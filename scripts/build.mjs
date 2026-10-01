@@ -52,13 +52,29 @@ import { SchemaError } from './lib/yaml.mjs';
 
 const WEB_DIR = fromRoot('web');
 const MANIFEST_NAME = '.pedia-manifest.json';
-const BASE = '/';
 
-const USAGE = `用法：node scripts/build.mjs [--stamp=YYYY-MM-DD] [--dry-run] [--quiet]
+/**
+ * 部署根（构建期决定，写进每个页面的 `<base href>` 与 boot 的 base）：
+ *   `/`           根域部署（自定义域名、Cloudflare Pages 根）
+ *   `/dshbaike/`  GitHub Pages 子路径部署（https://<org>.github.io/dshbaike/）
+ * 默认 `/`；可用 `--base=/dshbaike/` 或环境变量 `DSHBAIKE_BASE` 覆盖（CLI 优先）。
+ */
+let BASE = '/';
+
+function normalizeBase(input) {
+  const raw = String(input ?? '').trim();
+  if (raw === '' || raw === '/') return '/';
+  return `/${raw.replace(/^\/+/, '').replace(/\/+$/, '')}/`;
+}
+
+const USAGE = `用法：node scripts/build.mjs [--stamp=YYYY-MM-DD] [--base=/子路径/] [--dry-run] [--quiet]
 
   --stamp=<日期>  覆盖产物里的 generatedAt（默认取数据里最新的日期，保证确定性）
+  --base=<路径>   部署根，默认 /（根域）；GitHub Pages 子路径部署写 --base=/dshbaike/
   --dry-run       只算不写，打印将要产出的文件清单
   --quiet         只在结尾打印一行摘要
+
+环境变量：DSHBAIKE_BASE 等价于 --base（CLI 优先）。
 
 退出码：0 成功 / 1 数据有问题 / 2 用法错误。`;
 
@@ -66,10 +82,16 @@ const USAGE = `用法：node scripts/build.mjs [--stamp=YYYY-MM-DD] [--dry-run] 
 
 function main(argv) {
   const flags = { stamp: null, dryRun: false, quiet: false };
+  if (process.env.DSHBAIKE_BASE) BASE = normalizeBase(process.env.DSHBAIKE_BASE);
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') {
       process.stdout.write(`${USAGE}\n`);
       return 0;
+    }
+    const base = /^--base=(.*)$/.exec(arg);
+    if (base) {
+      BASE = normalizeBase(base[1]);
+      continue;
     }
     const stamp = /^--stamp=(.+)$/.exec(arg);
     if (stamp) {
@@ -769,12 +791,12 @@ function fallbackShell({ title, desc, payload }) {
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     `<title>${title}</title>`,
     `<meta name="description" content="${desc}">`,
-    '<link rel="stylesheet" href="/pedia.css">',
+    '<link rel="stylesheet" href="' + BASE + 'pedia.css">',
     bootScript(payload),
     '</head>',
     '<body>',
     '<div id="app"></div>',
-    '<script src="/pedia.js"></script>',
+    '<script src="' + BASE + 'pedia.js"></script>',
     '</body>',
     '</html>',
     '',
@@ -787,6 +809,9 @@ function applyTemplate(template, { title, desc, payload }) {
   let html = template;
   html = html.replaceAll('{{TITLE}}', title);
   html = html.replaceAll('{{DESC}}', desc);
+  // 部署根写进 <base href>：模板里写死的是 "/"，子路径部署（GitHub Pages 的 /dshbaike/）
+  // 必须按 --base 改写，否则嵌套页（concept/1.html）里的相对资源会指到根域。
+  html = html.replace(/<base href="[^"]*">/, `<base href="${BASE}">`);
   html = html.replace(BOOT_COMMENT, bootScript(payload));
   if (html.includes(BOOT_COMMENT_COMPACT)) html = html.replace(BOOT_COMMENT_COMPACT, bootScript(payload));
   return html.endsWith('\n') ? html : `${html}\n`;
