@@ -1,9 +1,9 @@
-# 构建产物（见 docs/03-directory-and-pipeline.md：产物不入库，由 CI 构建）
+# 构建产物（见 docs/03 §5、docs/10 §1：产物不入库，由 CI 构建）
 web/data/
-web/*.html
 web/*/*.html
+web/*.html
 !web/index.html
-!web/entry.template.html
+!web/*.template.html
 
 # 依赖与缓存
 node_modules/
