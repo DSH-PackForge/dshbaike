@@ -44,6 +44,7 @@
 | [07 · 多源分区](docs/07-multi-source-zones.md) | 一个分区里有多个做同一件事的源怎么办：源可插拔（adapter）、实体归并（`entities.yml`）、三级呈现；启动器分区的认领与血缘，以及通用方案与反模式 |
 | [08 · 视觉系统](docs/08-visual-system.md) | 现代 Wiki / 索引式的视觉语言：颜色与字体令牌、布局断点、徽章与信息表等组件规范；**明确不沿用市场的「纸墨朱砂」** |
 | [09 · 条目页深挖](docs/09-mcmod-entry-deepdive.md) | 对 `mcmod.cn/class/2021.html`（机械动力）的逐块拆解：20 个区块的实测值与我们的对应物，直接采纳 4 条、改造后采纳 3 条、明确不抄 5 条 |
+| [10 · M1 接口冻结](docs/10-m1-interface.md) | 三条并行工作流（工具链 / 内容 / 站点外壳）共用的接口：文件所有权、CLI 行为、产物字段名、模板占位符、验收清单 |
 
 ---
 
@@ -106,9 +107,22 @@
 
 ---
 
-## 本地预览（M1 之后可用）
+## 本地预览
 
 ```bash
-node scripts/build.mjs     # 离线构建到 web/data/
-npx serve web              # 任意静态服务器
+node scripts/validate.mjs   # 校验词条、分区与编号契约（0 errors 才能提 PR）
+node scripts/build.mjs      # 离线构建：写 web/data/**、web/<kind>/<n>.html、web/<zone>.html
+npx serve web               # 任意静态服务器；也可直接开 web/index.html 看演示数据
 ```
+
+构建**完全离线**（只读 `data/**` 与 `collected/**`），零第三方依赖，同一输入两次构建产出逐字节一致。
+
+---
+
+## 参与
+
+- 写一条词条：`node scripts/new.mjs <kind> "<标题>"` 领号 → 写正文 → 校验 → 提 PR
+- 改分区层：`data/zones/<zone>.yml`（条目必填 `name` / `blurb` / `links`）
+- 接入外部源：加一条 `adapter` 配置，见 [07](docs/07-multi-source-zones.md)
+
+完整流程、六类词条的写法与四条内容纪律见 [CONTRIBUTING.md](CONTRIBUTING.md)。

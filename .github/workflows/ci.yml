@@ -1,0 +1,68 @@
+name: 校验与构建
+
+# PR 上做两件事：校验数据契约（docs/02 §9 的规则）、干跑构建（产物不入库）。
+# 部署不在这里：仓库私有 + 组织 free 计划 → GitHub Pages 不可用，发布走 Cloudflare Pages
+# （见 docs/03 §8）。deploy.yml 等托管方确定后再加。
+
+on:
+  pull_request:
+    paths:
+      - 'data/**'
+      - 'scripts/**'
+      - 'web/**'
+      - '.github/workflows/ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'
+      - 'scripts/**'
+      - 'web/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 校验词条、分区与编号契约
+        run: node scripts/validate.mjs
+
+      - name: 构建产物不得入库
+        run: |
+          tracked=$(git ls-files web/data web/plugin web/concept web/tutorial web/pack web/launcher web/source || true)
+          if [ -n "$tracked" ]; then
+            echo "::error::以下文件是构建产物，不应提交（见 docs/10 §1）："
+            echo "$tracked"
+            exit 1
+          fi
+
+      - name: 构建（干跑）
+        run: node scripts/build.mjs
+
+      - name: 确定性检查：连续两次构建产出必须逐字节一致
+        run: |
+          set -e
+          rm -rf /tmp/pedia-build-1 /tmp/pedia-build-2
+          cp -r web/data /tmp/pedia-build-1
+          rm -rf web/data
+          node scripts/build.mjs
+          cp -r web/data /tmp/pedia-build-2
+          if diff -r /tmp/pedia-build-1 /tmp/pedia-build-2 > /tmp/pedia-diff.txt; then
+            echo "确定性 OK"
+          else
+            echo "::error::两次构建产出不一致，构建不是确定性的（见 docs/10 §6）"
+            head -n 40 /tmp/pedia-diff.txt
+            exit 1
+          fi
