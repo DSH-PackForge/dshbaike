@@ -91,11 +91,10 @@ node scripts/build.mjs && npx serve web     # 或你自己惯用的静态服务�
 词条 front-matter 的 `maintainers` 填 GitHub 用户名。`status: protected` 的词条只接受维护者修改；
 `status: archived` 表示上游已归档，必须写清归档原因（校验器会 warn）。
 
-## 许可
+## 许可（已定，完整说明见 [LICENSE](LICENSE)）
 
-- 站点代码与脚本：**CC0 1.0**
-- 词条正文：**CC BY-SA 4.0**
-- 结构化数据与构建产物（`registry.yml` / `taxonomy.yml` / `sources.yml` / `collected/**` / `web/data/**`）：**CC0 1.0**
+- **词条正文**（`data/<kind>/*.md`）：**CC BY-SA 4.0**（署名 + 相同方式共享）
+- **其余全部 CC0 1.0**：代码与脚本、结构化数据（`registry` / `taxonomy` / `sources` / `entities` / `zones`）、采集与构建产物、设计文档
 - 外部源与上游仓库的元数据：**只引用（带快照日期）与外链**，不落副本
 
-> 许可条款的最终口径仍在评审（见 [README 待确认项](README.md)），当前按上述执行。
+所以你写进词条的正文会以 CC BY-SA 4.0 发布；你写的分区条目、结构化数据会以 CC0 发布——**提 PR 即表示同意这两种发布方式**。

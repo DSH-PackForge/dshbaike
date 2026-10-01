@@ -213,12 +213,17 @@ node scripts/new.mjs tutorial "为什么升级后插件会失效"
 
 ## 7. 许可证与署名
 
+**已定**，完整许可表与理由见仓库根的 [`LICENSE`](../LICENSE)（以它为准）：
+
 | 对象 | 许可证 | 理由 |
 | --- | --- | --- |
-| 站点代码（`web/`、`scripts/`、`*.yml`） | CC0 1.0 | 与 `dsh-pack-market/web/LICENSE` 一致 |
-| 词条正文（`data/<kind>/*.md` 的 Markdown 正文） | CC BY-SA 4.0 | wiki 惯例：允许转载与二次整理，但要求署名 + 相同方式共享 |
-| **结构化数据与构建产物**（`data/registry.yml`、`data/taxonomy.yml`、`data/sources.yml`、`collected/**`、`web/data/**`） | **CC0 1.0** | 这些是要被下游机器消费的（市场、启动器、第三方工具）。若也套 CC BY-SA，会给出「能不能直接吃这份 JSON」的法律不确定性，与生态一贯的开放取向冲突 |
+| 站点代码（`web/`、`scripts/`） | CC0 1.0 | 与 `dsh-pack-market/web/LICENSE` 一致；下游零摩擦 |
+| 词条正文（`data/<kind>/*.md` 的 Markdown 正文） | CC BY-SA 4.0 | 正文是唯一的原创资产：署名 + 相同方式共享，防止被静默搬走再商业化 |
+| **结构化数据与构建产物**（`data/registry.yml`、`data/taxonomy.yml`、`data/sources.yml`、`data/entities.yml`、`data/zones/**`、`collected/**`、`web/data/**`） | **CC0 1.0** | 这些要被下游机器消费（市场、启动器、第三方工具）。若套分享-alike，会给出「能不能直接吃这份 JSON」的法律不确定性 |
+| 设计文档（`docs/**`） | CC0 1.0 | 让别人能直接拿走改造成自己的百科 |
 | 采集的第三方 README / 图片 | **不整篇复制**，只做「摘要 + 出处链接」 | 上游仓库许可证各异，整篇复制会造成许可证冲突 |
+
+**不使用带 NC 的许可**（参照物 MC百科用 BY-NC-SA 3.0）：NC 会让商业化的客户端无法合法消费本站数据，站点会变成数据孤岛，与 DSH 生态「数据可被下游机器消费」的方向冲突。
 
 页脚只做**自愿鸣谢 + 外链**（awesome、dshbase、市场、规范仓库），**不写任何具体协议名**——市场页脚写「awesome-dsh-plugin.com（CC0 1.0）」，而该站 README 自述 **MIT**（见 [04](04-mcmod-reference.md) §7.3），照抄会把一个可能错误的许可证声明传播下去。同时把这条不一致回报给 `dsh-pack-market`。
 

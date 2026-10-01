@@ -1,0 +1,37 @@
+# 分许可说明（DSH 百科 / dshbaike）
+
+本仓库**不同部分采用不同许可**，判断依据是路径：
+
+| 路径 / 内容 | 许可 | SPDX |
+| --- | --- | --- |
+| `data/<kind>/*.md` —— 词条正文与 front-matter | 署名—相同方式共享 4.0 国际 | `CC-BY-SA-4.0` |
+| `data/registry.yml`、`data/taxonomy.yml`、`data/sources.yml`、`data/entities.yml`、`data/zones/**` —— 结构化数据 | 公共领域贡献 | `CC0-1.0` |
+| `collected/**`、`web/data/**` —— 采集产物与构建产物 | 公共领域贡献 | `CC0-1.0` |
+| `scripts/**`、`web/**` 的 HTML / CSS / JS | 公共领域贡献 | `CC0-1.0` |
+| `docs/**` —— 设计文档 | 公共领域贡献 | `CC0-1.0` |
+| `.github/**`、`CONTRIBUTING.md`、本文件 | 公共领域贡献 | `CC0-1.0` |
+
+许可以下列官方文本为准（中文名仅为通行译法，法律效力以英文文本为准）：
+
+- CC0 1.0 Universal：<https://creativecommons.org/publicdomain/zero/1.0/legalcode>
+- Attribution-ShareAlike 4.0 International：<https://creativecommons.org/licenses/by-sa/4.0/legalcode>
+
+---
+
+## 为什么这样分
+
+**机器消费路径全部 CC0。** 结构化数据、索引、构建产物、代码都不设任何限制——整合包市场、启动器、第三方工具可以直接读取、二次分发、商业化使用，不需要考虑署名义务或分享-alike 传染。这是本站架构里明确的目标（见 `docs/03` §7）。
+
+**词条正文用 CC BY-SA 4.0。** 正文是本站唯一的原创资产。零约束等于允许别人整站搬走再商业化；CC BY-SA 的「署名 + 相同方式共享」既保护了志愿写作，也与本站「出处在页面上」的纪律同向。
+
+**为什么不用带 NC 的许可**（参照 MC百科用的是 BY-NC-SA 3.0）：NC 条款会污染整个下游生态——商业化的桌面客户端就不能合法消费本站数据，站点会变成数据孤岛。这与 DSH 生态「数据可被下游机器消费」的方向冲突。
+
+**引用与摘录不受影响。** 带署名的短引用（例如启动器在界面上显示一条摘要、市场引用一句定位）属于正常引用；把**整篇正文**搬走才需要同样以 CC BY-SA 开放。
+
+## 署名：对 CC0 部分的非强制请求
+
+使用 CC0 部分时，我们**请求但不要求**你保留指向 `dshbaike.com` 的出处链接。这不是许可条件。
+
+## 第三方内容
+
+本仓库**不复制**上游 README、外部教程正文或外部源的元数据，只做引用与外链（见 `CONTRIBUTING.md` 的四条内容纪律）。被引用内容的版权归其原作者，适用其各自的许可。
