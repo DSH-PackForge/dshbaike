@@ -11,8 +11,9 @@
 | 项 | 决定 | 理由 |
 | --- | --- | --- |
 | 仓库 | **独立仓库** `DSH-PackForge/dsh-pedia`，与 `dsh-pack-market`、`dsh-packforge-app` 平级 | 词条内容体量大、贡献者不同（写词条 vs 改规范 vs 写代码）、CI 频率与失败代价不同；混进规范仓库会让「改一句话」也要跑规范评审 |
-| 站点地址 | `https://dsh-packforge.github.io/dsh-pedia/` | 与市场的 `dsh-packforge.github.io/dsh-pack-market/` 同域，便于互相深链 |
-| 站点输出目录 | `web/` | 与市场一致，Pages Source 选 **GitHub Actions**（不是 branch） |
+| 站名 / 域名 | **DSH 百科** / `dshbaike.com`；过渡期先用免费子域 `dshbaike.pages.dev` | 域名是入口、仓库名是工程标识，两者不必一致；品牌规范见 [08](08-visual-system.md) §8 |
+| 托管 | **Cloudflare Pages**（从私有仓构建，免费额度足够），备选 Vercel / Netlify | 仓库**私有** + 组织 **free 计划** → **GitHub Pages 不可用**（Pages for private repos 需 Pro/Team/Enterprise） |
+| 站点输出目录 | `web/` | 托管方直接发布该目录；构建产物不入库 |
 | 本地目录 | 当前工作区里的 `dsh-pedia/` 就是该仓库的工作副本 | 同级目录均为独立仓库，根目录只是容器、本身不是仓库 |
 
 ---
@@ -60,7 +61,7 @@ dsh-pedia/
 ├── docs/                       # 本设计文档
 ├── .github/workflows/
 │   ├── ci.yml                  # PR：validate + build 干跑
-│   └── deploy-pages.yml        # 定时采集 + build + 部署
+│   └── deploy.yml              # 定时采集 + build + 发布（目标托管方：Cloudflare Pages / 备选 Vercel、Netlify）
 ├── CONTRIBUTING.md             # 领号 → 写词条 → 提 PR 的流程
 ├── LICENSE                     # 代码 CC0 1.0；词条正文 CC BY-SA 4.0；结构化数据 CC0（见 §7）
 └── README.md
@@ -152,13 +153,13 @@ node scripts/new.mjs tutorial "为什么升级后插件会失效"
 
 `build.mjs` 为每条词条吐一个 `web/<kind>/<n>.html`（如 `web/tutorial/6.html`、`web/plugin/12.html`）：外壳复用 `entry.template.html`，只替换标题、OG meta 与该词条的 `kind/n`。这样分享出去的链接在社交平台能出预览卡，搜索引擎也能逐条收录——hash 路由做不到这两件事。删除的词条也要生成墓碑页（`status: deleted` → 显示「本词条已撤下」+ 指向替代词条），**链接不烂是编号方案存在的理由**。
 
-站点部署在子路径 `https://dsh-packforge.github.io/dsh-pedia/`，所以**不能**用相对路径拼数据地址。构建期把 base 写进外壳：
+站点挂在域名根（`https://dshbaike.com/`，过渡期 `https://dshbaike.pages.dev/`），所以 `base` 默认就是 `/`——比挂在项目子路径（如 `user.github.io/repo/`）省事。即便如此，仍把 base 写成**构建期可配置的常量**，以便将来改成子路径部署或本地 `file://` 预览：
 
 ```html
-<script>window.__PEDIA_BASE__ = "/dsh-pedia/";</script>
+<script>window.__PEDIA_BASE__ = "/";</script>
 ```
 
-`pedia.js` 一律用 `__PEDIA_BASE__ + 'data/…'` 取数据；本地 `npx serve web` 时 base 为 `/`。这一点与市场不同——市场页只有一层 hash 路由，用 `./index.json` 就够了。
+`pedia.js` 一律用 `__PEDIA_BASE__ + 'data/…'` 取数据。这一点与市场不同——市场挂在 `dsh-packforge.github.io/dsh-pack-market/` 子路径下，只能靠相对路径兜。
 
 ---
 
@@ -230,9 +231,11 @@ node scripts/new.mjs tutorial "为什么升级后插件会失效"
 | workflow | 触发 | 步骤 | 失败行为 |
 | --- | --- | --- | --- |
 | `ci.yml` | PR（改 `data/**`、`web/**`、`scripts/**`） | `validate.mjs` → `build.mjs`（干跑，不写 `web/data`） | 校验失败即红色，PR 不可合并；**不**自动往 PR 分支提交产物 |
-| `deploy-pages.yml` | 每 6 小时定时（与市场错开，避开同一时刻抓 GitHub） / push `main` / 手动 | `collect.mjs`（失败不致命，沿用上轮）→ `build.mjs` → `upload-pages-artifact`(`web/`) → `deploy-pages` | 采集失败仍部署上轮数据；构建失败则不部署（宁可站点停在上一版） |
+| `deploy.yml` | 每 6 小时定时（与市场错开，避开同一时刻抓 GitHub） / push `main` / 手动 | `collect.mjs`（失败不致命，沿用上轮）→ `build.mjs` → 上传 `web/` 到托管方（Cloudflare Pages action / `wrangler`；备选 Vercel、Netlify） | 采集失败仍部署上轮数据；构建失败则不部署（宁可站点停在上一版） |
 
 采集与部署合在同一个 workflow，沿用市场的理由：默认 `GITHUB_TOKEN` 推回 `main` 的 push 不会再次触发其它 workflow，拆成两个 workflow 会导致「采集完了但没部署」。
+
+**为什么不用 GitHub Pages**：仓库私有 + 组织 free 计划 → Pages 对私有仓不开放（需 Pro/Team/Enterprise）。Cloudflare Pages / Vercel / Netlify 都支持从**私有**仓构建且免费额度足够，并支持后挂自定义域 `dshbaike.com`，所以先上免费子域不会有迁移成本。
 
 **采集产物要不要提交回 `main`**：要。`collected/**` 入库是「市场挂了也能构建」的前提。但如果只有 `collected/` 变化、`data/` 没变，仍应提交（词条页上的快照时间会更新），这一点与市场「索引无变化就跳过提交」不同——需要显式确认是否接受这种周期性提交。**待确认项**（见 §10）。
 
