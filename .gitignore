@@ -1,0 +1,22 @@
+# 构建产物（见 docs/03-directory-and-pipeline.md：产物不入库，由 CI 构建）
+web/data/
+web/*.html
+web/*/*.html
+!web/index.html
+!web/entry.template.html
+
+# 依赖与缓存
+node_modules/
+.pnpm-store/
+*.log
+
+# 本地抓页/临时目录（子代理或脚本留下的抓取缓存）
+.probe/
+.tmp/
+
+# 编辑器与系统
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
