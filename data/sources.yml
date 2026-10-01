@@ -1,0 +1,160 @@
+# 外部实体映射（docs/03 §2）：插件 ↔ npm 包 ↔ GitHub 仓库 ↔ 市场 id ↔ 启动器 canonical ID。
+# 本文件只登记**坐标**，不落任何上游元数据副本（star / 下载量 / README 一律只引用、带快照日期）。
+# 快照日期 `at` 是采集的观测日期，人工不臆造。
+version: 1
+sources:
+  - id: awesome
+    name: awesome-dsh-plugin.com
+    kind: plugin-directory
+    url: https://awesome-dsh-plugin.com/zh/
+    catalog: https://awesome-dsh-plugin.com/zh/catalog.json
+    entry: source/1
+    zone: ["plugins"]
+    # 实测 2026-10-02：catalog.json 顶层 items 数组恰为 4400 条；首页自述「收录 4400 个插件 / 24 个分类」。
+    coverage:
+      items: 4400
+      categories: 24
+      at: 2026-10-01
+    fields: [cat, tag, name, owner, short, slug, desc, cmd, npm, stars, dl, added, href]
+    reliability: high
+    status: active
+  - id: dshbase
+    name: dshbase.com
+    kind: guide
+    url: https://dshbase.com/
+    entry: null
+    zone: ["plugins", "packs", "themes", "skills"]
+    # 收录量来自 dsh-pedia docs/05 §5 的人工登记（7800+）；本轮未独立抓取核实。
+    coverage:
+      items: null
+      at: 2026-10-01
+      note: 收录量未独立核实，docs/05 §5 登记为「7800+」。
+    fields: []
+    reliability: medium
+    status: active
+  - id: market
+    name: dsh-pack-market
+    kind: market
+    url: https://github.com/DSH-PackForge/dsh-pack-market
+    index: https://dsh-packforge.github.io/dsh-pack-market/index.json
+    entry: source/2
+    zone: ["packs", "launchers"]
+    coverage:
+      items: 8
+      at: 2026-10-01
+    fields: [id, owner, repo, manifestVersion, type, name, version, displayName, description, author, category, dshVersion, profileName, downloadUrl, sha256, size, updatedAt, bundleCount, depCount]
+    reliability: high
+    status: active
+  - id: launchers
+    name: 启动器 canonical ID 认领表（launchers.json）
+    kind: registry
+    url: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
+    index: https://dsh-packforge.github.io/dsh-pack-market/launchers.json
+    entry: null
+    zone: ["launchers"]
+    coverage:
+      items: 5
+      at: 2026-10-01
+    fields: [id, name, url, support, desc]
+    reliability: high
+    status: active
+  - id: npm
+    name: npm registry
+    kind: registry
+    url: https://www.npmjs.com/
+    entry: null
+    zone: ["plugins"]
+    coverage:
+      items: null
+      at: 2026-10-01
+      note: 不普查总量；只在建插件词条时按 repo / npm 坐标抓一次最新版本。
+    fields: [name, version, dist-tags, time, license, repository, homepage]
+    reliability: high
+    status: active
+  - id: github
+    name: GitHub 仓库事实
+    kind: registry
+    url: https://github.com/
+    entry: null
+    zone: ["plugins", "packs", "toolchain"]
+    coverage:
+      items: null
+      at: 2026-10-01
+      note: 只按已知坐标取单个仓库事实（stars / pushedAt / license / archived），不做话题全量扫描。
+    fields: [full_name, stars, pushed_at, license, archived, default_branch]
+    reliability: medium
+    status: active
+  - id: specs
+    name: DSH 规范仓库（DSH-PackForge/specs）
+    kind: spec
+    url: https://github.com/DSH-PackForge/DSH-PackForge/tree/main/specs
+    entry: null
+    zone: ["specs"]
+    coverage:
+      items: 12
+      at: 2026-10-01
+    fields: [file, version, status, title]
+    reliability: high
+    status: active
+
+# 坐标映射（docs/05 §3.2 第 1 条：npm 包名 ≠ GitHub 仓库；映射不到的标「仓库归属待核」，不猜）
+plugins:
+  - name: dsh-loader
+    market:
+      id: dsh-plugins/dsh-loader
+      url: https://github.com/dsh-plugins/dsh-loader
+    npm: "@dsh-plugin/dsh-loader"
+    repo: dsh-plugins/dsh-loader
+    entry: plugin/1
+    note: npm scope（@dsh-plugin）与 GitHub owner（dsh-plugins）不同名，是两个独立坐标。
+  - name: dsh-pack-plugin
+    market:
+      id: DSH-PackForge/dsh-pack-plugin
+      url: https://github.com/DSH-PackForge/dsh-pack-plugin
+    npm: "@dsh-packforge/dsh-pack-plugin"
+    repo: DSH-PackForge/dsh-pack-plugin
+    entry: plugin/2
+    note: 市场精选条目写 `DSH-PackForge/dsh-pack-plugin`；package.json 的 npm 名是 `@dsh-packforge/dsh-pack-plugin`。
+  - name: dsh-packforge-app
+    market:
+      id: DSH-PackForge/dsh-packforge-app
+      url: https://github.com/DSH-PackForge/dsh-packforge-app
+    npm: null
+    repo: DSH-PackForge/dsh-packforge-app
+    entry: plugin/3
+    note: 市场安装命令是 `dsh plugin add github:DSH-PackForge/dsh-packforge-app`（GitHub 坐标）；是否另发 npm 包未核实。
+
+packs:
+  - marketId: hxh230802.smoother-deepseek-harness
+    repo: hxh230802/smoother-deepseek-harness
+  - marketId: yukitakasama.better-deepseek-harness-codex
+    repo: yukitakasama/better-deepseek-harness-codex
+  - marketId: 1900992335.desktop-pack
+    repo: 1900992335/desktop-pack
+  - marketId: LQH-A-A-O.dsh-simple-drawing
+    repo: LQH-A-A-O/dsh-simple-drawing
+  - marketId: LQH-A-A-O.dsh-bcut-edit
+    repo: LQH-A-A-O/dsh-bcut-edit
+  - marketId: LQH-A-A-O.cad-ppt-skills
+    repo: LQH-A-A-O/cad-ppt-skills
+  - marketId: hxh230802.pokemon
+    repo: hxh230802/pokemon
+  - marketId: hxh230802.better-sidebar
+    repo: hxh230802/better-sidebar
+
+launchers:
+  - id: dshl
+    name: DSHL · DeepSeek Harness Launcher
+    url: https://github.com/Loliyer520/DSHL-Deepseek-Harness-Launcher
+  - id: hdsl
+    name: HDSL · Hello DeepSeek Launcher
+    url: https://github.com/MCXCC303/HDSL
+  - id: dsh-packforge-app
+    name: DSH PackForge GUI / dspack CLI
+    url: https://github.com/DSH-PackForge/dsh-packforge-app
+  - id: official-desktop
+    name: DeepSeek Harness 官方桌面端
+    url: null
+  - id: dsh-cli
+    name: 裸 dsh 命令行
+    url: null

@@ -56,6 +56,7 @@ node scripts/linkcheck.mjs [--write]         # 可选：HEAD 检查外链，写 
   "html": "<p>…</p>",             // 渲染后的正文（已转义，见 §7）
   "toc": [{ "level": 2, "text": "它解决什么问题", "anchor": "它解决什么问题" }],
   "meta": { },                    // 该 kind 的专有字段原样透传（plugin 的 compat/roles/…）
+                                  // 另：`archivedNote` 也放这里（common 可选字段，墓碑/归档页要用）
   "sources": { "license": "auto", "compat": "manual" },   // 字段 → manual|verified|auto
   "completeness": { "score": 78, "missing": [{ "field": "compat", "label": "兼容性未声明", "hint": "补 compat.dsh" }] },
   "plugins": [ { "name": "…", "entry": "plugin/12", "why": "…", "install": "…", "links": {} } ],
@@ -83,17 +84,24 @@ node scripts/linkcheck.mjs [--write]         # 可选：HEAD 检查外链，写 
     {
       "name": "官方 Web UI",
       "blurb": "浏览器里的完整界面，dsh web 启动。",
+      "source": "curated",             // 来源徽章：awesome | market | launchers | specs | curated
       "links": { "github": "deepseek-ai/deepseek-harness" },
       "entry": "plugin/12",            // 可空 → 红链
       "entryTitle": "…",               // entry 存在时由构建填充
       "completeness": 78,              // entry 存在时为数字，否则 null
       "tags": ["UI 增强"],
+      "version": null,                 // 可选，通用键
+      "updatedAt": null,               // 可选，通用键
       "risk": ["build-script"],
       "extra": { "form": "web", "shippedBy": "official", "profile": "web" }   // 只允许 itemFields 内的键
     }
   ]
 }
 ```
+
+> **通用卡片键**（直接写在条目上，**不要**声明进 `itemFields`，否则会被塞进 `extra` 而顶层丢失）：
+> `name` / `blurb` / `source` / `links` / `entry` / `completeness` / `tags` / `version` / `updatedAt` / `risk`。
+> `itemFields` 只放**分区独有**的字段（如 `clients` 的 `form` / `shippedBy` / `profile` / `platforms`）。校验器对「把通用键写进 itemFields」报 error。
 
 ## 6. 其余产物
 

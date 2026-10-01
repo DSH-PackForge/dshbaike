@@ -1,0 +1,71 @@
+# 编号契约（docs/02 §2）：各 kind 独立计数、断号不回填、删除留墓碑、永不复用。
+# 只有 scripts/new.mjs 会改 counters；本文件是 M1 首版的人工落地。
+version: 1
+counters:
+  concept: 4
+  plugin: 3
+  tutorial: 3
+  pack: 0
+  launcher: 0
+  source: 2
+entries:
+  - n: 1
+    kind: concept
+    title: patch 层与层序
+    createdAt: 2026-10-02
+    status: published
+  - n: 2
+    kind: concept
+    title: profile
+    createdAt: 2026-10-02
+    status: published
+  - n: 3
+    kind: concept
+    title: $DSH_HOME
+    createdAt: 2026-10-02
+    status: published
+  - n: 4
+    kind: concept
+    title: client 半端
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: plugin
+    title: dsh-loader
+    createdAt: 2026-10-02
+    status: published
+  - n: 2
+    kind: plugin
+    title: dsh-pack-plugin
+    createdAt: 2026-10-02
+    status: published
+  - n: 3
+    kind: plugin
+    title: dsh-packforge-app
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: tutorial
+    title: 为什么 DSH 升级后插件会失效
+    createdAt: 2026-10-02
+    status: published
+  - n: 2
+    kind: tutorial
+    title: 写一个 DSH 插件（bundle 声明 + patch 层）
+    createdAt: 2026-10-02
+    status: published
+  - n: 3
+    kind: tutorial
+    title: 装插件时到底发生了什么
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: source
+    title: awesome-dsh-plugin.com
+    createdAt: 2026-10-02
+    status: published
+  - n: 2
+    kind: source
+    title: dsh-pack-market
+    createdAt: 2026-10-02
+    status: published

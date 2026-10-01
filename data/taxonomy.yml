@@ -1,0 +1,125 @@
+# 分类树（docs/02 §4）。点分层级；每个节点都必须有 label.zh 与 desc；
+# 词条的 category 只能落在叶子节点上（validate 规则 6）。
+# 一级对齐概念词条的 layer 枚举与教程主题，不搬 awesome 的 24 个插件分类键（那是二级标签的活）。
+version: 1
+tree:
+  - id: concept
+    label:
+      zh: 本体机制
+      en: Core mechanisms
+    desc: DSH 自身怎么跑起来：层栈、目录、运行时与半端的机制级解释。
+    children:
+      - id: concept.runtime
+        label:
+          zh: 运行时与启动
+        desc: profile 装配、patch 层序、CLI 启动路径一类的运行时机制。
+      - id: concept.plugin
+        label:
+          zh: 插件与 bundle
+        desc: 插件以什么形态分发与挂载：bundle 声明、patch 层、双半端。
+      - id: concept.agent
+        label:
+          zh: 智能体与预设
+        desc: agent preset、权限档位、会话内 composition 一类的智能体侧机制。
+      - id: concept.workspace
+        label:
+          zh: 工作区与会话
+        desc: 工作区注册、会话存储与分支一类的本机状态机制。
+      - id: concept.ecosystem
+        label:
+          zh: 生态与分发
+        desc: 规范、市场、启动器与外部源之间的关系与契约。
+  - id: plugin
+    label:
+      zh: 插件与兼容
+      en: Plugins and compatibility
+    desc: 按「这篇内容在讲插件的哪一面」组织，不是插件目录分类。
+    children:
+      - id: plugin.compat
+        label:
+          zh: 前置与兼容
+        desc: 兼容层、前置加载器、版本断裂与升级后的插件可用性。
+      - id: plugin.ui
+        label:
+          zh: 界面扩展
+        desc: 改侧边栏、面板、设置页一类界面扩展的挂载与冲突。
+      - id: plugin.capability
+        label:
+          zh: 能力接入
+        desc: 工具、模型接入、外部服务桥接一类给智能体加能力的插件。
+      - id: plugin.data
+        label:
+          zh: 数据与记忆
+        desc: 会话之外的持久化、检索与记忆后端一类插件。
+      - id: plugin.packaging
+        label:
+          zh: 打包与安装
+        desc: 导出、安装、profile 切换与整合包管理一类插件。
+  - id: pack
+    label:
+      zh: 整合包
+      en: Packs
+    desc: 一次装一整套的包词条，按使用者取向分类。
+    children:
+      - id: pack.coding
+        label:
+          zh: 编码向
+        desc: 面向写代码场景的整合包。
+      - id: pack.media
+        label:
+          zh: 创作与媒体
+        desc: 绘图、视频剪辑、办公产出类整合包。
+      - id: pack.fun
+        label:
+          zh: 娱乐与趣味
+        desc: 桌宠、玩法、游戏化一类整合包。
+      - id: pack.general
+        label:
+          zh: 通用增强
+        desc: 不针对特定场景、整体提升 DSH 易用性的整合包。
+  - id: ops
+    label:
+      zh: 运维与排错
+      en: Operations
+    desc: 装、升、修三件事的操作类内容。
+    children:
+      - id: ops.install
+        label:
+          zh: 安装
+        desc: 把东西装上：命令、落点、构建授权。
+      - id: ops.upgrade
+        label:
+          zh: 升级
+        desc: 版本变化带来的失效、回滚与迁移。
+      - id: ops.troubleshoot
+        label:
+          zh: 排错
+        desc: 启动失败、插件不生效、日志与二分定位。
+  - id: ecosystem
+    label:
+      zh: 生态与分发
+      en: Ecosystem
+    desc: 规范、外部源与发布渠道。
+    children:
+      - id: ecosystem.spec
+        label:
+          zh: 规范与协议
+        desc: manifest、pack-structure、index、publishing 等契约文档。
+      - id: ecosystem.source
+        label:
+          zh: 资源源
+        desc: 外部资源站与渠道：收录什么、提供哪些字段、怎么投稿。
+      - id: ecosystem.publish
+        label:
+          zh: 发布与收录
+        desc: 把自己的东西发布出去并被外部源收录。
+  - id: meta
+    label:
+      zh: 元
+      en: Meta
+    desc: 关于这部百科自身与参与方式的内容。
+    children:
+      - id: meta.contributing
+        label:
+          zh: 参与与维护
+        desc: 领号、写词条、提 PR 与评审约定。

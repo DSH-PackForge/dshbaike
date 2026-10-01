@@ -173,7 +173,10 @@ items:
     shippedBy: official
 ```
 
-校验规则：条目出现白名单之外的键 → error（宁可拒绝，也不让分区页慢慢长歪）。
+两条硬规矩：
+
+1. 条目出现白名单之外的键 → error（宁可拒绝，也不让分区页慢慢长歪）。
+2. **通用卡片键不能写进 `itemFields`**（`name` / `blurb` / `source` / `links` / `entry` / `completeness` / `tags` / `version` / `updatedAt` / `risk`）。构建会把 `itemFields` 里的键塞进 `item.extra`，于是顶层字段消失——**我们踩过一次**：11 个分区都把 `source` 声明进了 `itemFields`，结果来源徽章全部渲染不出来。校验器现在对这条报 error。
 
 ---
 

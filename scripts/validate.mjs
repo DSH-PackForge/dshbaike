@@ -1,0 +1,1103 @@
+#!/usr/bin/env node
+/**
+ * validate.mjs —— 校验 data/**（docs/02 §9 的 23 条规则；docs/10 §9 要求 6 / 23 必须是 error）。
+ *
+ * 用法：
+ *   node scripts/validate.mjs                 # 校验整棵 data/ 树
+ *   node scripts/validate.mjs <文件…>          # 只校验给定文件（跨文件检查仍取全量数据）
+ *
+ * 退出码：有 error → 1；只有 warn → 0；用法错误 → 2。
+ * 末尾固定打印一行 `N errors, M warnings`。
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+
+import {
+  DATA_DIR,
+  loadCollected,
+  loadCollectedPacks,
+  loadEntities,
+  loadRegistry,
+  loadSourceConfigs,
+  loadSources,
+  loadTaxonomy,
+  loadZoneFiles,
+} from './lib/data.mjs';
+import { splitFrontMatter } from './lib/frontmatter.mjs';
+import { isMissing, displayPath, fromRoot, exists, parseEntryId, readText, todayLocal } from './lib/util.mjs';
+import { SchemaError } from './lib/yaml.mjs';
+import { EXPECTED_FIELDS, OPTIONAL_FIELDS } from './lib/fields.mjs';
+import { registryProblems, ENTRY_STATUSES, ENTRY_KINDS } from './lib/registry.mjs';
+
+const USAGE = `用法：node scripts/validate.mjs [文件…]
+
+  不带参数   校验整棵 data/ 树
+  带文件参数  只校验这些文件（跨文件检查仍读全量 data/）
+
+退出码：有 error → 1，只有 warn → 0。`;
+
+/* ------------------------------------------------------------------ */
+/* 诊断收集                                                            */
+/* ------------------------------------------------------------------ */
+
+class Reporter {
+  constructor() {
+    this.items = [];
+    this.seen = new Set();
+  }
+
+  add(level, file, line, rule, message, hint) {
+    const key = `${level}|${file}|${line ?? ''}|${rule}|${message}`;
+    if (this.seen.has(key)) return;
+    this.seen.add(key);
+    this.items.push({ level, file, line: line ?? null, rule, message, hint: hint ?? null });
+  }
+
+  error(file, line, rule, message, hint) {
+    this.add('error', file, line, rule, message, hint);
+  }
+
+  warn(file, line, rule, message, hint) {
+    this.add('warn', file, line, rule, message, hint);
+  }
+
+  get errors() {
+    return this.items.filter((i) => i.level === 'error');
+  }
+
+  get warnings() {
+    return this.items.filter((i) => i.level === 'warn');
+  }
+
+  print(out = process.stdout) {
+    const sorted = [...this.items].sort((a, b) => {
+      if (a.file !== b.file) return a.file < b.file ? -1 : 1;
+      if ((a.line ?? 0) !== (b.line ?? 0)) return (a.line ?? 0) - (b.line ?? 0);
+      if (a.level !== b.level) return a.level === 'error' ? -1 : 1;
+      return a.message < b.message ? -1 : 1;
+    });
+    for (const item of sorted) {
+      const loc = item.line ? `${item.file}:${item.line}` : item.file;
+      const tag = item.level === 'error' ? 'error' : 'warn ';
+      out.write(`${tag} [规则 ${item.rule}] ${loc} — ${item.message}\n`);
+      if (item.hint) out.write(`                                ↳ ${item.hint}\n`);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 行号定位                                                            */
+/* ------------------------------------------------------------------ */
+
+function lineOf(lines, keyPath) {
+  if (!lines) return null;
+  if (typeof keyPath === 'number') return lines.get(String(keyPath)) ?? null;
+  const key = String(keyPath);
+  if (lines.has(key)) return lines.get(key);
+  // 回退到最长已知前缀（`plugins.0.name` → `plugins.0` → `plugins`）
+  const parts = key.split('.');
+  for (let i = parts.length - 1; i > 0; i -= 1) {
+    const prefix = parts.slice(0, i).join('.');
+    if (lines.has(prefix)) return lines.get(prefix);
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* 枚举与常量                                                          */
+/* ------------------------------------------------------------------ */
+
+const ENUMS = {
+  status: ENTRY_STATUSES,
+  difficulty: ['beginner', 'intermediate', 'advanced'],
+  origin: ['original', 'external'],
+  layer: ['runtime', 'plugin', 'agent', 'workspace', 'ecosystem'],
+  role: ['bundle', 'client', 'bundle+client', 'theme', 'compat'],
+  packType: ['profile', 'dshhome'],
+  entryGate: ['tutorial', 'pack', 'maintainer'],
+  sourceKind: ['plugin-directory', 'guide', 'market', 'registry', 'spec', 'tool', 'topic'],
+  relation: ['complementary', 'overlapping', 'upstream'],
+  relationType: ['requires', 'recommends', 'conflicts', 'replaces', 'integrates'],
+  roleType: ['owner', 'maintainer', 'contributor', 'translator', 'upstream'],
+  risk: ['desktop-control', 'network', 'credentials', 'build-script'],
+  dataSource: ['curated', 'awesome', 'market', 'launchers', 'specs'],
+  /** 分区条目的来源徽章（docs/02 §1.3） */
+  sourceBadge: ['awesome', 'market', 'launchers', 'specs', 'curated'],
+};
+
+/** 只有形如「实测 / 未核实」的口径词才算声明过适用性（规则 11 / 16） */
+const CALIBER = /实测|未核实|已核实|未测试|未验证/;
+
+/** 插件引用块里禁止出现的空泛理由（规则 9） */
+const BANNED_WHY = ['很好用', '很强大', '非常强大', '牛逼', '神器', 'yyds', '好用', '强烈推荐', '必备'];
+
+/** zone 文件的通用键（不在 `itemFields` 白名单里的额外键就是规则 23 的 error） */
+const ZONE_KEYS = new Set([
+  'zone',
+  'title',
+  'desc',
+  'dataSource',
+  'howto',
+  'itemFields',
+  'sources',
+  'snapshot',
+  'items',
+  'updatedAt',
+]);
+
+/** 分区条目的通用卡片键（docs/06 §4） */
+const ITEM_KEYS = new Set([
+  'name',
+  'blurb',
+  'source',
+  'links',
+  'entry',
+  'completeness',
+  'tags',
+  'version',
+  'updatedAt',
+  'risk',
+]);
+
+const BODY_MIN_LENGTH = 120; // 规则 14（warn）
+const WHY_MIN_LENGTH = 8; // 规则 9
+
+/* ------------------------------------------------------------------ */
+/* 主流程                                                              */
+/* ------------------------------------------------------------------ */
+
+function main(argv) {
+  if (argv.includes('--help') || argv.includes('-h')) {
+    process.stdout.write(`${USAGE}\n`);
+    return 0;
+  }
+  const targets = argv.filter((a) => !a.startsWith('-'));
+  const unknownFlags = argv.filter((a) => a.startsWith('-') && a !== '--help' && a !== '-h');
+  if (unknownFlags.length) {
+    process.stderr.write(`不认识的选项：${unknownFlags.join(' ')}\n\n${USAGE}\n`);
+    return 2;
+  }
+
+  const reporter = new Reporter();
+  const ctx = loadContext(reporter);
+
+  for (const target of targets) {
+    if (!exists(target)) {
+      reporter.error(target, null, 0, '指定的文件不存在');
+    }
+  }
+
+  checkTaxonomy(ctx, reporter);
+  if (targets.length === 0) {
+    checkRegistry(ctx, reporter);
+    checkEntries(ctx, reporter, null);
+    checkZones(ctx, reporter, null);
+    checkSourcesConfig(ctx, reporter);
+  } else {
+    // 只校验给定文件：跨文件检查仍用全量数据
+    const abs = targets.map((t) => path.resolve(t));
+    const entryTargets = abs.filter((p) => /[\\/]data[\\/][a-z]+[\\/]\d+\.md$/.test(p) || ctx.entryByPath.has(p));
+    const zoneTargets = abs.filter((p) => ctx.zoneByPath.has(p));
+    const registryTarget = abs.some((p) => path.resolve(ctx.registry.path) === p);
+    const known = new Set([...entryTargets, ...zoneTargets, ...(registryTarget ? [ctx.registry.path] : [])]);
+    for (const p of abs) {
+      if (!known.has(p)) {
+        reporter.warn(displayPath(p), null, 0, '这个文件不在已知的事实源清单里（不是词条 / 分区 / registry），已跳过');
+      }
+    }
+    checkRegistry(ctx, reporter, registryTarget || entryTargets.length > 0);
+    checkEntries(ctx, reporter, entryTargets.length ? entryTargets : null);
+    checkZones(ctx, reporter, zoneTargets.length ? zoneTargets : null);
+    checkSourcesConfig(ctx, reporter);
+  }
+
+  reporter.print();
+  process.stdout.write(`${reporter.errors.length} errors, ${reporter.warnings.length} warnings\n`);
+  return reporter.errors.length > 0 ? 1 : 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* 加载上下文                                                          */
+/* ------------------------------------------------------------------ */
+
+function loadContext(reporter) {
+  const registry = loadRegistry();
+  const taxonomy = loadTaxonomy();
+  const sources = loadSources();
+  const entities = loadEntities();
+  const zones = loadZoneFiles();
+  const sourceConfigs = loadSourceConfigs();
+  const collected = loadCollected();
+
+  const entryByN = new Map();
+  for (const entry of registry.data.entries ?? []) {
+    if (entry.kind && Number.isFinite(Number(entry.n))) {
+      entryByN.set(`${entry.kind}/${Number(entry.n)}`, entry);
+    }
+  }
+
+  // 扫描 data/<kind>/*.md
+  const entryFiles = [];
+  for (const kind of ENTRY_KINDS) {
+    const dir = path.join(DATA_DIR, kind);
+    if (!exists(dir)) continue;
+    for (const name of fs.readdirSync(dir).sort()) {
+      const abs = path.join(dir, name);
+      if (!fs.statSync(abs).isFile()) continue;
+      if (!name.endsWith('.md')) {
+        reporter.warn(displayPath(abs), null, 1, `data/${kind}/ 下出现了非 .md 文件，已忽略`);
+        continue;
+      }
+      const base = name.slice(0, -3);
+      if (!/^\d+$/.test(base)) {
+        reporter.error(displayPath(abs), null, 1, `文件名的编号部分必须是纯数字（现在是 \`${base}\`）`, '路径契约是 data/<kind>/<n>.md');
+        continue;
+      }
+      entryFiles.push({ kind, n: Number(base), abs, file: displayPath(abs) });
+    }
+  }
+  entryFiles.sort((a, b) => (a.kind === b.kind ? a.n - b.n : a.kind < b.kind ? -1 : 1));
+
+  // 解析每个词条的 front-matter
+  const entries = [];
+  for (const item of entryFiles) {
+    const raw = readText(item.abs);
+    let parsed = null;
+    try {
+      parsed = splitFrontMatter(raw, { file: item.file });
+    } catch (error) {
+      reporter.error(
+        item.file,
+        error instanceof SchemaError ? error.line : null,
+        5,
+        error instanceof SchemaError ? error.detail : `front-matter 解析失败：${error.message}`,
+      );
+      entries.push({ ...item, data: null, body: '', lines: new Map(), parseFailed: true });
+      continue;
+    }
+    entries.push({ ...item, data: parsed.data, body: parsed.body, lines: parsed.lines, bodyStartLine: parsed.bodyStartLine });
+  }
+
+  const byId = new Map();
+  for (const entry of entries) byId.set(`${entry.kind}/${entry.n}`, entry);
+
+  // data/registry.yml 的原始文本（行号用）
+  const registryText = exists(path.join(DATA_DIR, 'registry.yml')) ? readText(path.join(DATA_DIR, 'registry.yml')) : null;
+
+  const zoneByPath = new Map();
+  for (const zone of zones) zoneByPath.set(path.resolve(zone.path), zone);
+
+  const entryByPath = new Map();
+  for (const entry of entries) entryByPath.set(path.resolve(entry.abs), entry);
+
+  return {
+    registry,
+    registryText,
+    taxonomy,
+    taxonomyLeaves: collectTaxonomyLeaves(taxonomy?.data),
+    sources,
+    entities,
+    zones,
+    sourceConfigs,
+    collected,
+    entryByN,
+    byId,
+    entries,
+    zoneByPath,
+    entryByPath,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* taxonomy                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 分类树节点 id。允许两种写法：
+ * - 全限定：`id: concept.runtime`（data/taxonomy.yml 现行写法）
+ * - 相对：`id: runtime`，由父级补上前缀
+ * 之前这里无条件补前缀，导致全限定写法被拼成 `concept.concept.runtime`，
+ * 于是「明明在树里」的 category 被判成不在树里（规则 6 误报）。
+ */
+function taxonomyNodeId(prefix, localId) {
+  const explicit = String(localId);
+  if (!prefix) return explicit;
+  return explicit.includes('.') ? explicit : `${prefix}.${explicit}`;
+}
+
+/** 递归收集 taxonomy 节点：id → { node, path, deprecated, hasChildren, line } */
+function collectTaxonomyLeaves(data) {
+  const map = new Map();
+  const walk = (nodes, prefix) => {
+    if (!Array.isArray(nodes)) return;
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object') continue;
+      const localId = node.id ?? node.key ?? node.name;
+      if (!localId) continue;
+      const id = taxonomyNodeId(prefix, localId);
+      const children = node.children ?? node.nodes ?? [];
+      map.set(id, {
+        node,
+        id,
+        hasChildren: Array.isArray(children) && children.length > 0,
+        deprecated: node.status === 'deprecated' || node.deprecated === true,
+      });
+      if (Array.isArray(children) && children.length) walk(children, id);
+    }
+  };
+  const roots = Array.isArray(data) ? data : (data?.tree ?? data?.nodes ?? []);
+  walk(roots, '');
+  return map;
+}
+
+function checkTaxonomy(ctx, reporter) {
+  const taxonomy = ctx.taxonomy;
+  if (!taxonomy) {
+    reporter.warn('data/taxonomy.yml', null, 6, '没有 taxonomy.yml，category 的叶子校验无法进行（规则 6 形同虚设）');
+    return;
+  }
+  const walk = (nodes, prefix, depth) => {
+    if (!Array.isArray(nodes)) return;
+    for (const [i, node] of nodes.entries()) {
+      const line = lineOf(taxonomy.lines, `${prefix ? `${prefix}.` : ''}${i}`);
+      const localId = node?.id ?? node?.key ?? node?.name;
+      const id = localId ? taxonomyNodeId(prefix, localId) : String(localId);
+      if (!localId) {
+        reporter.error(taxonomy.file, line, 6, `taxonomy 第 ${i + 1} 个节点缺少 id / key`);
+        continue;
+      }
+      if (isMissing(node.label?.zh) && isMissing(node.label)) {
+        reporter.warn(taxonomy.file, line, 6, `taxonomy 节点 \`${id}\` 没有 label.zh`);
+      }
+      if (isMissing(node.desc)) {
+        reporter.warn(taxonomy.file, line, 6, `taxonomy 节点 \`${id}\` 没有 desc（docs/02 §4 要求必填）`);
+      }
+      const children = node.children ?? node.nodes;
+      if (depth >= 3 && Array.isArray(children) && children.length) {
+        reporter.warn(taxonomy.file, line, 6, `taxonomy 节点 \`${id}\` 层级超过 3 层，叶子校验会变得难以维护`);
+      }
+      walk(children, id, depth + 1);
+    }
+  };
+  const roots = Array.isArray(taxonomy.data) ? taxonomy.data : (taxonomy.data?.tree ?? taxonomy.data?.nodes ?? []);
+  walk(roots, '', 1);
+}
+
+/* ------------------------------------------------------------------ */
+/* registry                                                            */
+/* ------------------------------------------------------------------ */
+
+function checkRegistry(ctx, reporter, force = false) {
+  const registry = ctx.registry;
+  const file = registry.file ?? 'data/registry.yml';
+  const lines = registry.lines;
+
+  if (!registry.file) {
+    reporter.warn(file, null, 3, 'data/registry.yml 不存在；所有编号契约检查都会跳过（领号请走 node scripts/new.mjs）');
+    return;
+  }
+
+  for (const problem of registryProblems(registry.data)) {
+    const line = lineOf(lines, problem.path);
+    const isCounter = problem.path.startsWith('counters.');
+    reporter.error(file, line, isCounter ? 3 : 2, problem.message);
+  }
+  if (!force) return;
+}
+
+/* ------------------------------------------------------------------ */
+/* 词条                                                                */
+/* ------------------------------------------------------------------ */
+
+function checkEntries(ctx, reporter, only) {
+  const targets = only ?? ctx.entries;
+  for (const entry of targets) {
+    if (!entry.data) continue; // front-matter 已经报过错
+    checkEntry(ctx, reporter, entry);
+  }
+}
+
+function checkEntry(ctx, reporter, entry) {
+  const { kind, n, file, data, lines } = entry;
+  const id = `${kind}/${n}`;
+  const R = (key) => lineOf(lines, key);
+
+  // ---- 规则 1：路径与 kind 匹配（由扫描保证；这里再确认一遍 kind 字段） ----
+  if (data.kind != null && String(data.kind) !== kind) {
+    reporter.error(file, R('kind'), 1, `front-matter 的 kind \`${data.kind}\` 与所在目录 \`${kind}\` 不一致`);
+  }
+
+  // ---- 规则 2 / 4：registry 一致性、墓碑不可覆盖 ----
+  const reg = ctx.entryByN.get(id);
+  if (!reg) {
+    reporter.error(file, null, 2, `${id} 不在 data/registry.yml 里（领号必须走 node scripts/new.mjs ${kind} "…"）`, '手写文件会破坏编号契约');
+  } else {
+    if (reg.status === 'deleted') {
+      // 合法墓碑：registry 与文件都是 deleted —— 页面保留、链接不烂（docs/02 §2 规则 3）。
+      // 只有「文件还活着」才说明这个号被复用了。
+      const fmStatusForTombstone = data.status == null ? 'published' : String(data.status);
+      if (fmStatusForTombstone !== 'deleted') {
+        reporter.error(
+          file,
+          R('status'),
+          4,
+          `${id} 在 registry 里已经是墓碑（status: deleted），墓碑号永不复用`,
+          reg.title ? `墓碑标题：${reg.title}` : null,
+        );
+      }
+    }
+    const fmStatus = data.status == null ? 'published' : String(data.status);
+    const regStatus = reg.status == null ? 'published' : String(reg.status);
+    if (fmStatus !== regStatus) {
+      reporter.error(file, R('status'), 2, `status 不一致：front-matter 是 \`${fmStatus}\`，registry 是 \`${regStatus}\``);
+    }
+    if (reg.title != null && data.title != null && String(reg.title) !== String(data.title)) {
+      reporter.warn(file, R('title'), 2, `title 与 registry 不一致：front-matter \`${data.title}\`，registry \`${reg.title}\``, '改了标题记得同步 registry');
+    }
+  }
+
+  // ---- 规则 5：必填字段 ----
+  // `draft` 是「还没写完」的合法状态（new.mjs 生成的骨架就是 draft），
+  // 所以「缺类别 / 类别不在树里」这类问题在 draft 下只提示，改成 published 才拦截。
+  const isDraft = String(data.status ?? '') === 'draft';
+  const incomplete = (line, rule, message, hint) =>
+    isDraft
+      ? reporter.warn(file, line, rule, `${message}（draft 状态只提示，不拦截）`)
+      : reporter.error(file, line, rule, message, hint);
+
+  for (const key of ['title', 'category', 'summary', 'status']) {
+    if (isMissing(data[key])) {
+      incomplete(R(key), 5, `缺少必填字段 \`${key}\``);
+    }
+  }
+  if (Array.isArray(data.category) && data.category.length === 0) {
+    incomplete(R('category'), 5, '`category` 不能是空数组：至少要有一个 taxonomy 叶子节点');
+  }
+  if (typeof data.category !== 'undefined' && !Array.isArray(data.category)) {
+    incomplete(R('category'), 5, '`category` 必须是序列（如 `[plugin.compat]`）');
+  }
+  if (typeof data.summary === 'string' && data.summary.trim().length < 8 && data.summary.trim().length > 0) {
+    reporter.warn(file, R('summary'), 5, `summary 只有 ${data.summary.trim().length} 个字，太短了`);
+  }
+  if (!isMissing(data.status) && !ENTRY_STATUSES.includes(String(data.status))) {
+    reporter.error(file, R('status'), 13, `status \`${data.status}\` 不在允许值里（${ENTRY_STATUSES.join(' | ')}）`);
+  }
+
+  // ---- 规则 6：category 必须是 taxonomy 叶子（M1 必须就位，error） ----
+  if (Array.isArray(data.category)) {
+    for (const [i, cat] of data.category.entries()) {
+      const line = R(`category.${i}`) ?? R('category');
+      if (typeof cat !== 'string') {
+        reporter.error(file, line, 6, `category[${i}] 不是字符串`);
+        continue;
+      }
+      const node = cat.includes('.') ? ctx.taxonomyLeaves.get(cat) : matchLeafShorthand(ctx.taxonomyLeaves, cat);
+      if (!node) {
+        incomplete(line, 6, `category \`${cat}\` 不在 data/taxonomy.yml 里`, '只能填 taxonomy 的叶子节点 id（点分形式，如 plugin.compat）');
+        continue;
+      }
+      if (node.hasChildren) {
+        incomplete(line, 6, `category \`${cat}\` 是 taxonomy 的父节点，不是叶子`, '父节点不能直接当分类用');
+      }
+      if (node.deprecated) {
+        reporter.warn(file, line, 6, `category \`${cat}\` 已被标记 deprecated`);
+      }
+    }
+  }
+
+  // ---- 规则 13：枚举字段 + 截图存在 ----
+  for (const [field, allowed] of Object.entries(ENUMS)) {
+    if (field === 'status' || field === 'risk' || field === 'dataSource') continue;
+    if (isMissing(data[field])) continue;
+    if (!allowed.includes(String(data[field]))) {
+      reporter.error(file, R(field), 13, `${field} \`${data[field]}\` 不在允许值里（${allowed.join(' | ')}）`);
+    }
+  }
+  if (!isMissing(data.screenshots)) {
+    if (!Array.isArray(data.screenshots)) {
+      reporter.error(file, R('screenshots'), 13, '`screenshots` 必须是序列');
+    } else {
+      for (const [i, shot] of data.screenshots.entries()) {
+        if (typeof shot !== 'string') continue;
+        const abs = path.join(DATA_DIR, 'assets', shot);
+        if (!exists(abs)) {
+          reporter.error(file, R(`screenshots.${i}`) ?? R('screenshots'), 13, `截图不存在：data/assets/${shot}`);
+        }
+      }
+    }
+  }
+
+  // ---- 规则 8：正文里的 [[kind/n]] 目标必须存在（正文行号按出现位置估算） ----
+  const bodyLines = String(entry.body ?? '').split(/\r\n|\r|\n/);
+  const bodyLineOf = (needle) => {
+    const idx = bodyLines.findIndex((l) => l.includes(needle));
+    return idx === -1 ? (entry.bodyStartLine ?? null) : (entry.bodyStartLine ?? 1) + idx;
+  };
+  const wikilinks = [...String(entry.body ?? '').matchAll(/\[\[([^\]\n]+?)\]\]/g)];
+  for (const match of wikilinks) {
+    const target = match[1].split('|')[0].trim();
+    const line = bodyLineOf(match[0]);
+    const parsed = parseEntryId(target);
+    if (!parsed) {
+      reporter.error(file, line, 8, `[[${target}]] 的形状不对：站内链接必须写成 \`kind/n\``);
+      continue;
+    }
+    const targetEntry = ctx.byId.get(parsed.id);
+    if (!targetEntry) {
+      reporter.error(file, line, 8, `[[${target}]] 指向的词条不存在（渲染时会变成红链）`, '要么建这一条，要么改掉链接');
+    } else if (String(targetEntry.data?.status) === 'deleted') {
+      reporter.warn(file, line, 8, `[[${target}]] 指向的词条已撤下（墓碑）`);
+    }
+  }
+
+  // ---- 规则 12（构建期）/ 明显不支持的外链在正文里就地提示 ----
+  for (const match of String(entry.body ?? '').matchAll(/\[[^\]]*\]\(([^)\s]+)/g)) {
+    const url = match[1];
+    if (!/^(https?:|mailto:|#|\/)/i.test(url)) {
+      reporter.warn(file, bodyLineOf(match[0]), 12, `正文里的链接 \`${url}\` 协议不被允许，渲染时会退化成纯文本`);
+    }
+  }
+
+  // ---- 规则 14：正文长度下限（warn） ----
+  const bodyText = String(entry.body ?? '').replace(/<!--[\s\S]*?-->/g, '').trim();
+  if (bodyText.length < BODY_MIN_LENGTH) {
+    reporter.warn(file, entry.bodyStartLine ?? null, 14, `正文只有 ${bodyText.length} 个字符（下限 ${BODY_MIN_LENGTH}），像空壳词条`);
+  }
+
+  // ---- 规则 7：prereq / related 指向的词条必须存在 ----
+  for (const field of ['prereq', 'related']) {
+    if (isMissing(data[field])) continue;
+    if (!Array.isArray(data[field])) {
+      reporter.error(file, R(field), 7, `\`${field}\` 必须是序列（形如 [concept/4, tutorial/1]）`);
+      continue;
+    }
+    for (const [i, ref] of data[field].entries()) {
+      const line = R(`${field}.${i}`) ?? R(field);
+      const parsed = parseEntryId(ref);
+      if (!parsed) {
+        reporter.error(file, line, 7, `${field}[${i}] \`${ref}\` 的形状不对：必须是 \`kind/n\``);
+        continue;
+      }
+      const target = ctx.byId.get(parsed.id);
+      if (!target) {
+        reporter.error(file, line, 7, `${field} 指向的 ${parsed.id} 不存在`);
+      } else if (String(target.data?.status) === 'deleted') {
+        reporter.warn(file, line, 7, `${field} 指向的 ${parsed.id} 已撤下（墓碑）`);
+      }
+    }
+  }
+
+  // ---- 规则 11：appliesTo 必须带口径 ----
+  if (kind === 'tutorial' && !isMissing(data.appliesTo)) {
+    if (!CALIBER.test(String(data.appliesTo))) {
+      reporter.error(file, R('appliesTo'), 11, `appliesTo 里没有「实测 / 未核实」这类口径词：\`${data.appliesTo}\``);
+    }
+  }
+
+  // ---- 规则 22：archived 必须说明原因（warn） ----
+  if (String(data.status) === 'archived' && isMissing(data.archivedNote)) {
+    reporter.warn(file, R('status'), 22, 'status: archived 但没写 archivedNote：归档不是垃圾桶，要说清为什么还留着');
+  }
+
+  // ---- 规则 9：插件引用块 ----
+  const plugins = data.plugins;
+  if (!isMissing(plugins)) {
+    if (!Array.isArray(plugins)) {
+      reporter.error(file, R('plugins'), 9, '`plugins` 必须是序列（每项一个插件引用块）');
+    } else {
+      for (const [i, block] of plugins.entries()) {
+        checkPluginBlock(ctx, reporter, { file, lines, kind, id, block, index: i });
+      }
+    }
+  }
+
+  // ---- 规则 10：origin: external 的必填项 ----
+  if (String(data.origin) === 'external') {
+    const ext = data.external;
+    if (isMissing(ext) || typeof ext !== 'object') {
+      reporter.error(file, R('external'), 10, 'origin: external 必须给 `external` 块（url / reviewedAt / verdict）');
+    } else {
+      for (const key of ['url', 'reviewedAt', 'verdict']) {
+        if (isMissing(ext[key])) {
+          reporter.error(file, R(`external.${key}`) ?? R('external'), 10, `origin: external 缺少 external.${key}`);
+        }
+      }
+      if (!isMissing(ext.url) && !/^https?:\/\//i.test(String(ext.url))) {
+        reporter.error(file, R('external.url'), 10, `external.url 必须是 http(s) 链接：\`${ext.url}\``);
+      }
+    }
+    if (bodyText.length === 0) {
+      reporter.error(file, entry.bodyStartLine ?? null, 10, 'origin: external 的词条也必须有正文（写「讲了什么、适合谁、哪里会过时」，不是转载）');
+    }
+  }
+
+  // ---- 规则 15 / 16：插件词条 ----
+  if (kind === 'plugin') {
+    checkPluginEntry(ctx, reporter, entry, { id, bodyText });
+  }
+
+  // ---- 字段白名单：未知字段给 warn，避免拼错字段名悄悄丢数据 ----
+  const expected = new Set([
+    ...(EXPECTED_FIELDS[kind] ?? []),
+    ...(OPTIONAL_FIELDS.common ?? []),
+    ...(OPTIONAL_FIELDS[kind] ?? []),
+  ]);
+  for (const key of Object.keys(data)) {
+    if (!expected.has(key)) {
+      reporter.warn(file, R(key), 5, `字段 \`${key}\` 不在 ${kind} 的契约里（拼错了？）`, '见 docs/02 §3.1 / §3.2');
+    }
+  }
+}
+
+function checkPluginBlock(ctx, reporter, info) {
+  const { file, kind, id, block, index } = info;
+  const R = (key) => lineOf(info.lines, `plugins.${index}.${key}`) ?? lineOf(info.lines, `plugins.${index}`);
+  if (!block || typeof block !== 'object') {
+    reporter.error(file, R(null), 9, `plugins[${index}] 不是一个引用块（应为 \`- name: …\` 形式）`);
+    return;
+  }
+  if (isMissing(block.name)) reporter.error(file, R('name'), 9, `plugins[${index}] 缺少 name`);
+  if (isMissing(block.why)) {
+    reporter.error(file, R('why'), 9, `plugins[${index}]（${block.name ?? '?'}）缺少 why：在这篇内容里为什么用它`);
+  } else {
+    const why = String(block.why).trim();
+    if (why.length < WHY_MIN_LENGTH) {
+      reporter.error(file, R('why'), 9, `plugins[${index}].why 只有 ${why.length} 个字（下限 ${WHY_MIN_LENGTH}）`);
+    }
+    const banned = BANNED_WHY.find((word) => why.includes(word));
+    if (banned) {
+      reporter.error(file, R('why'), 9, `plugins[${index}].why 里出现了空泛词「${banned}」，要写清具体用途`);
+    }
+  }
+  if (isMissing(block.npm) && isMissing(block.repo)) {
+    reporter.error(file, R('npm'), 9, `plugins[${index}]（${block.name ?? '?'}）必须至少给 npm 或 repo 之一`);
+  }
+  if (!isMissing(block.install) && !/^dsh plugin\s/i.test(String(block.install).trim())) {
+    reporter.error(file, R('install'), 9, `plugins[${index}].install 必须是 \`dsh plugin …\` 形式：\`${block.install}\``);
+  }
+  if (!isMissing(block.entry)) {
+    const parsed = parseEntryId(block.entry);
+    if (!parsed) {
+      reporter.error(file, R('entry'), 9, `plugins[${index}].entry \`${block.entry}\` 形状不对：必须是 plugin/<n>`);
+    } else if (!ctx.byId.get(parsed.id)) {
+      reporter.error(file, R('entry'), 9, `plugins[${index}].entry 指向的 ${parsed.id} 不存在`);
+    }
+  }
+  if (!isMissing(block.entry) && kind === 'plugin') {
+    const parsed = parseEntryId(block.entry);
+    if (parsed && parsed.id === id) {
+      reporter.warn(file, R('entry'), 9, '插件引用块指向了词条自己');
+    }
+  }
+}
+
+function checkPluginEntry(ctx, reporter, entry, extras) {
+  const { file, data, lines } = entry;
+  const { id, bodyText } = extras;
+  const R = (key) => lineOf(lines, key);
+
+  const repo = data.repo;
+  const npm = data.npm;
+  if (isMissing(repo) && isMissing(npm)) {
+    reporter.error(file, R('repo'), 16, '插件词条必须至少给 `repo`（owner/repo）或 `npm`（包名）之一');
+  }
+  if (!isMissing(repo) && !/^[\w.-]+\/[\w.-]+$/.test(String(repo))) {
+    reporter.error(file, R('repo'), 16, `repo \`${repo}\` 形状不对：应该是 owner/repo`);
+  }
+
+  // 收录门槛（规则 15）
+  const referencedBy = [];
+  for (const other of ctx.entries) {
+    if (other.kind === 'plugin' || !other.data) continue;
+    const blocks = other.data.plugins;
+    if (!Array.isArray(blocks)) continue;
+    const hit = blocks.some((b) => b && b.entry === id);
+    if (hit) referencedBy.push(`${other.kind}/${other.n}`);
+  }
+  const usedInPacks = (data.usedInPacks ?? []).length > 0;
+  const hasMaintainer = !isMissing(data.maintainers);
+  const satisfied = [
+    referencedBy.length ? 'tutorial' : null,
+    usedInPacks ? 'pack' : null,
+    hasMaintainer ? 'maintainer' : null,
+  ].filter(Boolean);
+
+  const declared = data.entryGate;
+  if (declared != null && !isMissing(declared)) {
+    if (!ENUMS.entryGate.includes(String(declared))) {
+      reporter.error(file, R('entryGate'), 15, `entryGate \`${declared}\` 不在允许值里（${ENUMS.entryGate.join(' | ')}）`);
+    } else if (!satisfied.includes(String(declared))) {
+      reporter.error(
+        file,
+        R('entryGate'),
+        15,
+        `entryGate 声明为 \`${declared}\`，但实际不满足${satisfied.length ? `（实际满足：${satisfied.join(', ')}）` : '任何收录门槛'}`,
+        '门槛 = 被本站教程引用 / 被已收录整合包使用 / 有 maintainer 认领',
+      );
+    }
+  }
+
+  if (satisfied.length === 0) {
+    reporter.error(
+      file,
+      R('repo') ?? null,
+      15,
+      `插件词条 ${id} 不满足任何收录门槛（没被教程引用、没被整合包使用、没有 maintainer）`,
+      '三条门槛满足任意一条即可，见 docs/02 §1.2',
+    );
+  }
+  if (bodyText.length === 0) {
+    reporter.warn(file, entry.bodyStartLine ?? null, 15, `插件词条 ${id} 正文为空：聚合页的价值在「外部源没有的那部分」`);
+  }
+
+  // relations 的 target 必须存在，since/until 必须合法（规则 16 / 21）
+  if (!isMissing(data.relations)) {
+    if (!Array.isArray(data.relations)) {
+      reporter.error(file, R('relations'), 16, '`relations` 必须是序列');
+    } else {
+      for (const [i, rel] of data.relations.entries()) {
+        const line = R(`relations.${i}`) ?? R('relations');
+        if (!rel || typeof rel !== 'object') {
+          reporter.error(file, line, 16, `relations[${i}] 不是对象`);
+          continue;
+        }
+        if (isMissing(rel.type)) {
+          reporter.error(file, R(`relations.${i}.type`) ?? line, 16, `relations[${i}] 缺少 type`);
+        } else if (!ENUMS.relationType.includes(String(rel.type))) {
+          reporter.error(file, R(`relations.${i}.type`) ?? line, 16, `relations[${i}].type \`${rel.type}\` 不在允许值里`);
+        }
+        const parsed = parseEntryId(rel.target);
+        if (!parsed) {
+          reporter.error(file, R(`relations.${i}.target`) ?? line, 16, `relations[${i}].target \`${rel.target}\` 形状不对：必须是 plugin/<n>`);
+        } else if (parsed.kind !== 'plugin') {
+          reporter.error(file, R(`relations.${i}.target`) ?? line, 16, `relations[${i}].target 必须指向 plugin/<n>（现在是 ${parsed.id}）`);
+        } else if (!ctx.byId.get(parsed.id)) {
+          reporter.error(file, R(`relations.${i}.target`) ?? line, 16, `relations[${i}].target 指向的 ${parsed.id} 不存在`);
+        }
+        const since = rel.since;
+        const until = rel.until;
+        for (const key of ['since', 'until']) {
+          const value = rel[key];
+          if (isMissing(value)) continue;
+          if (!/^[\w.+-]+$/.test(String(value))) {
+            reporter.warn(file, R(`relations.${i}.${key}`) ?? line, 21, `relations[${i}].${key} \`${value}\` 不像合法版本串`);
+          }
+        }
+        if (!isMissing(since) && !isMissing(until) && compareVersions(String(since), String(until)) > 0) {
+          reporter.warn(file, R(`relations.${i}.since`) ?? line, 21, `relations[${i}] 的 since（${since}）大于 until（${until}），版本段反了`);
+        }
+      }
+    }
+  }
+
+  // compat.dsh 每项带口径（规则 16）
+  const compatDsh = data.compat?.dsh;
+  if (!isMissing(compatDsh)) {
+    if (!Array.isArray(compatDsh)) {
+      reporter.error(file, R('compat.dsh'), 16, 'compat.dsh 必须是版本枚举（序列）');
+    } else {
+      for (const [i, item] of compatDsh.entries()) {
+        const text = typeof item === 'string' ? item : JSON.stringify(item);
+        if (!CALIBER.test(text)) {
+          reporter.error(file, R(`compat.dsh.${i}`) ?? R('compat'), 16, `compat.dsh[${i}]（${text}）没有标「实测 / 未核实」口径`);
+        }
+      }
+    }
+  }
+
+  // providedBy 每项带快照时间（规则 16）
+  if (!isMissing(data.providedBy)) {
+    if (typeof data.providedBy !== 'object' || Array.isArray(data.providedBy)) {
+      reporter.error(file, R('providedBy'), 16, 'providedBy 必须是对象（awesome / npm / github / dshbase 各一项）');
+    } else {
+      for (const [source, value] of Object.entries(data.providedBy)) {
+        const line = R(`providedBy.${source}`) ?? R('providedBy');
+        if (value == null || typeof value !== 'object') {
+          reporter.warn(file, line, 16, `providedBy.${source} 不是对象，跳过快照时间检查`);
+          continue;
+        }
+        const at = value.at ?? value.snapshot ?? value.fetchedAt;
+        if (isMissing(at)) {
+          reporter.error(file, line, 16, `providedBy.${source} 没有快照时间（at / snapshot），热度数字必须带快照日期`);
+        } else if (!/^\d{4}-\d{2}-\d{2}/.test(String(at))) {
+          reporter.warn(file, line, 16, `providedBy.${source} 的快照时间 \`${at}\` 不是 YYYY-MM-DD`);
+        }
+      }
+    }
+  }
+
+  // roles 枚举（温和）
+  if (Array.isArray(data.roles)) {
+    for (const [i, role] of data.roles.entries()) {
+      if (!role || isMissing(role.who)) {
+        reporter.warn(file, R(`roles.${i}`) ?? R('roles'), 16, `roles[${i}] 缺少 who`);
+      }
+      if (role && !isMissing(role.role) && !ENUMS.roleType.includes(String(role.role))) {
+        reporter.warn(file, R(`roles.${i}.role`) ?? R('roles'), 16, `roles[${i}].role \`${role.role}\` 不在允许值里`);
+      }
+    }
+  }
+}
+
+/** `1.2.3` / `0.1.0-rc.6` 的粗比较（足够支撑 since ≤ until 的检查） */
+function compareVersions(a, b) {
+  const parse = (v) => String(v).split(/[.+-]/).map((x) => (/^\d+$/.test(x) ? Number(x) : x));
+  const pa = parse(a);
+  const pb = parse(b);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i += 1) {
+    const x = pa[i];
+    const y = pb[i];
+    if (x === undefined) return -1;
+    if (y === undefined) return 1;
+    if (typeof x === 'number' && typeof y === 'number') {
+      if (x !== y) return x < y ? -1 : 1;
+      continue;
+    }
+    const sx = String(x);
+    const sy = String(y);
+    if (sx !== sy) return sx < sy ? -1 : 1;
+  }
+  return 0;
+}
+
+/** `concept.runtime`（叶子）在 taxonomy 里的直接查找；shorthand 只接受唯一匹配 */
+function matchLeafShorthand(leaves, cat) {
+  const hits = [...leaves.values()].filter((node) => node.id.endsWith(`.${cat}`) && !node.hasChildren);
+  return hits.length === 1 ? hits[0] : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* 分区                                                                */
+/* ------------------------------------------------------------------ */
+
+function checkZones(ctx, reporter, only) {
+  const targets = only ? ctx.zones.filter((z) => only.includes(path.resolve(z.path))) : ctx.zones;
+  const seenZones = new Map();
+  for (const zone of ctx.zones) {
+    if (seenZones.has(zone.zone)) {
+      reporter.error(zone.file, lineOf(zone.lines, 'zone'), 17, `分区名 \`${zone.zone}\` 重复（另一个在 ${seenZones.get(zone.zone)}）`);
+    } else {
+      seenZones.set(zone.zone, zone.file);
+    }
+  }
+
+  for (const zone of targets) {
+    checkZone(ctx, reporter, zone);
+  }
+}
+
+function checkZone(ctx, reporter, zone) {
+  const { file, data, lines, zone: zoneName } = zone;
+  const R = (key) => lineOf(lines, key);
+
+  if (isMissing(data.title)) reporter.error(file, R('title'), 17, `分区 \`${zoneName}\` 缺少 title`);
+  if (isMissing(data.desc)) reporter.error(file, R('desc'), 17, `分区 \`${zoneName}\` 缺少 desc（一句话定义，必填）`);
+  if (isMissing(data.howto)) reporter.error(file, R('howto'), 17, `分区 \`${zoneName}\` 缺少 howto（顶部「怎么用」，必填）`);
+  if (!isMissing(data.dataSource) && !ENUMS.dataSource.includes(String(data.dataSource))) {
+    reporter.error(file, R('dataSource'), 17, `dataSource \`${data.dataSource}\` 不在允许值里（${ENUMS.dataSource.join(' | ')}）`);
+  }
+  for (const key of Object.keys(data)) {
+    if (!ZONE_KEYS.has(key)) {
+      reporter.error(file, R(key), 17, `分区文件里出现了未知键 \`${key}\``, `允许的通用键：${[...ZONE_KEYS].join(', ')}`);
+    }
+  }
+
+  const itemFields = Array.isArray(data.itemFields) ? data.itemFields.map(String) : [];
+  if (data.itemFields != null && !Array.isArray(data.itemFields)) {
+    reporter.error(file, R('itemFields'), 23, '`itemFields` 必须是序列（专属字段白名单）');
+  }
+  // 通用卡片键不能进 itemFields：构建会把 itemFields 里的键塞进 item.extra，
+  // 于是顶层字段（尤其 source 徽章）会凭空消失。这条护栏就是为那次事故加的。
+  for (const field of itemFields) {
+    if (ITEM_KEYS.has(field)) {
+      reporter.error(
+        file,
+        R('itemFields'),
+        23,
+        `\`itemFields\` 不能声明通用卡片键 \`${field}\``,
+        `通用键（${[...ITEM_KEYS].join(' / ')}）直接写在条目上即可；itemFields 只放本分区独有的字段，否则构建会把它塞进 extra、顶层丢失`,
+      );
+    }
+  }
+
+  const items = Array.isArray(data.items) ? data.items : [];
+  if (data.items != null && !Array.isArray(data.items)) {
+    reporter.error(file, R('items'), 17, '`items` 必须是序列');
+  }
+  if (items.length === 0) {
+    reporter.warn(file, R('items'), 17, `分区 \`${zoneName}\` 还没有任何条目（十一个分区页都必须非空）`);
+  }
+
+  const usedFields = new Set();
+  for (const [i, item] of items.entries()) {
+    const at = (key) => lineOf(lines, key == null ? `items.${i}` : `items.${i}.${key}`) ?? R('items');
+    if (!item || typeof item !== 'object') {
+      reporter.error(file, at(null), 17, `items[${i}] 不是对象`);
+      continue;
+    }
+    if (isMissing(item.name)) reporter.error(file, at('name'), 17, `items[${i}] 缺少 name`);
+    if (isMissing(item.blurb)) reporter.error(file, at('blurb'), 17, `items[${i}]（${item.name ?? '?'}）缺少 blurb（一句话介绍，人工写）`);
+    if (isMissing(item.links)) {
+      reporter.error(file, at('links'), 17, `items[${i}]（${item.name ?? '?'}）缺少 links（至少一个外部链接）`);
+    } else if (typeof item.links !== 'object' || Array.isArray(item.links) || Object.keys(item.links).length === 0) {
+      reporter.error(file, at('links'), 17, `items[${i}].links 必须是非空对象（如 { github: "owner/repo" }）`);
+    } else {
+      for (const [key, url] of Object.entries(item.links)) {
+        if (isMissing(url)) continue;
+        const text = String(url);
+        if (/^(https?:\/\/|mailto:)/i.test(text)) continue;
+        if (/^[\w.-]+\/[\w.-]+$/.test(text)) continue;
+        // `npm: dsh-myskin` 这类裸包名是合法写法（npm 包名不一定带 scope 或斜杠）
+        if (String(key) === 'npm' && /^(@[\w.-]+\/)?[\w.-]+$/.test(text)) continue;
+        reporter.warn(file, at('links'), 18, `items[${i}].links.${key} \`${text}\` 既不是 URL 也不是 owner/repo`);
+      }
+    }
+    if (!isMissing(item.source) && !ENUMS.sourceBadge.includes(String(item.source))) {
+      reporter.warn(file, at('source'), 17, `items[${i}].source \`${item.source}\` 不是已知来源徽章（${ENUMS.sourceBadge.join(' | ')}）`);
+    }
+    if (!isMissing(item.risk) && Array.isArray(item.risk)) {
+      for (const risk of item.risk) {
+        if (!ENUMS.risk.includes(String(risk))) {
+          reporter.warn(file, at('risk'), 17, `items[${i}].risk \`${risk}\` 不在允许值里（${ENUMS.risk.join(' | ')}）`);
+        }
+      }
+    }
+
+    // 规则 18：entry 指向存在的词条（留空即红链，合法）
+    if (!isMissing(item.entry)) {
+      const parsed = parseEntryId(item.entry);
+      if (!parsed) {
+        reporter.error(file, at('entry'), 18, `items[${i}].entry \`${item.entry}\` 形状不对：必须是 kind/<n>`);
+      } else if (!ctx.byId.get(parsed.id)) {
+        reporter.error(file, at('entry'), 18, `items[${i}].entry 指向的 ${parsed.id} 不存在`, '要么建这一条，要么留空（红链是合法状态）');
+      }
+    }
+
+    // 规则 23：只允许 itemFields 白名单内的专属键（M1 必须就位，error）
+    for (const key of Object.keys(item)) {
+      if (ITEM_KEYS.has(key)) continue;
+      if (itemFields.includes(key)) {
+        usedFields.add(key);
+        continue;
+      }
+      reporter.error(
+        file,
+        at(key),
+        23,
+        `items[${i}]（${item.name ?? '?'}）出现了 \`itemFields\` 白名单之外的键 \`${key}\``,
+        itemFields.length
+          ? `本分区允许的专属字段：${itemFields.join(', ')}`
+          : '本分区没有声明 itemFields，条目只允许通用卡片字段（name / blurb / links / entry / tags / risk …）',
+      );
+    }
+  }
+
+  for (const field of itemFields) {
+    if (!usedFields.has(field)) {
+      reporter.warn(file, R('itemFields'), 23, `itemFields 声明了 \`${field}\`，但没有任何条目在用它`);
+    }
+  }
+
+  // 分区来源区块
+  if (!isMissing(data.sources)) {
+    if (!Array.isArray(data.sources)) {
+      reporter.error(file, R('sources'), 17, '`sources` 必须是序列');
+    } else {
+      for (const [i, source] of data.sources.entries()) {
+        if (isMissing(source?.id) || isMissing(source?.name)) {
+          reporter.warn(file, lineOf(lines, `sources.${i}`) ?? R('sources'), 17, `sources[${i}] 缺少 id / name`);
+        }
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* sources/<slug>.yml（规则 20）                                        */
+/* ------------------------------------------------------------------ */
+
+const SOURCE_CONFIG_KEYS = new Set(['slug', 'url', 'zones', 'zone', 'adapter', 'note', 'status', 'snapshot', 'sourceKind', 'name']);
+
+function checkSourcesConfig(ctx, reporter) {
+  const zoneNames = new Set(ctx.zones.map((z) => z.zone));
+  const hasZones = ctx.zones.length > 0;
+  const documentedSlugs = new Set();
+  if (Array.isArray(ctx.sources?.data?.sources)) {
+    for (const source of ctx.sources.data.sources) {
+      if (source?.slug) documentedSlugs.add(String(source.slug));
+    }
+  } else if (ctx.sources?.data && typeof ctx.sources.data === 'object') {
+    for (const key of Object.keys(ctx.sources.data)) documentedSlugs.add(key);
+  }
+  // 源词条（kind: source）的 slug 也算「已文档化」
+  // 注意：**不要把源词条声明的 zones 加进 zoneNames**——那等于让源自己给自己授权，
+  // 「源指向的分区不存在」这条规则就永远不触发（曾经因此漏掉了 `docs` 这个不存在的分区）。
+  for (const entry of ctx.entries) {
+    if (entry.kind !== 'source' || !entry.data) continue;
+    if (entry.data.slug) documentedSlugs.add(String(entry.data.slug));
+  }
+
+  for (const config of ctx.sourceConfigs) {
+    const { file, data, lines, slug } = config;
+    if (documentedSlugs.has(slug)) {
+      reporter.error(
+        file,
+        lineOf(lines, 'slug') ?? 1,
+        20,
+        `源 \`${slug}\` 既有 data/sources/${slug}.yml 配置、又有同 slug 的源词条：两者不能并存`,
+      );
+    }
+    for (const key of Object.keys(data)) {
+      if (!SOURCE_CONFIG_KEYS.has(key)) {
+        reporter.warn(file, lineOf(lines, key), 20, `源配置里出现了未知键 \`${key}\``);
+      }
+    }
+    const zones = data.zones ?? (data.zone ? [data.zone] : []);
+    if (!hasZones) {
+      continue; // 分区还没建，跳过
+    }
+    for (const [i, z] of (Array.isArray(zones) ? zones : [zones]).entries()) {
+      if (!zoneNames.has(String(z))) {
+        reporter.error(file, lineOf(lines, Array.isArray(zones) ? `zones.${i}` : 'zone'), 20, `源 \`${slug}\` 指向的分区 \`${z}\` 不存在`);
+      }
+    }
+    const adapterZone = data.adapter?.zone;
+    if (!isMissing(adapterZone) && !zoneNames.has(String(adapterZone))) {
+      reporter.error(file, lineOf(lines, 'adapter.zone') ?? lineOf(lines, 'adapter'), 20, `adapter.zone \`${adapterZone}\` 不是已存在的分区`);
+    }
+  }
+
+  // 源词条自己声明的 zones 同样必须指向真实存在的分区（前端据此聚合「本分区的来源」）
+  if (hasZones) {
+    for (const entry of ctx.entries) {
+      if (entry.kind !== 'source' || !entry.data) continue;
+      const declared = entry.data.zones;
+      if (isMissing(declared)) continue;
+      const list = Array.isArray(declared) ? declared : [declared];
+      for (const [i, z] of list.entries()) {
+        if (zoneNames.has(String(z))) continue;
+        reporter.error(
+          entry.file,
+          lineOf(entry.lines, Array.isArray(declared) ? `zones.${i}` : 'zones'),
+          20,
+          `源词条 \`${entry.data.title ?? entry.id}\` 指向的分区 \`${z}\` 不存在`,
+          `已存在的分区只有：${[...zoneNames].join(' / ')}`,
+        );
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+
+try {
+  process.exit(main(process.argv.slice(2)));
+} catch (error) {
+  if (error instanceof SchemaError) {
+    process.stderr.write(`${error.message}\n`);
+    process.exit(1);
+  }
+  throw error;
+}

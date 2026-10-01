@@ -1,0 +1,35 @@
+# 多源实体归并（docs/02 §1.4、docs/07 §4）。
+# 三条铁律：① 只有 repo: / npm: 这类键**精确匹配**才自动归并，名字相似一律不合并；
+#          ② 一个键全局只能属于一个实体；③ 字段冲突照实并列，不取平均。
+# refs 由 collect.mjs 写、带快照时间；M1 首版留空（尚无采集产物），人工只维护 id 与 keys。
+version: 1
+entities:
+  - id: plugin/1
+    keys:
+      - "repo:dsh-plugins/dsh-loader"
+      - "npm:@dsh-plugin/dsh-loader"
+    refs: []
+  - id: plugin/2
+    keys:
+      - "repo:DSH-PackForge/dsh-pack-plugin"
+      - "npm:@dsh-packforge/dsh-pack-plugin"
+    refs: []
+  - id: plugin/3
+    keys:
+      - "repo:DSH-PackForge/dsh-packforge-app"
+    refs: []
+  # 以下为「有生态证据但尚未建词条」的实体（docs/07 §5 第二档）。
+  # 保留在这里的价值：同一个插件被多个整合包用不同坐标写法引用时，分区页不会出现两遍。
+  - id: external:dsh-wildmon
+    keys:
+      - "npm:dsh-wildmon"
+      - "repo:swaylq/dsh-wildmon"
+    refs: []
+  - id: external:dsh-better-sidebar-loader
+    keys:
+      - "npm:@dsh-plugin/dsh-better-sidebar-loader"
+    refs: []
+  - id: external:dsh-pets
+    keys:
+      - "npm:@hellosz/dsh-pets"
+    refs: []

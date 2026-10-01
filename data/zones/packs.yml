@@ -1,0 +1,105 @@
+# 分区层数据（docs/06 §2）。整合包分区是 external-index：数据来自市场索引，
+# 本站不重复采集。当前市场共 8 条，本分区全收。
+zone: packs
+title: 整合包
+desc: 一次装一整套：.dspack 单文件包（manifest v5 的 profile / dshhome 两形态）。装法由启动器或 dspack CLI 承担，本站只做入口与成分说明。
+dataSource: market
+howto: 用「安装端」装：dsh-packforge-app 的 GUI / dspack CLI，或支持 .dspack 的启动器（HDSL 已采纳）。装完落在一个 profile 目录里，见「profile」与「$DSH_HOME」两条概念。dshhome 形态会覆盖整机 home 级内容，装前先看清 manifest 的 type。
+itemFields: [manifestVersion, packType]
+items:
+  - name: 丝滑的DSH（smoother-deepseek-harness）
+    blurb: HXH 的通用增强包：平滑流式输出、自定义皮肤、任务看板、上下文洞察与底部信息栏，另带 20 个 skill。市场索引记的 dshVersion 是空串，即**作者未声明** DSH 版本。
+    version: 1.0.3
+    updatedAt: 2026-09-30
+    manifestVersion: 5
+    packType: profile
+    source: market
+    entry: null
+    tags: ["UI 增强"]
+    links:
+      github: hxh230802/smoother-deepseek-harness
+      market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/hxh230802.smoother-deepseek-harness
+  - name: 更好的 deepseek harness（codex 风格）
+    blurb: yukitakasama 的编码向包：Codex 风格侧栏与轮次导航、/review 独立子 Agent 审查、/simplify、思考强度滑块、费用计量、鲸鱼娘桌宠、AST 上下文压缩、Git 分支图与 Windows 桌面操控。manifest 里 dshVersions 写了两项，是兼容性声明的正面样本。
+    version: 2.0.0
+    updatedAt: 2026-09-30
+    manifestVersion: 5
+    packType: profile
+    source: market
+    entry: null
+    tags: ["开发与运行时", "UI 增强"]
+    links:
+      github: yukitakasama/better-deepseek-harness-codex
+      market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/yukitakasama.better-deepseek-harness-codex
+  - name: 桌面端整合包（desktop-pack）
+    blurb: 1900992335 的桌面向包：packforge 打包、上下文管理、插件市场与模型代理。profileName 是 desktop，与 dsh-pack-plugin 的「激活指针」约定同名。
+    version: 1.0.0
+    updatedAt: 2026-09-30
+    manifestVersion: 5
+    packType: profile
+    source: market
+    entry: null
+    tags: ["工具与能力"]
+    links:
+      github: 1900992335/desktop-pack
+      market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/1900992335.desktop-pack
+  - name: dsh 简易绘图能力包
+    blurb: 涟崎桦的创作向包：四条作画路线（参考图提取重画、MakeHuman 立绘、方块角色、平涂转像素画）。技能落在 DSH_HOME 的 skills/ 下，依赖 numpy / pillow / opencv-python-headless。
+    version: 1.1.0
+    updatedAt: 2026-09-30
+    manifestVersion: 5
+    packType: profile
+    source: market
+    entry: null
+    tags: ["工具与能力"]
+    links:
+      github: LQH-A-A-O/dsh-simple-drawing
+      market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/LQH-A-A-O.dsh-simple-drawing
+  - name: 必剪视频剪辑技能包（bcut-edit）
+    blurb: 涟崎桦的技能包：直接读写必剪（Bcut）的 .bjson 草稿工程，或用 ffmpeg 渲染出成品 mp4，同一份剪辑方案喂两个后端。需本机已装必剪 3.10.x。
+    version: 1.0.0
+    updatedAt: 2026-09-26
+    manifestVersion: 5
+    packType: profile
+    source: market
+    entry: null
+    tags: ["工具与能力"]
+    links:
+      github: LQH-A-A-O/dsh-bcut-edit
+      market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/LQH-A-A-O.dsh-bcut-edit
+  - name: AutoCAD 出图 + PPT 制作技能包（cad-ppt-skills）
+    blurb: 涟崎桦的两个 Windows 原生技能：autocad-draw（COM 驱动本机 AutoCAD 出图 / 改图 / 导出校验）与 pptx-editor（7 套主题 × 11 种版式的排版引擎）。需本机已装 AutoCAD 2020+ 与 PowerPoint。
+    version: 1.1.0
+    updatedAt: 2026-09-26
+    manifestVersion: 5
+    packType: profile
+    source: market
+    entry: null
+    tags: ["工具与能力"]
+    links:
+      github: LQH-A-A-O/cad-ppt-skills
+      market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/LQH-A-A-O.cad-ppt-skills
+  - name: 宝可梦风格整合包（pokemon）
+    blurb: HXH 的趣味向包：加入宝可梦宠物与玩法，/mon start 启动。bundles 里出现 dsh-wildmon 与 @hellosz/dsh-pets，也是「同一实体两种坐标写法」的实例。
+    version: 1.0.0
+    updatedAt: 2026-09-21
+    manifestVersion: 5
+    packType: profile
+    source: market
+    entry: null
+    tags: ["娱乐"]
+    links:
+      github: hxh230802/pokemon
+      market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/hxh230802.pokemon
+  - name: 更好的侧边栏（better-sidebar）
+    blurb: HXH 的侧边栏增强包。索引里 manifestVersion 记的是 4——生态里仍有包在用 v4，这条就是活样本；同时它是唯一带 dsh-loader 的包。
+    version: 1.0.0
+    updatedAt: 2026-09-02
+    manifestVersion: 4
+    packType: profile
+    source: market
+    entry: null
+    tags: ["UI 增强"]
+    links:
+      github: hxh230802/better-sidebar
+      market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/hxh230802.better-sidebar

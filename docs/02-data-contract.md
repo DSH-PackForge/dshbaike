@@ -130,7 +130,7 @@ entries:
 
 1. **`id` = 路径里的数字**（`data/tutorial/21.md` → `/tutorial/21.html`），**不写进 front-matter**；写了与 registry 或路径不一致即校验失败。
 2. **各 kind 独立计数**（照 MC百科 `/class/`、`/item/`、`/modpack/`、`/post/` 各自编号的做法）。断号不回填、不复用。
-3. **删除留墓碑**：`status: deleted` 的词条页仍然存在，显示「本词条已撤下」+ 搜索与指向替代词条，而不是 404。链接不烂是这套编号的**唯一目的**。
+3. **删除留墓碑**：`status: deleted` 的词条页仍然存在，显示「本词条已撤下」+ 搜索与指向替代词条，而不是 404。链接不烂是这套编号的**唯一目的**。墓碑**不进搜索索引**、不计入分区与分类计数，但**页面保留**；`registry.yml` 里也保留该条目（`status: deleted`）。
 4. **领号必须走脚本**：`node scripts/new.mjs tutorial "写一个 DSH 插件"` → 取下一个空闲号、写 registry、生成 front-matter 骨架。手改 registry 或跳号由 CI 拒绝。
 5. 代价要正视：文件名不再自解释。补偿手段是构建期产出 `web/data/registry.json`（数字 → kind / 标题 / 日期 / 状态），供导航、墓碑页与「最近更新」使用。
 
@@ -345,7 +345,8 @@ plugins:                    # 插件引用块，见 §5
 | 3 | 同一 kind 内数字不重复；`counters[kind] >= max(n)` | error |
 | 4 | 已 `deleted` 的号没有被新文件占用（墓碑不可覆盖） | error |
 | 5 | front-matter 可解析、无重复键；必填字段齐备 | error |
-| 6 | `category` 每项都是 taxonomy 的**叶子**节点（`deprecated` 节点 warn） | error |
+| 5 | front-matter 可解析、无重复键；必填字段齐备 —— **`status: draft` 时只提示不拦截**（`new.mjs` 生成的骨架本来就是 draft，否则新贡献者一领号就红） | error（draft 为 warn） |
+| 6 | `category` 每项都是 taxonomy 的**叶子**节点（`deprecated` 节点 warn）——同上，**draft 时降为 warn** | error（draft 为 warn） |
 | 7 | `prereq` / `related` 指向的 `kind/n` 存在（被删词条 warn） | error |
 | 8 | 正文里的 `[[kind/n]]` 目标存在 | error |
 | 9 | 插件引用块：`name` 与 `why` 必填、`why` 长度下限且不含禁用词、`npm`/`repo` 至少一个、`install` 形如 `dsh plugin …` | error |

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 首页是手写外壳（docs/10 §7）：title / description 直接写死品牌文案，不参与构建期替换。 -->
+<title>DSH百科 | 一站式的 DeepSeek Harness 中文百科</title>
+<meta name="description" content="一站式的 DeepSeek Harness 中文百科：界面与客户端、插件、整合包、启动器、主题、技能、预设、指令与配方，一处找齐；每页标注来源与快照日期。">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DSH百科">
+<meta property="og:title" content="DSH百科 | 一站式的 DeepSeek Harness 中文百科">
+<meta property="og:description" content="一站式的 DeepSeek Harness 中文百科：界面与客户端、插件、整合包、启动器、主题、技能、预设、指令与配方，一处找齐；每页标注来源与快照日期。">
+<!-- 首页在线根，资源路径是相对的，不会断；子路径部署时由构建期补一行 <base href="/dshbaike/">。 -->
+<link rel="stylesheet" href="pedia.css">
+<!-- 手写外壳自带 boot：直接双击打开或任何静态服务器下都可用。
+     构建期若替换下面的 PEDIA_BOOT 占位符，注入值会覆盖这里的同名键。 -->
+<script>window.__PEDIA__ = { base: "./", page: "index", kind: null, n: null, title: "DSH百科" };</script>
+<!--{{PEDIA_BOOT}}-->
+</head>
+<body data-page="index">
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="masthead" id="site-masthead"></header>
+<noscript>
+  <p class="notice notice--warn"><span class="notice__icon" aria-hidden="true">!</span>
+  本站的词条、分区与搜索数据由 JavaScript 读取静态 JSON 渲染；请启用 JavaScript。</p>
+</noscript>
+
+<div class="layout">
+  <main id="main" tabindex="-1"></main>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="pedia.js" defer></script>
+</body>
+</html>

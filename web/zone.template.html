@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESC}}">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DSH百科">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESC}}">
+<!-- 分区页外壳（docs/10 §7）：构建期为每个分区生成一份，只替换上面两个占位符与下面两行。
+     <base> 由构建期按部署根写入（本地预览写 "/"，子路径部署写 "/dshbaike/"）；
+     它与 PEDIA_BOOT 里的 base 必须一致。资源路径保持相对，靠 <base> 解析。 -->
+<base href="/">
+<!--{{PEDIA_BOOT}}-->
+<link rel="stylesheet" href="pedia.css">
+</head>
+<body data-page="zone">
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="masthead" id="site-masthead"></header>
+<noscript>
+  <p class="notice notice--warn"><span class="notice__icon" aria-hidden="true">!</span>
+  本站的分区卡片与来源区块由 JavaScript 读取静态 JSON 渲染；请启用 JavaScript。</p>
+</noscript>
+
+<div class="layout">
+  <main id="main" tabindex="-1"></main>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="pedia.js" defer></script>
+</body>
+</html>
