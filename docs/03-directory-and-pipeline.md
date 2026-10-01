@@ -10,18 +10,18 @@
 
 | 项 | 决定 | 理由 |
 | --- | --- | --- |
-| 仓库 | **独立仓库** `DSH-PackForge/dsh-pedia`，与 `dsh-pack-market`、`dsh-packforge-app` 平级 | 词条内容体量大、贡献者不同（写词条 vs 改规范 vs 写代码）、CI 频率与失败代价不同；混进规范仓库会让「改一句话」也要跑规范评审 |
+| 仓库 | **独立仓库** `DSH-PackForge/dshbaike`，与 `dsh-pack-market`、`dsh-packforge-app` 平级 | 词条内容体量大、贡献者不同（写词条 vs 改规范 vs 写代码）、CI 频率与失败代价不同；混进规范仓库会让「改一句话」也要跑规范评审 |
 | 站名 / 域名 | **DSH 百科** / `dshbaike.com`；过渡期先用免费子域 `dshbaike.pages.dev` | 域名是入口、仓库名是工程标识，两者不必一致；品牌规范见 [08](08-visual-system.md) §8 |
 | 托管 | **Cloudflare Pages**（从私有仓构建，免费额度足够），备选 Vercel / Netlify | 仓库**私有** + 组织 **free 计划** → **GitHub Pages 不可用**（Pages for private repos 需 Pro/Team/Enterprise） |
 | 站点输出目录 | `web/` | 托管方直接发布该目录；构建产物不入库 |
-| 本地目录 | 当前工作区里的 `dsh-pedia/` 就是该仓库的工作副本 | 同级目录均为独立仓库，根目录只是容器、本身不是仓库 |
+| 本地目录 | 当前工作区里的 `dshbaike/` 就是该仓库的工作副本 | 同级目录均为独立仓库，根目录只是容器、本身不是仓库 |
 
 ---
 
 ## 2. 目录结构
 
 ```
-dsh-pedia/
+dshbaike/
 ├── data/                       # ★ 事实源：人工词条与分类表，PR 只改这里
 │   ├── registry.yml            # ★ 编号契约：各 kind 的计数器 + n → 标题/日期/状态（含墓碑）
 │   ├── concept/<n>.md          # 概念词条（MC百科式自增数字，永不复用）

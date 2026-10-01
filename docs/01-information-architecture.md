@@ -171,7 +171,7 @@
 
 1. **信息来源可见**：每个采集字段后面挂「自动采集 · 快照时间」或「人工核实 · 日期」（契约见 [02](02-data-contract.md) §7）。读者据此判断可信度。
 2. **红链（wiki 生长机制）**：链接到未收录的词条时显示为灰色虚线下划线，点击进「申请收录」页（GitHub Issue 模板预填词条 id）。这是 MC百科式的生长方式——先有人写、后有人补。
-3. **编辑入口深链到 GitHub**：`[编辑此条]` 指向 `https://github.com/DSH-PackForge/dsh-pedia/edit/main/data/<kind>/<n>.md`。没有用户系统与在线编辑器，改词条 = 提 PR（新建词条先领号，见 [03](03-directory-and-pipeline.md) §2）。
+3. **编辑入口深链到 GitHub**：`[编辑此条]` 指向 `https://github.com/DSH-PackForge/dshbaike/edit/main/data/<kind>/<n>.md`。没有用户系统与在线编辑器，改词条 = 提 PR（新建词条先领号，见 [03](03-directory-and-pipeline.md) §2）。
 
 ### 4.4 完整度条与「派生下级内容」入口
 

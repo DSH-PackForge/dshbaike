@@ -2,7 +2,7 @@
 
 > **状态：设计阶段（设计稿待评审，尚无代码）。** 本轮只交付设计文档，评审通过后再进入实现。
 >
-> 站点名 **DSH 百科**，域名 **`dshbaike.com`**（仓库名仍是 `dsh-pedia`——域名是入口、仓库名是工程标识，两者不必一致；先上免费子域，域名可在 M4 前再买）。品牌与命名规范见 [08](docs/08-visual-system.md) §8。
+> 站点名 **DSH 百科**，域名 **`dshbaike.com`**，仓库 **`DSH-PackForge/dshbaike`**（三者同名，省得记两套）。先上免费子域，域名可在 M4 前再买。品牌与命名规范见 [08](docs/08-visual-system.md) §8。
 >
 > 仿 MC百科（[mcmod.cn](https://www.mcmod.cn/)）的信息架构，为 DSH（DeepSeek Harness）生态做一部**词条化**的百科。主站是两个功能的合体：
 >
