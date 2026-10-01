@@ -750,6 +750,10 @@
       navItems.map(function (z) {
         var a = el('a', { href: zoneUrl(z.id), text: z.label });
         if (opts.currentZone === z.id) a.setAttribute('aria-current', 'page');
+        // 窄屏是浮层：点完导航就收回，别挡着正文
+        a.addEventListener('click', function () {
+          if (railIsOverlay()) setRailCollapsed(true, false);
+        });
         return el('li', {}, a);
       })
     );
@@ -758,7 +762,8 @@
       type: 'search',
       class: 'search__input',
       id: 'site-search',
-      placeholder: '搜索词条 / 插件 / 教程 …',
+      // 侧栏只有 180px：这里用短文案，完整版留给首页 hero 的搜索框
+      placeholder: '搜索词条 …',
       autocomplete: 'off',
       'aria-label': '站内搜索',
       role: 'combobox',
@@ -767,7 +772,7 @@
       'aria-autocomplete': 'list'
     });
 
-    // <1280px 时左侧「相关」导航收进正文流，用一个按钮展开（≥1280 常显）
+    // 「相关」：词条页的本页导航在窄视口（及侧栏占位时）收进正文流，用这个按钮展开
     var navToggle = el('button', {
       type: 'button',
       class: 'icon-btn nav-toggle',
@@ -778,6 +783,18 @@
     });
     var hasNavPanel = !!document.getElementById('entry-nav-panel');
     if (!hasNavPanel) navToggle.setAttribute('hidden', '');
+
+    // 侧栏最下面的按钮：向左收回
+    var collapseBtn = el('button', {
+      type: 'button',
+      class: 'rail-collapse',
+      id: 'rail-collapse',
+      'aria-controls': 'site-masthead',
+      'aria-expanded': 'true'
+    }, [
+      el('span', { class: 'rail-collapse__icon', 'aria-hidden': 'true', text: '‹' }),
+      el('span', { text: '收起侧栏' })
+    ]);
 
     var inner = el('div', { class: 'masthead__inner' }, [
       el('a', { class: 'brand', href: BASE, 'aria-label': SITE.name + ' 首页' }, [
@@ -790,7 +807,8 @@
           el('div', { class: 'search__panel', id: 'site-search-panel', role: 'listbox', 'aria-label': '搜索结果', hidden: true })
         ]),
         themeButton(),
-        navToggle
+        navToggle,
+        collapseBtn
       ])
     ]);
 
@@ -798,13 +816,93 @@
     attachSearch(searchInput, $('#site-search-panel'));
     bindThemeButton($('#theme-toggle', host));
 
+    collapseBtn.addEventListener('click', function () { setRailCollapsed(true, true); });
+
     navToggle.addEventListener('click', function () {
       var panel = document.getElementById('entry-nav-panel');
       if (!panel) return;
       var open = navToggle.getAttribute('aria-expanded') === 'true';
-      panel.hidden = open;
+      // 用类切换而不是 panel.hidden：hidden 属性会被样式表里的 display 覆盖
+      panel.classList.toggle('is-open', !open);
       navToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
     });
+
+    ensureRailChrome();
+    syncRailAria();
+  }
+
+  /* ------------------------------------------------------------ 侧栏收放 */
+
+  var RAIL_STORE_KEY = 'dsh-pedia-rail';
+  var RAIL_OVERLAY_QUERY = '(max-width: 1099px)';
+
+  /** 窄视口下侧栏是浮层（覆盖正文），宽视口下推开正文——与 CSS 的断点保持一致 */
+  function railIsOverlay() {
+    return window.matchMedia(RAIL_OVERLAY_QUERY).matches;
+  }
+
+  function railIsCollapsed() {
+    return document.documentElement.classList.contains('rail-collapsed');
+  }
+
+  /**
+   * 收起 / 展开侧栏。
+   * @param {boolean} collapsed
+   * @param {boolean} persist 是否记住这次选择（用户点击 = true；程序默认值 = false）
+   */
+  function setRailCollapsed(collapsed, persist) {
+    document.documentElement.classList.toggle('rail-collapsed', !!collapsed);
+    if (persist) {
+      try { localStorage.setItem(RAIL_STORE_KEY, collapsed ? 'collapsed' : 'open'); } catch (e) { /* 隐私模式：忽略 */ }
+    }
+    syncRailAria();
+  }
+
+  function syncRailAria() {
+    var collapsed = railIsCollapsed();
+    var collapse = document.getElementById('rail-collapse');
+    if (collapse) collapse.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    var reopen = document.getElementById('rail-reopen');
+    if (reopen) reopen.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  }
+
+  /** 回展把手与遮罩挂在 body 上：它们不能跟着侧栏一起移出屏幕 */
+  function ensureRailChrome() {
+    if (!document.getElementById('rail-reopen')) {
+      var reopen = el('button', {
+        type: 'button',
+        class: 'rail-reopen',
+        id: 'rail-reopen',
+        'aria-controls': 'site-masthead',
+        'aria-label': '展开导航侧栏'
+      }, [
+        el('span', { 'aria-hidden': 'true', text: '›' }),
+        el('span', { text: '导航' })
+      ]);
+      reopen.addEventListener('click', function () { setRailCollapsed(false, true); });
+      document.body.appendChild(reopen);
+    }
+
+    if (!document.getElementById('rail-backdrop')) {
+      var backdrop = el('div', { class: 'rail-backdrop', id: 'rail-backdrop' });
+      backdrop.addEventListener('click', function () { setRailCollapsed(true, true); });
+      document.body.appendChild(backdrop);
+    }
+
+    if (!GLOBAL.railKeysBound) {
+      GLOBAL.railKeysBound = true;
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && railIsOverlay() && !railIsCollapsed()) setRailCollapsed(true, true);
+      });
+    }
+  }
+
+  /** 首次执行：优先用记住的选择；没选过就按视口给默认（窄屏默认收起） */
+  function applyInitialRailState() {
+    var stored = null;
+    try { stored = localStorage.getItem(RAIL_STORE_KEY); } catch (e) { stored = null; }
+    var collapsed = stored === 'collapsed' || stored === 'open' ? stored === 'collapsed' : railIsOverlay();
+    document.documentElement.classList.toggle('rail-collapsed', collapsed);
   }
 
   function themeButton() {
@@ -2985,6 +3083,9 @@
     var browseKind = browseKindFromHash();
     if (browseKind) renderBrowse(browseKind).catch(showLoadError);
   });
+
+  // 侧栏状态尽早落地：defer 脚本在解析后、首次绘制前执行，避免侧栏闪一下才收起
+  applyInitialRailState();
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run);
