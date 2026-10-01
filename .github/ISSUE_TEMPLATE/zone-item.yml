@@ -1,0 +1,61 @@
+name: 补充分区条目
+description: 给某个分区加一条资源（卡片：名称 + 一句话 + 外链），或把红链变成词条
+title: "[分区补充] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        分区条目很轻：**名称 + 一句话 + 至少一个外链**，写进 `data/zones/<zone>.yml` 即可。
+        有 `entry:` 就链到词条，没有就显示成红链「写这一条」——红链是合法状态，不是错误。
+  - type: dropdown
+    id: zone
+    attributes:
+      label: 哪个分区
+      options:
+        - clients（界面与客户端）
+        - plugins（插件）
+        - packs（整合包）
+        - launchers（启动器）
+        - themes（主题与皮肤）
+        - skills（技能包）
+        - presets（预设与人设）
+        - recipes（指令与配方）
+        - toolchain（工具链）
+        - specs（规范与协议）
+        - assets（素材与本地化）
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: 名称
+      placeholder: dsh-myskin
+    validations:
+      required: true
+  - type: input
+    id: blurb
+    attributes:
+      label: 一句话介绍
+      description: 请自己写一句话，不要直接抄上游 description——抄来的句子在列表里读起来都一样。
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: 外部链接
+      description: 一行一个。可用的键：`github` / `npm` / `awesome` / `dshbase` / `market` / `docs` / `spec` / `url`
+      placeholder: |
+        github: owner/repo
+        npm: package-name
+    validations:
+      required: true
+  - type: input
+    id: entry
+    attributes:
+      label: 对应词条（可选）
+      description: 如果这一条已经有本站词条，填 `kind/n`（如 plugin/12）；留空则显示红链。
+  - type: textarea
+    id: note
+    attributes:
+      label: 补充说明（可选）
+      description: 例如风险提示（会不会拿到本机权限）、与其它插件抢 slot、快照日期。

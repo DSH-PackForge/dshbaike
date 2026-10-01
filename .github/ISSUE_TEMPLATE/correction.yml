@@ -1,0 +1,48 @@
+name: 纠错
+description: 报一个事实错误、失效链接或过时内容（不需要会 Markdown，也不需要本地工具）
+title: "[纠错] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        谢谢纠错。填完直接提交即可——维护者会照着改。
+        如果你自己愿意改，词条页右上角的「编辑此条」可以直接跳到 GitHub 的网页编辑器。
+  - type: input
+    id: entry
+    attributes:
+      label: 词条
+      description: 形如 `plugin/1`、`concept/2`。从站内词条页点「纠错」进来的话这里会自动填好。
+      placeholder: plugin/1
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 问题类型
+      options:
+        - 事实错误
+        - 链接失效或指向错误
+        - 内容过时（版本/快照已变）
+        - 表述或错别字
+        - 缺少出处
+        - 其它
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 哪里不对
+      description: 尽量贴上原文片段；如果能给行号或小节标题更好。
+      placeholder: 在「它解决什么问题」一节里写着……
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 建议改成什么
+      description: 知道正确写法就写在这里，维护者可以直接采纳；不确定就留空。
+  - type: input
+    id: source
+    attributes:
+      label: 出处
+      description: 规范文件路径、代码位置或上游链接——有出处才有据可改。

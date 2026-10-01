@@ -471,16 +471,27 @@
     return red;
   }
 
+  /**
+   * Issue 表单 URL：`?template=<表单>.yml` + 预填字段（GitHub 用 `?<field-id>=` 预填表单字段）。
+   * 站内所有「贡献」入口都走这里，落到**结构化表单**上，而不是一张空白 Issue 框——
+   * 空白框对报告者是负担，对维护者是非结构化噪音。
+   */
+  function issueForm(template, params) {
+    var pairs = [];
+    Object.keys(params || {}).forEach(function (k) {
+      var v = params[k];
+      if (v === null || v === undefined || v === '') return;
+      pairs.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(v)));
+    });
+    return SITE.issueNew + '?template=' + encodeURIComponent(template) + (pairs.length ? '&' + pairs.join('&') : '');
+  }
+
   function redlinkHref(id, label) {
-    var body = [
-      '词条 id：' + (isPresent(id) ? id : '（分区条目，暂无词条 id）'),
-      '名称：' + (isPresent(label) ? label : ''),
-      '',
-      '我想为这一条写一个词条。',
-      '',
-      '（领号命令：`node scripts/new.mjs <kind> "<标题>"`，把输出贴在这里即可）'
-    ].join('\n');
-    return SITE.issueNew + '?title=' + encodeURIComponent('[收录申请] ' + (label || id)) + '&body=' + encodeURIComponent(body);
+    // 走「新增词条」表单：编号与骨架由自动化处理，报告者不需要装 Node、不需要本地跑脚本
+    return issueForm('new-entry.yml', {
+      title: '[新增词条] ' + (label || id || ''),
+      entryTitle: label || id || ''
+    });
   }
 
   function editHref(id) {
@@ -490,25 +501,19 @@
   }
 
   function correctHref(id, title) {
-    var body = [
-      '词条：' + (isPresent(title) ? title : '') + '（' + (id || '') + '）',
-      '页面：' + location.href,
-      '',
-      '哪一处有问题：',
-      '',
-      '正确的值应该是：'
-    ].join('\n');
-    return SITE.issueNew + '?title=' + encodeURIComponent('[纠错] ' + (title || id || '')) + '&body=' + encodeURIComponent(body);
+    // 纠错走表单：字段结构化（词条 / 问题类型 / 哪里不对 / 建议改法 / 出处），
+    // 维护者一眼看出改哪一行，而不是从一段自由文本里猜。
+    return issueForm('correction.yml', {
+      title: '[纠错] ' + (title || id || ''),
+      entry: id || ''
+    });
   }
 
   function deriveHref(kind, title) {
-    var body = [
-      '想为已有词条派生一条下级内容：' + (title || ''),
-      '',
-      '领号命令：`node scripts/new.mjs ' + kind + ' "<标题>"`',
-      '（教程请在 front-matter 里带上 `plugins: [{ entry: ..., why: "" }]` 与 `prereq`）'
-    ].join('\n');
-    return SITE.issueNew + '?title=' + encodeURIComponent('[派生 ' + kindZh(kind) + '] ' + (title || '')) + '&body=' + encodeURIComponent(body);
+    return issueForm('new-entry.yml', {
+      title: '[新增词条 · ' + kindZh(kind) + '] ' + (title || ''),
+      entryTitle: title || ''
+    });
   }
 
   /* ------------------------------------------------------- Markdown 渲染 */

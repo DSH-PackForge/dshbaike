@@ -1,0 +1,52 @@
+name: 新增词条
+description: 申请新增一条词条；编号与骨架由自动化处理，你不需要装任何东西
+title: "[新增词条] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交后，仓库的自动化会**分配编号、生成词条骨架、开一个 PR**，并在本 Issue 下回帖链接。
+        你只需（在 PR 里或在这里）把内容补上——**不用装 Node，也不用本地跑脚本**。
+        编号是永久的：断号不回填、删除留墓碑。
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 词条类型
+      options:
+        - concept（概念：本体机制）
+        - plugin（插件：聚合页）
+        - tutorial（教程）
+        - pack（整合包）
+        - launcher（启动器）
+        - source（资源源：外部渠道）
+    validations:
+      required: true
+  - type: input
+    id: entryTitle
+    attributes:
+      label: 标题
+      description: 中文标题；插件词条一般就是包名或插件名。
+      placeholder: 为什么 DSH 升级后插件会失效
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: 一句话摘要
+      description: 会用在列表卡片与搜索里，也是我们对外展示的第一句。
+    validations:
+      required: true
+  - type: textarea
+    id: body
+    attributes:
+      label: 初稿正文（可选）
+      description: 有初稿就贴这里；没有也可以先建骨架，之后再补。
+  - type: textarea
+    id: sources
+    attributes:
+      label: 事实来源
+      description: |
+        我们只写能指到出处的事实。请列出你依据的规范文件、代码路径或上游链接；
+        查不到的写「未核实」，不要猜。
+    validations:
+      required: true

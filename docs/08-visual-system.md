@@ -190,17 +190,20 @@ $DSH_HOME (~/.dsh)
 
 但这条不是硬约束：域名是**入口**，仓库名是**工程标识**，参照物就把两者分开了——MC百科的域名是 `mcmod.cn`，既不含「百科」也不含 Minecraft 全名。**换域名不需要改仓库、不需要改站内链接结构**——词条的主键是自增编号（[02](02-data-contract.md) §2），与域名无关。所以域名采购可以推迟到 M4 上线前，先用免费子域（§8.2）。
 
-### 8.2 托管路线（私有仓带来的约束）
+### 8.2 托管路线
 
-仓库是**私有**的，而组织在 **free 计划**下——**GitHub Pages 不可用于私有仓**（Pages for private repos 需要 Pro/Team/Enterprise）。因此前端托管改为：
+**仓库已转为公开**（2026-10-02），所以托管回到最省事的一条：**GitHub Pages**，零外部账号、零 secrets，`.github/workflows/pages.yml` 在每次 `main` 通过校验后构建并发布。
 
-| 方案 | 成本 | 子域 |
-| --- | --- | --- |
-| **Cloudflare Pages**（推荐） | 免费额度足够 | `dshbaike.pages.dev` |
-| Vercel / Netlify | 免费额度足够 | `dshbaike.vercel.app` / `.netlify.app` |
-| GitHub Pages | 需公开仓或升级组织计划 | `dsh-packforge.github.io/dshbaike/` |
+| 方案 | 成本 | 地址 | 状态 |
+| --- | --- | --- | --- |
+| **GitHub Pages**（现行） | 免费 | `dsh-packforge.github.io/dshbaike/` | ✅ 已接入 |
+| Cloudflare Pages | 免费额度足够 | `dshbaike.pages.dev` | 备选：要挂 `dshbaike.com` 根域时更省事 |
+| Vercel / Netlify | 免费额度足够 | `dshbaike.vercel.app` / `.netlify.app` | 备选 |
 
-三家都支持从**私有** GitHub 仓构建、都支持后挂自定义域，所以「先免费子域、以后再买域名」是零迁移成本的路径。
+**子路径部署是硬约束，不是小事**：GitHub Pages 的项目站挂在 `/<repo>/` 下，所以构建期必须写对部署根——`node scripts/build.mjs --base=/dshbaike/`。它会同时改写两处：生成页的 `<base href>`（嵌套页靠它解析相对资源）与 boot 里的 `base`（前端据此取 `data/*.json`）。模板里写死的那行 `<base href="/">` 会被构建期替换掉，不要手改模板去迎合某个部署形态。挂上自定义域（根路径）时，去掉 `--base` 即可。
+
+站内所有链接都是相对的（`pedia.css`、`data/search.json`）或由 boot 的 base 拼出来的，所以同一份代码在根域与子路径下都能跑，切托管方不需要改数据。
+
 
 ### 8.3 非官方声明（固定文案，必须常驻）
 

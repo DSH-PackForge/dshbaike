@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | 仓库 | **独立仓库** `DSH-PackForge/dshbaike`，与 `dsh-pack-market`、`dsh-packforge-app` 平级 | 词条内容体量大、贡献者不同（写词条 vs 改规范 vs 写代码）、CI 频率与失败代价不同；混进规范仓库会让「改一句话」也要跑规范评审 |
 | 站名 / 域名 | **DSH 百科** / `dshbaike.com`；过渡期先用免费子域 `dshbaike.pages.dev` | 域名是入口、仓库名是工程标识，两者不必一致；品牌规范见 [08](08-visual-system.md) §8 |
-| 托管 | **Cloudflare Pages**（从私有仓构建，免费额度足够），备选 Vercel / Netlify | 仓库**私有** + 组织 **free 计划** → **GitHub Pages 不可用**（Pages for private repos 需 Pro/Team/Enterprise） |
+| 托管 | **GitHub Pages**（仓库已公开，免费、零 secrets，见 §8），备选 Cloudflare Pages / Vercel / Netlify | 公开仓才可用 Pages；项目站是**子路径**部署，构建期必须传 `--base=/dshbaike/` |
 | 站点输出目录 | `web/` | 托管方直接发布该目录；构建产物不入库 |
 | 本地目录 | 工作区里的 `dsh-pedia/` 是该仓库的工作副本（仓库已改名为 `dshbaike`）。目录名与仓库名不一致**不影响 git**，句柄释放后手工改名即可对齐 | 同级目录均为独立仓库，根目录只是容器、本身不是仓库 |
 
@@ -240,7 +240,9 @@ node scripts/new.mjs tutorial "为什么升级后插件会失效"
 
 采集与部署合在同一个 workflow，沿用市场的理由：默认 `GITHUB_TOKEN` 推回 `main` 的 push 不会再次触发其它 workflow，拆成两个 workflow 会导致「采集完了但没部署」。
 
-**为什么不用 GitHub Pages**：仓库私有 + 组织 free 计划 → Pages 对私有仓不开放（需 Pro/Team/Enterprise）。Cloudflare Pages / Vercel / Netlify 都支持从**私有**仓构建且免费额度足够，并支持后挂自定义域 `dshbaike.com`，所以先上免费子域不会有迁移成本。
+**为什么现在用 GitHub Pages**：仓库已转为**公开**（2026-10-02），组织 free 计划下 Pages 对公开仓免费开放，于是**零外部账号、零 secrets** 就能发布——`.github/workflows/pages.yml` 校验通过后构建 `web/` 并发布到 `https://dsh-packforge.github.io/dshbaike/`。注意项目站是**子路径**部署，构建期必须传 `--base=/dshbaike/`（见 §5.1）。
+
+**什么时候换 Cloudflare Pages**：想挂自定义域 `dshbaike.com` 到**根路径**时（省掉 `/dshbaike/` 前缀），或者需要 Cloudflare Access 那种「非公开预览」。两者都支持从同一份产物构建，所以切换不需要改数据与链接结构。
 
 **采集产物要不要提交回 `main`**：要。`collected/**` 入库是「市场挂了也能构建」的前提。但如果只有 `collected/` 变化、`data/` 没变，仍应提交（词条页上的快照时间会更新），这一点与市场「索引无变化就跳过提交」不同——需要显式确认是否接受这种周期性提交。**待确认项**（见 §10）。
 
