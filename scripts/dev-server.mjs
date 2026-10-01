@@ -39,21 +39,40 @@ const MIME = {
 };
 
 function parseArgs(argv) {
-  const out = { port: 8811, dir: 'web', host: '127.0.0.1' };
+  const out = { port: 8811, dir: 'web', host: '127.0.0.1', prefix: '/' };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    // 同时支持 `--prefix=X` 与 `--prefix X`：只认后者的话，前者会被静默忽略，
+    // 于是「本地明明复现不了线上问题」——这种错很难看出来，所以两种都收。
+    const eq = /^--([a-z-]+)=(.*)$/.exec(arg);
+    if (eq) {
+      if (eq[1] === 'dir') out.dir = eq[2];
+      else if (eq[1] === 'host') out.host = eq[2];
+      else if (eq[1] === 'prefix') out.prefix = eq[2];
+      else {
+        process.stderr.write(`不认识的选项：${arg}\n`);
+        process.exit(2);
+      }
+      continue;
+    }
     if (arg === '--dir') out.dir = argv[++i] ?? out.dir;
     else if (arg === '--host') out.host = argv[++i] ?? out.host;
+    else if (arg === '--prefix') out.prefix = argv[++i] ?? out.prefix;
     else if (/^\d+$/.test(arg)) out.port = Number(arg);
     else if (arg === '--help' || arg === '-h') {
-      process.stdout.write('用法：node scripts/dev-server.mjs [port] [--dir web] [--host 127.0.0.1]\n');
+      process.stdout.write('用法：node scripts/dev-server.mjs [port] [--dir=web] [--host=127.0.0.1] [--prefix=/dshbaike/]\n');
       process.exit(0);
+    } else {
+      process.stderr.write(`不认识的选项：${arg}\n`);
+      process.exit(2);
     }
   }
+  // 统一成前后带斜杠；`/` 表示挂在根
+  out.prefix = out.prefix === '/' ? '/' : `/${String(out.prefix).replace(/^\/+/, '').replace(/\/+$/, '')}/`;
   return out;
 }
 
-const { port, dir, host } = parseArgs(process.argv.slice(2));
+const { port, dir, host, prefix } = parseArgs(process.argv.slice(2));
 const rootDir = path.resolve(REPO_ROOT, dir);
 
 if (!fs.existsSync(rootDir)) {
@@ -69,6 +88,25 @@ const server = http.createServer((req, res) => {
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('400 请求路径无法解析');
     return;
+  }
+
+  // 子路径前缀：模拟 GitHub Pages 的项目站（/dshbaike/），用来在本地复现
+  // 「部署根写错」这类只在子路径下暴露的问题（例如前端把 ./ 塌成 / 去取 data/*.json）。
+  if (prefix !== '/') {
+    if (pathname === prefix.slice(0, -1)) {
+      res.writeHead(302, { location: prefix + (req.url.includes('#') ? '' : '') });
+      res.end();
+      return;
+    }
+    if (!pathname.startsWith(prefix)) {
+      res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(`<!doctype html><meta charset="utf-8"><title>404</title>
+<body style="font:14px system-ui;padding:40px">
+<h1 style="font-size:18px">404 这个服务器只在 ${prefix} 下提供站点</h1>
+<p>你请求的是 <code>${pathname}</code>。试试 <a href="${prefix}">${prefix}</a>。</p>`);
+      return;
+    }
+    pathname = '/' + pathname.slice(prefix.length);
   }
 
   // 路径穿越防护：解析后必须仍在 rootDir 之内
@@ -119,6 +157,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, host, () => {
-  process.stdout.write(`静态预览已启动：http://${host}:${port}/  （根目录 ${path.relative(REPO_ROOT, rootDir) || '.'}）\n`);
+  const where = prefix === '/' ? '' : prefix;
+  process.stdout.write(`静态预览已启动：http://${host}:${port}${where}  （根目录 ${path.relative(REPO_ROOT, rootDir) || '.'}，前缀 ${prefix}）\n`);
   process.stdout.write('Ctrl+C 停止。这个服务器只读文件，不做构建。\n');
 });

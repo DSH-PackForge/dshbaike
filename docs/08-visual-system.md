@@ -204,6 +204,20 @@ $DSH_HOME (~/.dsh)
 
 站内所有链接都是相对的（`pedia.css`、`data/search.json`）或由 boot 的 base 拼出来的，所以同一份代码在根域与子路径下都能跑，切托管方不需要改数据。
 
+**子路径部署的自检清单**（这三条都出过问题，改完部署相关代码请逐条过）：
+
+1. 生成页的 `<base href>` 等于部署根（由 `--base` 在构建期写入，模板里那行是占位）。
+2. boot 里的 `base` 与上一条一致（`window.__PEDIA__.base` / `__PEDIA_BASE__`）。
+3. **首页手写外壳里的 `base: "./"` 必须保持相对**——前端 `normalizeBase()` 曾把 `./` 塌成 `/`，本地根路径下一切正常，一挂到 `/dshbaike/` 就变成请求 `/data/search.json` 而 404。
+
+本地复现子路径（不要只在根路径下自测）：
+
+```bash
+node scripts/build.mjs --base=/dshbaike/
+node scripts/dev-server.mjs 8812 --prefix=/dshbaike/   # → http://127.0.0.1:8812/dshbaike/
+```
+
+
 
 ### 8.3 非官方声明（固定文案，必须常驻）
 

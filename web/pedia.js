@@ -326,7 +326,11 @@
   function normalizeBase(raw) {
     var b = raw === null || raw === undefined || String(raw).trim() === '' ? '/' : String(raw);
     b = b.split('#')[0].split('?')[0].replace(/\\/g, '/').trim();
-    if (b === '' || b === './' || b === '.') return '/';
+    if (b === '') return '/';
+    // `./` 是「相对当前文档」，**不能塌成根路径 `/`**：
+    // 首页是手写外壳、boot 里就写 `./`（为了双击打开或挂在任意路径下都能用），
+    // 塌成 `/` 后在 GitHub Pages 的 /dshbaike/ 子路径下会去请求 /data/search.json → 404。
+    if (b === './' || b === '.') return './';
     if (b.indexOf('://') >= 0) return b.replace(/\/?$/, '/');
     if (b.charAt(0) !== '/') b = '/' + b;
     b = b.replace(/\/+$/, '/').replace(/\/\.\//g, '/');

@@ -36,7 +36,8 @@ node scripts/build.mjs         # 产出 web/data/** 与分页
 # 4. 本地看效果
 node scripts/build.mjs && node scripts/dev-server.mjs   # → http://127.0.0.1:8811/
 #    词条列表：http://127.0.0.1:8811/#/browse/all
-#    子路径部署的样子：node scripts/build.mjs --base=/dshbaike/
+#    子路径部署的样子（GitHub Pages 就是这种）：先改构建根，再让服务器挂在前缀下
+node scripts/build.mjs --base=/dshbaike/ && node scripts/dev-server.mjs 8812 --prefix=/dshbaike/
 
 # 5. 提交 PR
 ```
