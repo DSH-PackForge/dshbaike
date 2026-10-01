@@ -10,10 +10,12 @@
 
 | 分区 | 已知或可预期的源 |
 | --- | --- |
-| 插件 | `awesome-dsh-plugin.com`（4400 条）、`dshbase.com`（7800+ 条）、npm registry、GitHub topic `dsh-plugin`、未来还会有别人的清单站 |
+| 插件 | `awesome-dsh-plugin.com`（4400 条）、`dshbase.com`（7800+ 条）、npm registry、GitHub topic `dsh-plugin`；另有三个**搜索发现的候选源，规模与活跃度待核实**：`deepseekplugin.org`（插件条目站）、`dsh-plugin.github.io`（自称「DSH 创意工坊 · 插件目录与安装指南」）、`dsh.deepseek404.com`（带详情页的目录站） |
 | 整合包 | `dsh-pack-market`（8 条）、`dshbase.com` 的场景包、将来其它启动器自建的市场 |
 | 启动器 | 规范里的 canonical ID 认领表（5 条）+ **个人自研/魔改的启动器**（DSHL 是 PCL2 魔改、HDSL 是 HMCL 内核，名字只差一个字母） |
 | 主题 / 技能 / 预设 / 配方 | 目前没有成规模的源，但**迟早会有**（至少会有别人的清单、gist、合集仓库） |
+
+> `deepseekplugin.org` / `dsh-plugin.github.io` / `dsh.deepseek404.com` 三条来自搜索结果，**未逐一核实收录量、字段与是否仍在维护**；登记为候选源，接入前按 [§3](#3-源适配器契约) 写 `adapter` 并核实。这条正好说明本节的判断：**源是复数，而且还会继续长出来**——所以分区层必须按「多源 + 归并」建模，而不是「一个源一张表」。
 
 如果按「一个分区一张表」去设计，结果是：每出现一个新源，就要么把它整表镜像进来（法律与维护成本），要么手工合并（永远做不完）。所以必须换一个模型。
 
