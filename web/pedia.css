@@ -1275,6 +1275,52 @@ table.data .col-key {
   color: var(--text);
 }
 
+/* 按类型浏览：类型导航条与页面标题（#/browse/<kind>） */
+.kindchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.kindchip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  text-decoration: none;
+  font-size: var(--fs-sm);
+}
+
+.kindchip:hover {
+  border-color: var(--link);
+  color: var(--link);
+}
+
+.kindchip--on {
+  border-color: var(--brand);
+  background: var(--brand-weak);
+  font-weight: 600;
+}
+
+.kindchip__count {
+  color: var(--text-faint);
+  font-size: var(--fs-xs);
+}
+
+.page__title {
+  margin: 4px 0 0;
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  color: var(--text);
+}
+
 a.card__name:hover {
   color: var(--link);
 }

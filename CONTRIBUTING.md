@@ -20,8 +20,10 @@ node scripts/new.mjs tutorial "为什么 DSH 升级后插件会失效"
 node scripts/validate.mjs      # 必须 0 errors
 node scripts/build.mjs         # 产出 web/data/** 与分页
 
-# 4. 本地看效果（任选一个静态服务器）
-node scripts/build.mjs && npx serve web     # 或你自己惯用的静态服务器
+# 4. 本地看效果
+node scripts/build.mjs && node scripts/dev-server.mjs   # → http://127.0.0.1:8811/
+#    词条列表：http://127.0.0.1:8811/#/browse/all
+#    也可以在任意静态服务器上打开 web/（纯静态，无构建步骤）
 
 # 5. 提交 PR
 ```

@@ -249,10 +249,11 @@ node scripts/new.mjs tutorial "为什么升级后插件会失效"
 ## 9. 本地开发
 
 ```bash
-node scripts/collect.mjs      # 可选：需要网络与 GH_TOKEN（读公开仓库可只读匿名限流）
-node scripts/build.mjs        # 离线构建到 web/data/
-node scripts/validate.mjs     # 校验词条
-npx serve web                 # 或任意静态服务器；也可直接开 web/index.html 看演示数据
+node scripts/collect.mjs         # 可选：需要网络与 GH_TOKEN（读公开仓库可只读匿名限流）
+node scripts/build.mjs           # 离线构建到 web/data/
+node scripts/validate.mjs        # 校验词条
+node scripts/dev-server.mjs      # 零依赖静态服务器：http://127.0.0.1:8811/（只读 web/，不做构建）
+npx serve web                    # 或任意静态服务器；也可直接开 web/index.html 看演示数据
 ```
 
 取舍说明：

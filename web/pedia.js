@@ -2624,6 +2624,130 @@
 
   /* -------------------------------------------------------------- 首页 */
 
+  /* ----------------------------------------------- 按类型浏览（#/browse/<kind>） */
+
+  var KIND_ORDER = ['concept', 'plugin', 'tutorial', 'pack', 'launcher', 'source'];
+
+  /** kind/n 的确定性排序：先按 KIND_ORDER 的固定次序，再按 n 的数字大小 */
+  function compareEntryIds(a, b) {
+    var pa = String(a).split('/');
+    var pb = String(b).split('/');
+    var ka = KIND_ORDER.indexOf(pa[0]);
+    var kb = KIND_ORDER.indexOf(pb[0]);
+    if (ka !== kb) return (ka < 0 ? 99 : ka) - (kb < 0 ? 99 : kb);
+    var na = Number(pa[1]);
+    var nb = Number(pb[1]);
+    if (isFinite(na) && isFinite(nb) && na !== nb) return na - nb;
+    return String(a).localeCompare(String(b));
+  }
+
+  /** `#/browse/all` 或 `#/browse/<kind>`；不是浏览路由就返回 null（交回原有分发） */
+  function browseKindFromHash() {
+    var m = /^#\/browse\/([a-z]+)\/?$/.exec(String(location.hash || ''));
+    if (!m) return null;
+    var k = m[1];
+    if (k === 'all') return 'all';
+    return KIND_ORDER.indexOf(k) >= 0 ? k : 'all';
+  }
+
+  /**
+   * 按类型浏览全部词条。
+   * 数据来自 search.json（全站轻量索引：id/kind/title/aliases/tags/summary），
+   * 所以这一页只发一个请求——不必为了列表把 12 个词条 JSON 全拉下来。
+   */
+  function renderBrowse(kindFilter) {
+    var main = $('#main');
+    return DATA.get('search.json').then(function (index) {
+      clear(main);
+      var items = asArray(index && index.items).filter(function (it) { return it && isPresent(it.id); });
+      var kinds = kindFilter === 'all' ? KIND_ORDER : [kindFilter];
+      var groups = kinds.map(function (k) {
+        return {
+          kind: k,
+          list: items.filter(function (it) { return String(it.kind) === k; })
+            .sort(function (a, b) { return compareEntryIds(a.id, b.id); })
+        };
+      }).filter(function (g) { return g.list.length > 0; });
+      var total = groups.reduce(function (sum, g) { return sum + g.list.length; }, 0);
+      var label = kindFilter === 'all' ? '全部词条' : kindZh(kindFilter) + '词条';
+
+      main.appendChild(el('nav', { class: 'crumbs', 'aria-label': '面包屑' }, el('ol', {}, [
+        el('li', {}, el('a', { href: BASE, text: '首页' })),
+        el('li', {}, el('span', { text: label }))
+      ])));
+
+      main.appendChild(el('div', { class: 'section__head' }, [
+        el('h1', { class: 'page__title', text: label }),
+        el('span', {
+          class: 'section__note',
+          text: total > 0
+            ? total + ' 条 · 数据来自 registry 与 search.json · 墓碑词条不计入'
+            : '这一类还没有词条'
+        })
+      ]));
+
+      // 类型导航：始终给全六类的入口，让人一眼看到「词条都在这」
+      main.appendChild(el('ul', { class: 'kindchips' }, KIND_ORDER.map(function (k) {
+        var count = items.filter(function (it) { return String(it.kind) === k; }).length;
+        var on = kindFilter === k;
+        return el('li', {}, el('a', {
+          class: 'kindchip' + (on ? ' kindchip--on' : ''),
+          href: '#/browse/' + k,
+          'aria-current': on ? 'true' : 'false'
+        }, [
+          el('span', { class: 'kindchip__name', text: kindZh(k) }),
+          el('span', { class: 'kindchip__count', text: count + ' 条' })
+        ]));
+      }).concat([
+        el('li', {}, el('a', {
+          class: 'kindchip' + (kindFilter === 'all' ? ' kindchip--on' : ''),
+          href: '#/browse/all',
+          'aria-current': kindFilter === 'all' ? 'true' : 'false'
+        }, [
+          el('span', { class: 'kindchip__name', text: '全部' }),
+          el('span', { class: 'kindchip__count', text: items.length + ' 条' })
+        ]))
+      ])));
+
+      if (total === 0) {
+        main.appendChild(el('p', { class: 'faint' }, [document.createTextNode('暂时没有词条 '), missing()]));
+      }
+
+      groups.forEach(function (g) {
+        main.appendChild(el('section', { class: 'section', 'aria-label': kindZh(g.kind) }, [
+          el('div', { class: 'section__head' }, [
+            el('h2', { text: kindZh(g.kind) + '（' + g.list.length + '）' }),
+            el('span', { class: 'section__note', text: kindBlurb(g.kind) })
+          ]),
+          el('ul', { class: 'cards' }, g.list.map(function (it) {
+            return el('li', { class: 'card' }, [
+              el('div', { class: 'card__head' }, el('span', { class: 'card__name' }, entryLink(it.id, it.title))),
+              el('p', { class: 'card__body', text: it.summary || '' }),
+              el('div', { class: 'card__meta' }, [badge(kindZh(it.kind), 'unknown')].concat(
+                asArray(it.tags).slice(0, 4).map(function (t) { return badge(String(t), 'unknown'); })
+              ))
+            ]);
+          }))
+        ]));
+      });
+
+      renderMasthead({ currentZone: null });
+      bindCopyButtons(main);
+      document.title = label + ' | DSH百科';
+    });
+  }
+
+  function kindBlurb(kind) {
+    return {
+      concept: '本体机制：DSH 自己怎么跑起来',
+      plugin: '插件聚合页：定位、关系、兼容与坑',
+      tutorial: '教程：自写 + 外部教程的索引卡',
+      pack: '整合包：组成与适合谁',
+      launcher: '启动器：canonical ID 与血缘',
+      source: '资源源：外部渠道收录什么、怎么用'
+    }[kind] || '';
+  }
+
   function renderIndex() {
     var main = $('#main');
     clear(main);
@@ -2684,6 +2808,24 @@
       }))
     ]));
 
+    // 全部词条：最容易被问「词条在哪」的那一步，先给足入口
+    var kindCounts = KIND_ORDER.map(function (k) { return { kind: k, n: byKind[k] || 0 }; })
+      .filter(function (x) { return x.n > 0; });
+    main.appendChild(el('section', { class: 'section', 'aria-label': '全部词条' }, [
+      el('div', { class: 'section__head' }, [
+        el('h2', { text: '全部词条（' + live.length + '）' }),
+        el('a', { href: '#/browse/all', text: '按类型浏览全部 →' })
+      ]),
+      kindCounts.length
+        ? el('ul', { class: 'kindchips' }, kindCounts.concat([{ kind: 'all', n: live.length }]).map(function (x) {
+          return el('li', {}, el('a', { class: 'kindchip', href: '#/browse/' + x.kind }, [
+            el('span', { class: 'kindchip__name', text: x.kind === 'all' ? '全部' : kindZh(x.kind) }),
+            el('span', { class: 'kindchip__count', text: x.n + ' 条' })
+          ]));
+        }))
+        : el('p', { class: 'faint' }, [document.createTextNode('还没有词条 '), missing(), document.createTextNode('（领号后出现在这里）')])
+    ]));
+
     // 教程（我们侧重的那一半）
     var tutorials = entries.filter(function (e) { return e.kind === 'tutorial' && e.status !== 'deleted'; })
       .sort(function (a, b) { return String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')); })
@@ -2691,7 +2833,7 @@
     main.appendChild(el('section', { class: 'section', 'aria-label': '教程' }, [
       el('div', { class: 'section__head' }, [
         el('h2', { text: '教程' }),
-        el('a', { href: zoneUrl('plugins') + '#tag=' + encodeURIComponent('教程'), text: '全部教程 →' })
+        el('a', { href: '#/browse/tutorial', text: '全部教程 →' })
       ]),
       tutorials.length
         ? el('ul', { class: 'updatelist' }, tutorials.map(function (t) {
@@ -2799,6 +2941,8 @@
 
     pre
       .then(function () {
+        var browseKind = browseKindFromHash();
+        if (browseKind) return renderBrowse(browseKind);
         if (page === 'entry') {
           var kind = P.kind || (document.body && document.body.getAttribute('data-kind'));
           var n = P.n;
@@ -2835,6 +2979,13 @@
       });
     });
   }
+
+  // 浏览路由是纯 hash 的：在站内点「按类型浏览」时不需要重载页面。
+  // 分区页自己的 tag/搜索 hash 由它内部的 hashchange 处理，这里只管 #/browse/…
+  window.addEventListener('hashchange', function () {
+    var browseKind = browseKindFromHash();
+    if (browseKind) renderBrowse(browseKind).catch(showLoadError);
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run);
