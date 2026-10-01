@@ -1,0 +1,13 @@
+# 仓库内统一 LF；Windows 工作副本不再产生 CRLF 噪音 diff
+* text=auto eol=lf
+
+# 二进制（图片、压缩包）不做换行转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.gif  binary
+*.ico  binary
+*.svg  text
+*.dspack binary
+*.zip  binary
