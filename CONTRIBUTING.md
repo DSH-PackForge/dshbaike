@@ -1,6 +1,6 @@
 # 参与 DSH 百科
 
-本站是**社区整理**的 DSH（DeepSeek Harness）资料站，与 DeepSeek 官方**无隶属关系**；收录不等于背书。
+本站是**社区整理**的 DSH（DeepSeek Harness）资料站，与 DeepSeek 官方无隶属关系。
 所有内容都在 git 里：**没有审核后台、没有数据库**，站上每一页都是某个 Markdown/YAML 文件渲染出来的。
 
 设计文档在 [`docs/`](docs/)：先看 [01 信息架构](docs/01-information-architecture.md)（站点长什么样）、[02 数据契约](docs/02-data-contract.md)（字段与校验规则）、[10 M1 接口冻结](docs/10-m1-interface.md)（工具链行为）。

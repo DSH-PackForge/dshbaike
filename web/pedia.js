@@ -23,7 +23,7 @@
   var SITE = {
     name: 'DSH 百科',
     tagline: '一站式的 DeepSeek Harness 中文百科',
-    compliance: '非官方社区资料站 · 收录不等于背书',
+    compliance: '非官方社区资料站',
     ogDesc:
       '一站式的 DeepSeek Harness 中文百科：界面与客户端、插件、整合包、启动器、主题、技能、预设、指令与配方，一处找齐；每页标注来源与快照日期。',
     domain: 'dshbaike.com',
@@ -781,8 +781,7 @@
 
     var inner = el('div', { class: 'masthead__inner' }, [
       el('a', { class: 'brand', href: BASE, 'aria-label': SITE.name + ' 首页' }, [
-        el('span', { class: 'brand__name', text: SITE.name }),
-        el('span', { class: 'brand__sub', text: SITE.compliance })
+        el('span', { class: 'brand__name', text: SITE.name })
       ]),
       el('nav', { class: 'zones', 'aria-label': '一级分区' }, list),
       el('div', { class: 'masthead__tools' }, [
@@ -882,7 +881,7 @@
 
     host.appendChild(el('div', { class: 'footer__inner' }, [
       l1,
-      el('p', { class: 'footer__line', text: SITE.compliance + ' · 出处在页面上' }),
+      el('p', { class: 'footer__line', text: SITE.compliance }),
       el('p', { class: 'footer__line' }, [document.createTextNode('生态：')].concat(
         joinWith(ECO.map(function (e) { return extLink(e.url, e.label); }), ' · ')
       )),
@@ -1614,14 +1613,6 @@
         ]));
       });
     }
-    if (kind === 'plugin') {
-      provRows.push(el('div', { class: 'infotable__row' }, [
-        el('dt', { text: '边界' }),
-        el('dd', {}, [
-          el('span', { class: 'badge badge--unknown', text: '非官方收录 · 装前请评估风险' })
-        ])
-      ]));
-    }
     if (provRows.length) groups.push({ title: '外部源指针', rows: provRows });
 
     return el('section', { class: 'box', 'aria-label': '信息表' }, [
@@ -2266,8 +2257,7 @@
       document.createTextNode(' · 快照 '),
       isPresent(entry.snapshot) ? document.createTextNode(fmtDate(entry.snapshot)) : missing(),
       document.createTextNode(' · 更新 '),
-      isPresent(entry.updatedAt) ? document.createTextNode(fmtDate(entry.updatedAt)) : missing(),
-      document.createTextNode(' · 非官方收录，装前请评估风险。')
+      isPresent(entry.updatedAt) ? document.createTextNode(fmtDate(entry.updatedAt)) : missing()
     ]);
   }
 
