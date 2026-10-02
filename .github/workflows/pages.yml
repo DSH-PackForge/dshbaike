@@ -3,9 +3,11 @@ name: Deploy to GitHub Pages
 # 站点是纯静态的：构建完全离线（只读 data/ 与 collected/），所以这个 workflow
 # 不需要任何 secrets，也不需要外部托管账号。
 #
-# 部署形态：项目子路径 https://<org>.github.io/<repo>/
-# 因此构建期必须传 --base=/<repo>/ —— 嵌套页（concept/1.html）靠它解析相对资源。
-# 以后挂上自定义域（根路径）时，把 --base 去掉即可。
+# 部署形态：**自定义域根路径** https://dshbaike.com/
+# （2026-10-02 绑域；此前是项目子路径 https://<org>.github.io/<repo>/，那时必须传 --base=/<repo>/）
+# 自定义域在仓库 Settings → Pages 里配（Actions 部署下不需要 CNAME 文件）。
+# 根路径部署**不要**再传 --base —— 嵌套页（launcher/1.html）靠构建期写入的
+# <base href="/"> 解析相对资源；传了子路径会导致全站资源 404。
 
 on:
   push:
@@ -34,8 +36,8 @@ jobs:
       - name: 校验词条与数据
         run: node scripts/validate.mjs
 
-      - name: 构建（子路径 base）
-        run: node scripts/build.mjs --base=/${{ github.event.repository.name }}/
+      - name: 构建（根路径：自定义域部署）
+        run: node scripts/build.mjs
 
       - name: 确认构建产物没被跟踪（产物只应存在于 web/，不入库）
         run: |
