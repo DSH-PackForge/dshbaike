@@ -343,7 +343,14 @@ jobs:
           echo "作者：${author_id:-（未知，退回机器人）}；共同作者：github-actions[bot]"
 
           git config user.name "dshbaike-bot"
-          git config user.email "bot@users.noreply.github.com"
+          # committer 邮箱**不能**写成 `bot@users.noreply.github.com`：那是旧式写法，
+          # GitHub 会按 login 解析，于是挂到一个**真实存在的第三方账号** `bot`
+          # （https://github.com/bot，2019 年注册）名下 —— 实测踩过：分支提交的 committer
+          # 在提交页显示成那个陌生账号。`dshbaike-bot` 这个账号并不存在，所以写成
+          # `dshbaike-bot@users.noreply.github.com` 不会被解析到任何人，只显示这个标签，
+          # 与 mesh-snapshot.yml 保持一致。将来若真建了机器账号，再换成
+          # `<id>+<login>@users.noreply.github.com` 的新式写法即可正确关联。
+          git config user.email "dshbaike-bot@users.noreply.github.com"
           git checkout -B "$branch"
           git add -A
           if git diff --cached --quiet; then
