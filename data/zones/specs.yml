@@ -1,11 +1,12 @@
 # 分区层数据（docs/06 §2）。元层之一：规范与协议。external-index——条目就是规范仓库里的文件。
 # 一切字段争议的最终裁判在这里，概念词条的 spec 也多指向它。
 #
-# 结构说明（评审 2026-10-02）：这六份规范**同属一个仓库**（DSH-PackForge/DSH-PackForge 的 specs/），
-# 原先拆成 8 条条目过度了。现在只留两条词条：
-#   · spec/2 = 规范仓库总览（manifest / pack-structure / index / publishing / launcher-registry / workspace-config）
-#   · spec/1 = manifest v5（保留：它是最常被引用的那一份，值得独立成条）
-# 历史版本不再单列条目，收进 collapsed 小节，需要的人展开看。
+# 结构说明（评审 2026-10-02 两轮）：
+#   ① 这六份规范**同属一个仓库**（DSH-PackForge/DSH-PackForge 的 specs/），原先拆成 8 条条目过度了；
+#   ② 收敛后又出现「两个条目指向同一条词条」的情况——条目数读起来是虚的。
+# 现在：**一节一条**，条目数 = 真正的内容单位。
+#   · spec/1 = 预留编号位（draft，先不放内容）
+#   · spec/2 = 规范仓库总览（六份现行规范 + 历史版本都在这一条里）
 zone: specs
 title: 规范与协议
 desc: manifest、pack-structure、index、publishing、launcher-registry 等契约文档——它们都写在同一个仓库里。谁说了算的问题在这一层结束：有争议时以规范仓库的文件为准，而不是以某个实现或某个包的现状为准。
@@ -21,9 +22,9 @@ sections:
 howto: 读的顺序建议按版本读：manifest 从 v1 到 v5 看字段是怎么长出来的；pack-structure v3 是当前 .dspack 容器契约；index/index.md 是市场索引 schemaVersion 2；launcher-registry.md 与发布流程各一份。要改规范就向该仓库提 PR，别在实现里私自分叉。
 itemFields: [specVersion, specStatus, fileName]
 items:
-  - name: DSH-PackForge 规范仓库（总览）
+  - name: DSH-PackForge 规范仓库
     section: current
-    blurb: 六份规范都在这里：manifest 决定包里声明什么、pack-structure 决定 .dspack 怎么装、index 决定市场怎么索引、publishing 决定怎么被收录，另有启动器 canonical ID 表与 .dshpkcfg 格式。一条词条看懂它们的分工与互相引用。
+    blurb: 现行六份规范都在这一个仓库里：manifest v5（包里声明什么）、pack-structure v3（.dspack 怎么装）、index（市场索引 schemaVersion 2）、publishing v1（怎么被收录）、launcher-registry（启动器 canonical ID 表）、workspace-config v1（.dshpkcfg 格式）。一条词条讲清它们的分工与互相引用。
     specVersion: null
     specStatus: current
     fileName: specs/
@@ -32,34 +33,14 @@ items:
     tags: ["生态地基", "规范"]
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/tree/main/specs
-  - name: manifest v5（当前）
-    section: current
-    blurb: 现行清单契约：type 分 profile / dshhome，bundles 与 dependencies 钉死坐标版本，patch 是包自带的一层；r2 追加 vendored、dshVersions、launchers 三组可选字段。
-    specVersion: 5
-    specStatus: current
-    fileName: specs/manifest/v5.md
-    source: specs
-    entry: spec/2
-    tags: ["工具与能力"]
-    links:
-      spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/manifest/v5.md
-  - name: manifest v1–v4（历史版本）
+  - name: 历史版本（manifest v1–v4、pack-structure v1–v2）
     section: history
-    blurb: 四个历史版本，保留用来读旧包：市场里实测仍有包声明 manifestVersion 4（更好的侧边栏）。读旧包时按它声明的版本去读对应文件，别拿 v5 的规则去判它。
-    specVersion: 1
+    blurb: 六份现行规范都有前身，保留在仓库里可读。读它们不是为了守着旧写法，而是为了两件事：读旧包（市场里实测仍有包声明 manifestVersion 4，甚至 .tgz 时代的包）与理解字段怎么长出来的（v5 的 type/dshhome、v3 的 home/ 都是前面几版长出问题的答案）。
+    specVersion: null
     specStatus: historical
-    fileName: specs/manifest/v1.md
+    fileName: specs/
     source: specs
     entry: spec/2
+    tags: ["规范"]
     links:
-      spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/manifest/v1.md
-  - name: pack-structure v1–v2（历史版本）
-    section: history
-    blurb: 容器契约的历史版本：v1 是 .tgz 时代的扁平快照，v2 是单 profile .dspack（没有 home/）。读旧包与追踪字段演进时用。
-    specVersion: 1
-    specStatus: historical
-    fileName: specs/pack-structure/v1.md
-    source: specs
-    entry: spec/2
-    links:
-      spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/pack-structure/v1.md
+      spec: https://github.com/DSH-PackForge/DSH-PackForge/tree/main/specs
