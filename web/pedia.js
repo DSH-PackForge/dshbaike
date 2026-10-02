@@ -2760,14 +2760,26 @@
         el('a', { class: 'subsec__anchor', href: '#' + anchor, text: '#', 'aria-label': '这一节的链接' })
       ])
     ];
-    if (isPresent(sec.desc)) children.push(el('p', { class: 'subsec__desc', text: sec.desc }));
+    // 这一节的主体：说明 + 综述 + 卡片。默认折叠的节把它整段折进 <details>，
+    // 用原生元素而不是 JS 开关——内容仍在 DOM 里（爬虫与无 JS 用户照样读得到），
+    // 展开/收起、键盘与读屏都由浏览器负责。
+    var body = [];
+    if (isPresent(sec.desc)) body.push(el('p', { class: 'subsec__desc', text: sec.desc }));
     if (isPresent(sec.introHtml)) {
       var intro = el('div', { class: 'subsec__intro' });
       intro.innerHTML = sec.introHtml; // 构建期已渲染并转义（pedia 的 markdown 渲染器先转义再替换）
-      children.push(intro);
+      body.push(intro);
     }
-    children.push(el('ul', { class: 'cards', id: 'zone-cards-' + (sec.id || 'none') },
+    body.push(el('ul', { class: 'cards', id: 'zone-cards-' + (sec.id || 'none') },
       list.map(function (it) { return cardFor(it, items, zone, zoneId); })));
+    if (sec.collapsed) {
+      children.push(el('details', { class: 'collapse subsec__fold' }, [
+        el('summary', { text: '说明与条目（' + list.length + ' 条）' }),
+        el('div', { class: 'subsec__foldbody' }, body)
+      ]));
+    } else {
+      Array.prototype.push.apply(children, body);
+    }
     return el('section', { class: 'subsection', id: anchor, 'aria-label': sec.title || sec.id }, children);
   }
 
@@ -2944,9 +2956,13 @@
         if (on) shown++;
       });
       // 整组被筛空时，连二级分区标题一起收起来（否则会留下一排空标题）
+      var filtering = state.tag !== '*' || !!state.q;
       Array.prototype.forEach.call(document.querySelectorAll('.subsection'), function (sec) {
         var visible = sec.querySelectorAll('[id^="zone-cards"] > li:not([hidden])').length;
         sec.hidden = visible === 0;
+        // 默认折叠的节：筛选命中时自动展开，否则用户筛进去了却看不到结果
+        var fold = sec.querySelector('details.subsec__fold');
+        if (fold && filtering && visible > 0) fold.open = true;
       });
       // 二级分区的「N 条」要跟着筛选走：卡片被筛掉了、标题还写着原数，
       // 看起来就像"内容没变化"（线上被这么报过）。筛选时显示「筛后 / 总数」。
@@ -3004,6 +3020,21 @@
       state.q = h.q.toLowerCase();
     }
     if (h.tag || h.q) apply();
+
+    // 锚点指向默认折叠的节：跳过去时把它展开（否则看到的是一个收起的块）
+    function openFoldedTarget() {
+      if (!location.hash) return;
+      var node = document.getElementById(location.hash.slice(1));
+      if (!node) return;
+      var fold = node.matches && node.matches('details.subsec__fold') ? node : node.querySelector('details.subsec__fold');
+      if (fold) fold.open = true;
+    }
+    window.addEventListener('hashchange', openFoldedTarget);
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a[href^="#sec-"]') : null;
+      if (a) setTimeout(openFoldedTarget, 0);
+    });
+    setTimeout(openFoldedTarget, 0);
 
     window.addEventListener('hashchange', function () {
       var nh = parseHash();

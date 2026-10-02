@@ -14,6 +14,9 @@ links:
     note: 按功能分 19 个扇区的全量生态图，由第三方项目 dsh-plugin-mesh（MIT）提供、每小时自动采集；数字与分类未经本站核实
 sections:
   - id: markets
+    # collapsed: true → 这一节默认收起（说明与条目折进 <details>，内容仍在 HTML 里，
+    # 爬虫与无 JS 用户照样读得到）。一般节不写这个键；只有一节很长又不必默认铺开时才用。
+    collapsed: true
     title: 插件市场
     desc: 市面上的插件源与目录：它们负责「发现」与全量收录，我们负责解释
     intro: |

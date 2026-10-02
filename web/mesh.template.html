@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#12796f">
+<meta property="og:image" content="https://dshbaike.com/og-image.png">
+<title>{{TITLE}}</title>
+<link rel="canonical" href="{{CANONICAL}}">
+<meta property="og:url" content="{{CANONICAL}}">
+<meta name="description" content="{{DESC}}">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DSH百科">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESC}}">
+<!-- 第三方应用的托管壳（/mesh/）。
+     为什么要套一层：那张图**不是我们做的**，而它的界面右上角挂的是它自己的作者
+     （WTStarMark）——读者从我们这儿点进来，得先知道这是谁的东西、数据是谁采的、
+     以及**哪些不是我们的结论**。所以这里放一条说明，再把它的应用整屏嵌进来。
+     它的应用与数据在 web/mesh/app/（构建期从 vendor/ 原样拷来，未做任何修改），
+     同源 iframe，所以 HTTPS 下不会被当作混合内容拦掉。 -->
+<script>
+/* 尽早应用主题与主题色，避免刷新时闪一下默认色（键名与 pedia.js / accent.js 一致） */
+(function(){try{var d=document.documentElement;
+var t=localStorage.getItem('dsh-pedia-theme');if(t&&t!=='auto')d.setAttribute('data-theme',t);
+var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent',a);}catch(e){}})();
+</script>
+<base href="/">
+<link rel="stylesheet" href="pedia.css">
+<link rel="stylesheet" href="accent.css">
+<style>
+  /* 这一页不走站点外壳（侧栏/页脚）：里面那张图是全屏应用，多一层壳反而挤。
+     说明条占一行，下面 iframe 铺满剩余高度。 */
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+
+  .mesh-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    margin: 0;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-subtle);
+  }
+
+  .mesh-note__tag {
+    flex: none;
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .mesh-note__text {
+    flex: 1 1 420px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .mesh-note__text strong {
+    color: var(--text);
+  }
+
+  .mesh-note__meta {
+    flex: none;
+    font-size: 12px;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mesh-note a {
+    color: var(--brand);
+  }
+
+  .mesh-frame {
+    flex: 1 1 auto;
+    display: block;
+    width: 100%;
+    min-height: 60vh;
+    border: 0;
+  }
+
+  @media (max-width: 760px) {
+    .mesh-note__text {
+      flex-basis: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<p class="mesh-note">
+  <span class="mesh-note__tag">第三方</span>
+  <span class="mesh-note__text">
+    这张图是
+    <a href="https://github.com/WTStarMark/dsh-plugin-mesh" rel="noopener noreferrer external" target="_blank">WTStarMark/dsh-plugin-mesh</a>
+    （MIT 许可）——本站<strong>原样托管、未做任何修改</strong>；数据由上游每小时自动采集，
+    <strong>其中的数字与分类未经本站核实</strong>。
+    我们人工核实过的条目在 <a href="plugins.html">插件分区</a>，自己的关系数据在
+    <a href="data/graph.json">data/graph.json</a>。
+  </span>
+  <span class="mesh-note__meta">{{MESH_SNAPSHOT}}</span>
+</p>
+<iframe class="mesh-frame" src="mesh/app/index.html" title="全量插件生态图（第三方项目 dsh-plugin-mesh，MIT）" loading="eager"></iframe>
+<noscript>
+  <p class="mesh-note__text" style="padding:10px 14px">
+    你的浏览器没有显示内嵌页面？直接打开 <a href="mesh/app/index.html">这张图</a>，
+    或去 <a href="https://github.com/WTStarMark/dsh-plugin-mesh">上游仓库</a> 看它的说明。
+  </p>
+</noscript>
+</body>
+</html>

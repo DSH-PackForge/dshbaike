@@ -181,11 +181,18 @@ function main(argv) {
   /* ---- registry / search / taxonomy / entities / reverse / plugins ---- */
   push(writes, nextManifest, path.posix.join('data', 'registry.json'), toJson(registryJson));
 
-  /* ---- 第三方全量插件生态图（vendor/dsh-plugin-mesh，MIT）：原样拷进 web/mesh/ ----
+  /* ---- 第三方全量插件生态图（vendor/dsh-plugin-mesh，MIT）----
      我们的 graph.json 是「人工核实过的关系」（31 条词条），这张图是「全量生态」
      （2625 个仓库、机器按 topic 采集）——两种东西，评审决定全景图用它那张。
-     这里只做拷贝：文件与上游逐字节一致，改它就去改上游或换新副本（见该目录 README.md）。 */
+
+     分两层落地：
+       ① 它的应用与数据 → `web/mesh/app/`（原样拷贝；改它就去改上游或换新副本）
+       ② 我们自己的说明壳 → `web/mesh/index.html`（构建期渲染，快照日期读 vendored 数据）
+     套壳的理由：那张图不是我们做的，而它的界面右上角挂的是它自己的作者；读者从我们这儿
+     点进来，得先知道这是谁的东西、数据是谁采的、哪些不是我们的结论。 */
   const vendorDir = fromRoot('vendor', 'dsh-plugin-mesh');
+  const meshDataPath = path.join(vendorDir, 'data', 'mesh.json');
+  const meshTemplate = loadTemplate('mesh.template.html');
   if (exists(vendorDir)) {
     const walkVendor = (dir, rel) => {
       for (const name of fs.readdirSync(dir).sort()) {
@@ -197,13 +204,24 @@ function main(argv) {
         }
         // README.md 是给我们自己看的，不进站点产物
         if (next === 'README.md') continue;
-        push(writes, nextManifest, path.posix.join('mesh', next), readText(abs));
+        push(writes, nextManifest, path.posix.join('mesh', 'app', next), readText(abs));
         counts.meshFiles = (counts.meshFiles ?? 0) + 1;
       }
     };
     walkVendor(vendorDir, '');
+    if (exists(meshDataPath)) {
+      push(
+        writes,
+        nextManifest,
+        'mesh/index.html',
+        renderMeshShell(meshTemplate?.text ?? null, JSON.parse(readText(meshDataPath))),
+      );
+      counts.meshFiles = (counts.meshFiles ?? 0) + 1;
+    } else {
+      problems.push('vendor/dsh-plugin-mesh/data/mesh.json 不存在：/mesh/ 的说明壳拿不到快照日期');
+    }
   } else {
-    problems.push('vendor/dsh-plugin-mesh 不存在：生态全景图（web/mesh/）不会生成');
+    problems.push('vendor/dsh-plugin-mesh 不存在：全量插件生态图（web/mesh/）不会生成');
   }
 
   /* ---- 我们自己的关系数据（docs/02 §产物 graph.json）----
@@ -358,6 +376,9 @@ function push(writes, manifest, rel, content) {
 function isOwnedArtifact(rel) {
   const p = rel.split(path.sep).join('/');
   if (p.startsWith('data/')) return true;
+  // 第三方全量生态图的托管目录（壳 + 原样拷贝的应用）。它整棵子树都是我们的产物，
+  // 换 vendor 新副本或改路径时，上一版留下的文件要能被清掉（3MB 级，留着很显眼）。
+  if (p === 'mesh' || p.startsWith('mesh/')) return true;
   if (p === 'sitemap.xml' || p === 'robots.txt') return true;
   if (/^(tag|platform)\/[a-z0-9-]+\.html$/.test(p)) return true;
   if (p === 'tags.html') return true;
@@ -865,6 +886,8 @@ function buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt) {
       title: s?.title ?? null,
       desc: s?.desc ?? null,
       intro: s?.intro ?? null,
+      // 默认折叠（docs/02 分区文件契约）：前端与预渲染都按它决定是否折进 <details>
+      collapsed: s?.collapsed === true,
       introHtml: isMissing(s?.intro) ? null : renderMarkdown(String(s.intro), { base: BASE, hasEntry: false }).html,
     })),
     itemFields,
@@ -1048,6 +1071,14 @@ function prerenderZone(output, entryOutputs, indexes = []) {
     const list = grouped.get(sec.id) ?? [];
     if (!list.length) continue;
     L.push(`<h2>${escapeHtml(sec.title ?? sec.id)}</h2>`);
+    if (sec.collapsed) {
+      // 默认折叠的节：说明与条目折进 <details>（内容仍在 HTML 里，爬虫与无 JS 用户都能读）
+      L.push(`<details class="collapse subsec__fold"><summary>说明与条目（${list.length} 条）</summary>`);
+      if (sec.desc) L.push(`<p>${escapeHtml(sec.desc)}</p>`);
+      emit(list);
+      L.push('</details>');
+      continue;
+    }
     if (sec.desc) L.push(`<p>${escapeHtml(sec.desc)}</p>`);
     emit(list);
   }
@@ -1353,6 +1384,38 @@ function renderZonePage(template, output, entryOutputs, indexes = []) {
  * 与那张全量图是两种东西：它的边是 topic 共现/同作者（相似度），我们的边带出处。
  * 将来词条页要做「以某条词条为圆心的邻域星图」时，读的就是这份数据。
  */
+
+/**
+ * 第三方全量生态图的托管壳（`web/mesh/index.html`）。
+ *
+ * 它把 vendored 应用整屏嵌进来，并在上面压一条说明：**这东西是谁的、数据谁采的、
+ * 哪些不是我们的结论**——因为那张图不是我们做的，而它的界面右上角挂的是它自己的作者。
+ * 说明里的快照日期直接读 vendored 的 `data/mesh.json`，所以页面上写的日期
+ * 永远和实际托管的那份数据一致（不会出现「说明写着 10-01、数据已经换成 10-05」）。
+ */
+function renderMeshShell(template, mesh) {
+  const meta = mesh?.meta ?? {};
+  const nodes = Number.isFinite(Number(meta.indexedNodes))
+    ? Number(meta.indexedNodes)
+    : Array.isArray(mesh?.nodes)
+      ? mesh.nodes.length
+      : null;
+  const edges = Number.isFinite(Number(meta.sampleEdges))
+    ? Number(meta.sampleEdges)
+    : Array.isArray(mesh?.edges)
+      ? mesh.edges.length
+      : null;
+  const gen = meta.generatedAt ? String(meta.generatedAt).slice(0, 10) : null;
+  const bits = [gen ? `上游快照 ${gen}` : null, nodes ? `${nodes} 个仓库` : null, edges ? `${edges} 条关系` : null].filter(Boolean);
+  const fallback = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>{{TITLE}}</title></head><body></body></html>';
+  const filled = (template ?? fallback).split('{{MESH_SNAPSHOT}}').join(escapeHtml(bits.join(' · ')));
+  return applyTemplate(filled, {
+    title: '全量插件生态图（第三方） | DSH百科',
+    desc: '第三方项目 dsh-plugin-mesh（MIT）的全量 DSH 插件生态图：本站原样托管、未做修改；数据由上游每小时自动采集，其中的数字与分类未经本站核实。',
+    canonical: `${SITE_URL}/mesh/`,
+    payload: { base: BASE, page: 'static', title: '全量插件生态图' },
+  });
+}
 
 /* ------------------------------------------------------------------ */
 /* 增量清单                                                            */

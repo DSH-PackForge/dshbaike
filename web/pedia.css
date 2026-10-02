@@ -2249,6 +2249,12 @@ a.card__name:hover {
   color: var(--text-faint);
 }
 
+/* 默认折叠的二级分区（docs/02 分区文件契约的 collapsed）：主体要留内边距，
+   因为里面的 .cards 自带 margin/padding: 0；边框与 summary 样式复用 details.collapse。 */
+.subsec__foldbody {
+  padding: 10px 12px;
+}
+
 details.collapse {
   border: 1px solid var(--border);
   border-radius: var(--r-box);

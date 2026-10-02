@@ -109,6 +109,12 @@ check('JS 建了外层 .mascot', /className\s*=\s*'mascot'/.test(JS));
 check('JS 建了内层 .mascot__sprite', /className\s*=\s*'mascot__sprite'/.test(JS));
 check('走在走/站着两个状态都用了 CSS 里的类', JS.includes('mascot--walk') && JS.includes('mascot--on') && CSS.includes('.mascot--on'));
 check('mousemove 是 passive（不拖慢滚动）', /addEventListener\('mousemove'[\s\S]{0,600}?passive:\s*true/.test(JS));
+// 回归：行走判定必须看「指针最近有没有动」。曾经拿「我离目标还剩多远」当速度，
+// 结果是追上了算停、一动又算走，在阈值附近来回切，两套精灵互相闪（用户报过）。
+check(
+  '行走判定看指针而不是追赶余量（否则会在阈值附近来回切）',
+  JS.includes('MOVE_WINDOW') && JS.includes('WALK_MIN_MS') && JS.includes('moveAcc') && !JS.includes('WALK_SPEED'),
+);
 
 console.log('\n== ⑥ 署名（素材许可的条件，不是可选装饰）==');
 check('web/mascot-CREDITS.txt 存在', exists('web/mascot-CREDITS.txt'));
@@ -123,6 +129,146 @@ if (exists('web/mascot-CREDITS.txt')) {
 check('页脚配置里有署名三元组', JS.includes('mascotAuthor') && JS.includes('mascotRepo') && JS.includes('mascotLicense'));
 check('页脚真的渲染了署名行', /mascotAuthor/.test(JS) && /吉祥物「大肥鱼」/.test(JS));
 check('LICENSE 把吉祥物素材列为第三方例外', read('LICENSE').includes('mascot-fatfish-idle.png'));
+
+console.log('\n== ⑦ 行为：拿假 DOM 跑真实的 mountMascot ==');
+// 沙箱里起不了浏览器，但「静止→移动时两套精灵来回闪」这种坏法**必须**能自动化验到：
+// 于是给一个够用的假 window/document，把 pedia.js 里那段函数原样跑起来，
+// 喂合成的鼠标事件与帧时钟，只观察它切换 .mascot--walk 的次数。
+function extractFn(src, name) {
+  const at = src.indexOf(`function ${name}(`);
+  if (at < 0) return null;
+  const open = src.indexOf('{', at);
+  let depth = 0;
+  for (let i = open; i < src.length; i += 1) {
+    if (src[i] === '{') depth += 1;
+    else if (src[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return src.slice(at, i + 1);
+    }
+  }
+  return null;
+}
+
+function makeEnv(clock) {
+  const listeners = {};
+  const frames = [];
+  const makeEl = () => ({
+    className: '',
+    style: {},
+    children: [],
+    setAttribute() {},
+    appendChild(child) {
+      this.children.push(child);
+    },
+    classList: {
+      set: new Set(),
+      add(c) {
+        this.set.add(c);
+      },
+      remove(c) {
+        this.set.delete(c);
+      },
+      toggle(c, on) {
+        if (on) this.set.add(c);
+        else this.set.delete(c);
+      },
+      contains(c) {
+        return this.set.has(c);
+      },
+    },
+  });
+  const win = {
+    innerWidth: 1200,
+    innerHeight: 800,
+    matchMedia: () => ({ matches: false }), // 既不模拟触摸、也不模拟「减少动态效果」
+    requestAnimationFrame: (cb) => frames.push(cb),
+    performance: { now: () => clock.t },
+  };
+  const doc = {
+    body: makeEl(),
+    createElement: () => makeEl(),
+    addEventListener: (type, fn) => {
+      (listeners[type] = listeners[type] || []).push(fn);
+    },
+    readyState: 'complete',
+  };
+  return { win, doc, frames, listeners };
+}
+
+const fnSrc = extractFn(JS, 'mountMascot');
+check('能从 pedia.js 里提出 mountMascot', Boolean(fnSrc));
+
+if (fnSrc) {
+  const clock = { t: 0 };
+  const env = makeEnv(clock);
+  // 原样执行那段函数（window / document / performance 由参数注入，盖住 Node 的全局时钟，
+  // 否则代码里的 performance.now() 会读到真实时间，我推的虚拟时钟就白推了）
+  const boot = new Function('window', 'document', 'performance', `${fnSrc}\nmountMascot();`);
+  boot(env.win, env.doc, { now: () => clock.t });
+  const host = env.doc.body.children[0];
+  check('挂载出了 .mascot 元素', Boolean(host) && host.className === 'mascot');
+  check('里面是 .mascot__sprite（两套精灵的容器）', Boolean(host && host.children[0]) && host.children[0].className === 'mascot__sprite');
+
+  const step = (ms) => {
+    clock.t += ms;
+    env.frames.splice(0).forEach((cb) => cb());
+  };
+  const moveTo = (x, y) => {
+    (env.listeners.mousemove || []).forEach((fn) => fn({ clientX: x, clientY: y }));
+  };
+  const isWalk = () => host.classList.contains('mascot--walk');
+  const run = (label, seq) => {
+    const states = [];
+    seq(() => states.push(isWalk()));
+    let switches = 0;
+    for (let i = 1; i < states.length; i += 1) if (states[i] !== states[i - 1]) switches += 1;
+    return { label, switches, first: states[0], last: states[states.length - 1], frames: states.length };
+  };
+
+  // ① 连续移动：应当只切一次（站着 → 行走），全程不再来回
+  const continuous = run('连续移动 60 帧', (tick) => {
+    for (let i = 0; i < 60; i += 1) {
+      moveTo(200 + i * 7, 300 + (i % 5) * 3); // 带一点纵向抖动，接近真实手抖
+      step(16);
+      tick();
+    }
+  });
+  check(`连续移动不来回切（切换 ${continuous.switches} 次，末态行走＝${continuous.last}）`, continuous.switches === 1 && continuous.last === true);
+
+  // ② 停住：应当切回待机，且只切一次
+  const stopped = run('停住 60 帧', (tick) => {
+    for (let i = 0; i < 60; i += 1) {
+      step(16);
+      tick();
+    }
+  });
+  check(`停住后回待机且只切一次（切换 ${stopped.switches} 次，末态行走＝${stopped.last}）`, stopped.switches === 1 && stopped.last === false);
+
+  // ③ 移动中短暂停顿（100ms）：不许闪回待机（这正是用户看到的那种难看）
+  const briefPause = run('移动中停顿 100ms', (tick) => {
+    moveTo(300, 300);
+    step(16);
+    tick();
+    for (let i = 0; i < 6; i += 1) {
+      step(16);
+      tick();
+    }
+    moveTo(340, 300);
+    step(16);
+    tick();
+  });
+  check(`移动中的短暂停顿不闪回（切换 ${briefPause.switches} 次）`, briefPause.switches === 0 && briefPause.first === true);
+
+  // ④ 极小抖动（1px/帧）：要么不触发，要么进去就不再切
+  const jitter = run('1px/帧 抖动 60 帧', (tick) => {
+    for (let i = 0; i < 60; i += 1) {
+      moveTo(400 + (i % 2), 400);
+      step(16);
+      tick();
+    }
+  });
+  check(`微小抖动不来回切（切换 ${jitter.switches} 次）`, jitter.switches <= 1);
+}
 
 console.log(`\n${fail === 0 ? '全部通过' : '有失败'}：${pass} 过 / ${fail} 败`);
 process.exit(fail === 0 ? 0 : 1);
