@@ -1217,6 +1217,33 @@ table.data .col-key {
   padding: 2px 0;
 }
 
+/* 已有维护者时的那一行（docs/14 §1.4）：认领之后要看得出来，否则等于白认领 */
+.completeness__owner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-sm);
+}
+
+.completeness__owner-k {
+  color: var(--text-faint);
+  font-size: var(--fs-xs);
+}
+
+.completeness__owner-v {
+  font-weight: 600;
+}
+
+.completeness__owner-note {
+  flex-basis: 100%;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
 /* 缺口清单里的动作：每个缺口都要能「做完」，不是只显示一句抱怨 */
 .completeness__field {
   font-weight: 600;

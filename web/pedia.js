@@ -1886,9 +1886,14 @@
       case 'install':
         return codeBlock(value, '安装命令');
       case 'maintainers':
-        return document.createTextNode(asArray(value).map(function (m) {
-          return '@' + String(m).replace(/^@/, '');
-        }).join(' · '));
+        // 链接到主页：维护者是「谁在跟进这一条」，读者应该能点过去看是谁
+        return frag(asArray(value).map(function (m, i) {
+          var u = String(m).replace(/^@/, '');
+          return frag([
+            document.createTextNode(i ? ' · ' : ''),
+            extLink('https://github.com/' + u, '@' + u)
+          ]);
+        }));
       case 'license':
         return document.createTextNode(String(value));
       case 'licenseRefs':
@@ -1970,6 +1975,19 @@
       el('span', { class: 'completeness__score', text: score + '%' }),
       el('span', { class: 'bar', role: 'img', 'aria-label': '完整度 ' + score + '%' }, el('span', { class: 'bar__fill', style: 'width:' + score + '%' }))
     ]));
+    // 「谁在跟进这一条」要看得出来：认领之后没有正面反馈，等于白认领（docs/14 §1.4）。
+    // 缺维护者时下面的缺项清单会给「我来维护 →」，这里只管**已有维护者**的情形。
+    var owners = asArray(entry.meta && entry.meta.maintainers).filter(isPresent);
+    if (owners.length) {
+      box.appendChild(el('div', { class: 'completeness__owner' }, [
+        el('span', { class: 'completeness__owner-k', text: '维护者' }),
+        el('span', { class: 'completeness__owner-v' }, joinWith(owners.map(function (m) {
+          var u = String(m).replace(/^@/, '');
+          return extLink('https://github.com/' + u, '@' + u);
+        }), ' · ')),
+        el('span', { class: 'completeness__owner-note', text: '改这一条的请求会先请他们过目' })
+      ]));
+    }
     var missingItems = asArray(c.missing);
     if (missingItems.length) {
       box.appendChild(el('ul', { class: 'completeness__missing' }, missingItems.map(function (m) {
