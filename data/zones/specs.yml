@@ -9,17 +9,17 @@
 #   · spec/2 = 规范仓库总览（六份现行规范 + 历史版本都在这一条里）
 zone: specs
 title: 规范与协议
-desc: manifest、pack-structure、index、publishing、launcher-registry 等契约文档——它们都写在同一个仓库里。谁说了算的问题在这一层结束：有争议时以规范仓库的文件为准，而不是以某个实现或某个包的现状为准。
+desc: DSH 全生态的规范与协议：谁说了算的问题在这一层结束。既有 **DSH 本体定义的形态与协议**（profile、插件 bundle、技能包、preset、半端划分——权威是官方仓库），也有**生态各方共同维护的约定**（整合包清单 manifest、.dspack 容器 pack-structure、市场索引 index、发布流程 publishing、启动器注册表 launcher-registry）。有争议时以对应的规范/协议文档为准，而不是以某个实现或某个包的现状为准。
 kinds: [spec]
 sections:
   - id: current
     title: 现行规范
-    desc: 现在照它做就对的那几份
+    desc: 现在照它做就对的那几份。目前这里收的是整合包这一族（manifest / pack-structure / index / publishing / launcher-registry / workspace-config）；DSH 本体那一侧的契约按概念词条写在各自分区里。
   - id: history
     title: 历史版本
     desc: 旧版本仍然可读：读它是为了理解字段怎么长出来的
     collapsed: true
-howto: 读的顺序建议按版本读：manifest 从 v1 到 v5 看字段是怎么长出来的；pack-structure v3 是当前 .dspack 容器契约；index/index.md 是市场索引 schemaVersion 2；launcher-registry.md 与发布流程各一份。要改规范就向该仓库提 PR，别在实现里私自分叉。
+howto: 按问题找权威：问「一个包能声明什么」看 manifest；问「.dspack 怎么装、文件落到哪」看 pack-structure；问「怎么才会被市场收录」看 publishing；问「启动器 canonical ID 与版本怎么判」看 launcher-registry；问「profile 是什么、patch 层怎么叠、DSH_HOME 指哪」看 DSH 本体那一侧——本站把这部分按概念词条写（见各分区的概念条目），不另立规范条目。要改规范就向对应的仓库提 PR，别在实现里私自分叉。
 itemFields: [specVersion, specStatus, fileName]
 items:
   - name: DSH-PackForge 规范仓库
