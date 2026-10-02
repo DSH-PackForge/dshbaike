@@ -870,9 +870,12 @@ function buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt) {
     desc: data.desc ?? null,
     howto: data.howto ?? null,
     // 分区页顶部的入口卡（`links`，docs/06 §4）：例如插件分区指向 `graph.html` 生态全景图。
-    // 只允许站内相对路径或 https，别让数据侧塞进 javascript: 之类。
+    // 只允许站内相对路径或 http(s) 绝对地址，别让数据侧塞进 javascript: 之类。
+    // **http:// 也要放行**：第三方项目常常只提供 http 地址（例如那张生态图的作者在线版是裸 IP），
+    // 而入口卡是**导航链接**、不是页面内资源，不存在混合内容问题。只认 https 会把这类链接
+    // 静默丢掉（评审踩过：配了在线版入口，页面和校验都不吭声）。
     links: (Array.isArray(data.links) ? data.links : [])
-      .filter((l) => l && !isMissing(l.href) && /^(?:[a-z0-9-]+\/)*[a-z0-9-]+\.html$|^https:\/\//i.test(String(l.href)))
+      .filter((l) => l && !isMissing(l.href) && /^(?:[a-z0-9-]+\/)*[a-z0-9-]+\.html$|^https?:\/\//i.test(String(l.href)))
       .map((l) => ({
         label: String(l.label ?? '').trim() || String(l.href),
         href: String(l.href),
@@ -1009,7 +1012,15 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
   if (metaRows.length) {
     L.push('<h2>信息表</h2>');
     L.push('<dl>');
-    for (const [k, v] of metaRows) L.push(`<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd>`);
+    for (const [k, v] of metaRows) {
+      // URL 值的字段（url / linkOut / homepage…）在无 JS 的预渲染里也要能点开，
+      // 与前端 pedia.js 的 infoRow 保持一致（评审：第三方项目的原链接、在线体验链接挂不上）。
+      const raw = String(v);
+      const dd = /^https?:\/\/\S+$/i.test(raw)
+        ? `<a href="${escapeHtml(raw)}" rel="noopener noreferrer external" target="_blank">${escapeHtml(raw)}</a>`
+        : escapeHtml(raw);
+      L.push(`<dt>${escapeHtml(k)}</dt><dd>${dd}</dd>`);
+    }
     L.push('</dl>');
   }
 

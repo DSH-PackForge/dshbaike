@@ -3,6 +3,17 @@
 这是 [WTStarMark/dsh-plugin-mesh](https://github.com/WTStarMark/dsh-plugin-mesh) 的**原样副本**，
 用来在 `dshbaike.com/mesh/` 提供那张**全量插件生态图**（2625 个仓库、19 个功能扇区）。
 
+原项目的三个去处（我们的 `/mesh/` 说明条上也都挂着）：
+
+| 去处 | 地址 | 说明 |
+| --- | --- | --- |
+| 上游仓库 | <https://github.com/WTStarMark/dsh-plugin-mesh> | 源码、README、话题采集说明；MIT |
+| 作者自己的在线版 | <http://104.129.51.126/> | **http + 裸 IP**（随时可能变），功能与我们这份一致，但读的是它自己当轮的数据 |
+| 我们托管的副本 | <https://dshbaike.com/mesh/> | 原样副本 + 一层说明条；数据由每天的快照任务刷新 |
+
+（作者在线版还有个卡片分享接口 `http://104.129.51.126/api/card/<owner>/<repo>.svg`，
+README 里有示例；与我们无关，仅备查。）
+
 **为什么用它的，而不是我们自己画一张**：我们的词条是人工核实的，目前 31 条、关系数据更少
 （`relations` 还是 0 条）；而这张图的价值在**全量**与**自动更新**——那是机器采集的活，
 不是百科该做的事。两者是两种东西：

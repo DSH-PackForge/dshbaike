@@ -2085,7 +2085,12 @@
           return ks.length ? document.createTextNode(ks.map(function (k) { return k + '：' + plainText(value[k]); }).join(' · ')) : missing();
         }
         if (Array.isArray(value)) return value.length ? document.createTextNode(plainText(value)) : missing();
-        return document.createTextNode(String(value));
+        // URL 值的字段（url / linkOut / homepage / docs…）要能点开。以前这里一律当纯文本，
+        // 于是第三方项目的「原仓库地址」「在线体验地址」读者看得见、点不了（评审提出）。
+        // 这里按**值**判断而不是按字段名，所以以后新加任何 URL 字段都自动可点。
+        var metaText = String(value);
+        if (/^https?:\/\/\S+$/i.test(metaText)) return extLink(metaText, metaText);
+        return document.createTextNode(metaText);
     }
   }
 

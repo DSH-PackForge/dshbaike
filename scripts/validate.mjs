@@ -1213,6 +1213,22 @@ function checkLinkShapes(ctx, reporter) {
   };
   for (const zone of ctx.zones) {
     (zone.data.items ?? []).forEach((item) => walk(zone.file, zone.lines, item?.links, (k) => lineOf(zone.lines, k)));
+    // 分区顶部的**入口卡**（`links` 是数组，与 items[].links 的 map 形状不同，上面 walk 覆盖不到）。
+    // 必须校验：build.mjs 会**静默丢弃**不合形状的 href —— 编辑者以为挂上了、页面上却没有。
+    // （评审就踩过：第三方项目在线版的 http:// 地址被丢，页面与校验都不吭声。）
+    const cards = Array.isArray(zone.data.links) ? zone.data.links : [];
+    cards.forEach((l, i) => {
+      if (!l || isMissing(l.href)) return;
+      const href = String(l.href).trim();
+      if (/^(?:[a-z0-9-]+\/)*[a-z0-9-]+\.html$/i.test(href) || /^https?:\/\//i.test(href)) return;
+      reporter.error(
+        zone.file,
+        lineOf(zone.lines, 'links'),
+        27,
+        `links[${i}] 的 href \`${href}\` 会被构建期丢弃`,
+        '入口卡只接受站内 .html 相对路径（如 mesh/index.html）或 http(s):// 绝对地址，否则这张卡不会出现在分区页上',
+      );
+    });
   }
   for (const entry of ctx.entries) {
     const providers = entry.data?.providedBy;

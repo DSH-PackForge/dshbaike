@@ -12,6 +12,12 @@ links:
   - label: 全量插件生态图（2625 个仓库）
     href: mesh/index.html
     note: 按功能分 19 个扇区的全量生态图，由第三方项目 dsh-plugin-mesh（MIT）提供、每小时自动采集；数字与分类未经本站核实
+  - label: 那张图的原项目（上游仓库）
+    href: https://github.com/WTStarMark/dsh-plugin-mesh
+    note: WTStarMark/dsh-plugin-mesh，MIT；采集规则、话题清单与自建方法都在它的 README 里
+  - label: 作者的在线版（http + 裸 IP）
+    href: http://104.129.51.126/
+    note: 作者自己部署的地址，随时可能变动；打不开就看上面那份我们托管的副本
 sections:
   - id: markets
     # collapsed: true → 这一节默认收起（说明与条目折进 <details>，内容仍在 HTML 里，
