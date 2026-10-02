@@ -71,10 +71,18 @@ const declared = [...opsSrc.matchAll(/^\s*title:\s*'([^']+)'/gm)].map((m) => m[1
 const applySrc = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'apply.yml'), 'utf8');
 const tplDir = EXTRA[0];
 
-// ① 四张「机器代改」表单（1-claim / 2-field / 3-replace / 4-zone-item）的标题前缀
-//    必须与 ops.mjs 声明的操作**一一对应**：一张表 = 一个意图（评审实测：合并成一张、
-//    操作在表单内选，体验更差——已经点了「改一句话」的人还要再选一次）。
-const botFormFiles = fs.readdirSync(tplDir).filter((f) => /^[1-4]-.*\.yml$/.test(f)).sort();
+// ① 「机器代改」表单的标题前缀必须与 ops.mjs 声明的操作**一一对应**：一张表 = 一个意图
+//    （评审实测：合并成一张、操作在表单内选，体验更差——已经点了「改一句话」的人还要再选一次）。
+//
+//    判定方式**不按文件名编号**：编号（1-4 机器代改 / 5 纠错 / 6 新增词条 / 7 站点改进）是给人读的，
+//    加第五类操作时它表达不了（新增词条是机器代改，却排在 6）。这里的判据是**署名契约**本身——
+//    带「内容变更」标签、且必填「GitHub 用户名」的表单就是机器代改表单。于是新增一类操作时，
+//    只要表单与 ops.mjs 对不上，检查就会 FAIL，而不会因为编号没挪位而静默放过。
+const isBotForm = (f) => {
+  const src = fs.readFileSync(path.join(tplDir, f), 'utf8');
+  return /^labels:\s*\[\s*"内容变更"/m.test(src) && /id: username[\s\S]*?required: true/.test(src);
+};
+const botFormFiles = fs.readdirSync(tplDir).filter((f) => f.endsWith('.yml') && isBotForm(f)).sort();
 const prefixes = botFormFiles.flatMap((f) =>
   [...fs.readFileSync(path.join(tplDir, f), 'utf8').matchAll(/^title:\s*"\[([^\]]+)\]\s*"/gm)].map((m) => m[1]));
 const routedOps = [...new Set(prefixes)].sort();
@@ -106,14 +114,21 @@ const noLabel = templates
   .filter(({ src }) => !/^labels:/m.test(src))
   .map(({ p }) => path.basename(p));
 
-// ④ 机器人代改的两张表单必须**必填** GitHub 用户名——署名契约（docs/14）：
+// ④ 机器人代改的表单必须**必填** GitHub 用户名——署名契约（docs/14）：
 // 署名靠它，所以它是输入里的必填项；少一处，那条路就会退化成「署不出名」。
-const botForms = templates.filter((p) => /^[1-4]-.*\.yml$/.test(path.basename(p)));
+// 这里的集合直接复用 ① 算出来的 botFormFiles（按标题前缀与 ops.mjs 对上的那些），
+// 不再按文件名编号挑选——否则新增一类操作、编号没挪位，这一项就会静默漏检。
+const botForms = botFormFiles.map((f) => path.join(tplDir, f));
 const missingUser = botForms.filter((p) => {
   const src = fs.readFileSync(p, 'utf8');
   const at = src.indexOf('label: GitHub 用户名');
   if (at < 0) return true;
-  return !/required:\s*true/.test(src.slice(at, at + 400));
+  // 只看**这个字段自己的块**（到下一个 `- type:` 为止），不要用固定字符窗口：
+  // 窗口会把后面字段的 required 也算进来，负例（把 required 改成 false）就触发不了检查。
+  const rest = src.slice(at);
+  const next = rest.search(/\n\s*- type:/);
+  const block = next < 0 ? rest : rest.slice(0, next);
+  return !/required:\s*true/.test(block);
 }).map((p) => path.basename(p));
 if (missingUser.length === 0) {
   process.stdout.write(`  OK   ${botForms.length} 张机器代改表单都把「GitHub 用户名」设为必填\n`);

@@ -118,7 +118,7 @@ async function main(argv) {
         reason: 'human-task',
         escalate: 'false',
         fingerprint: fp,
-        message: '这类请求由**人工**处理（机器人只做四类代改：认领维护 / 改一个字段 / 改正文里的一句话 / 补充分区条目）。表单没有问题，你不需要再改什么。',
+        message: '这类请求由**人工**处理（机器人做的是这五类代改：认领维护 / 改一个字段 / 改正文里的一句话 / 补充分区条目 / 新增词条）。表单没有问题，你不需要再改什么。',
       });
       return 1;
     }

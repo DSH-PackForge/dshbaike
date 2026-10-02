@@ -21,6 +21,7 @@ import {
 // 之前这里从 registry.mjs 导入导致 `does not provide an export named 'loadRegistry'`，领号整个跑不起来）
 import { loadRegistry } from './lib/data.mjs';
 import { displayPath, fromRoot, todayLocal } from './lib/util.mjs';
+import { skeleton } from './lib/skeleton.mjs';
 import { SchemaError } from './lib/yaml.mjs';
 
 const USAGE = `用法：node scripts/new.mjs <kind> "<标题>" [--dry-run]
@@ -88,63 +89,6 @@ function main(argv) {
   process.stdout.write(`编号写入：${result.registryPath}\n`);
   process.stdout.write(`registry 条目：n=${result.n} kind=${result.kind} title=${result.entry.title} createdAt=${result.entry.createdAt} status=${result.entry.status}\n`);
   return 0;
-}
-
-/** 生成词条骨架（front-matter 只放公共必填项 + 该 kind 的注释提示） */
-function skeleton(kind, title, date) {
-  const lines = [
-    `title: ${quote(title)}`,
-    'category: []            # TODO 填 taxonomy 的叶子节点 id（如 concept.runtime）；规则 6 是 error',
-    'tags: []',
-    'summary: TODO 一句话摘要，用于列表与搜索',
-    'status: draft           # draft | published | archived | deleted（必须与 registry 一致）',
-    `updatedAt: ${date}`,
-  ];
-
-  const kindHints = {
-    concept: ['# layer: runtime | plugin | agent | workspace | ecosystem', '# spec: 权威出处（代码路径或规范文档 URL）'],
-    plugin: [
-      '# repo: owner/repo        # npm 与 repo 至少给一个（规则 16）',
-      '# npm: "@scope/name"',
-      '# install: dsh plugin add <…>',
-      '# role: bundle | client | bundle+client | theme | compat',
-      '# positioning: TODO 用生态语境说清它解决什么问题（不要照抄上游 description）',
-      '# entryGate: tutorial     # official | tutorial | pack | maintainer（插件收录门槛，规则 15）',
-    ],
-    tutorial: [
-      '# difficulty: beginner | intermediate | advanced',
-      '# prereq: [concept/1]',
-      '# appliesTo: "dsh 0.1.0-rc.6 实测；0.2.x 未核实"   # 必须带「实测 / 未核实」口径（规则 11）',
-      '# origin: original        # original | external',
-      '# related: []',
-    ],
-    pack: ['# marketId: <owner>.<repo>', '# packType: profile | dshhome', '# fitFor: TODO 这包适合谁（人工判断）'],
-    launcher: [
-      '# launcherId: dshl | hdsl | dsh-packforge-app | official-desktop | dsh-cli',
-      '# url: …',
-      '# platforms: []',
-    ],
-    source: [
-      '# url: …',
-      '# zones: [plugins]',
-      '# sourceKind: plugin-directory | guide | market | registry | spec | tool | topic',
-      '# relation: complementary | overlapping | upstream',
-      '# howto: TODO 怎么用它 / 怎么向它投稿',
-      '# linkOut: …',
-    ],
-  };
-  lines.push(...(kindHints[kind] ?? []));
-
-  const body = ['## TODO 第一节', '', '这里写正文（中文）。标题从二级开始，构建期会生成锚点与 TOC。', ''].join('\n');
-  return `---\n${lines.join('\n')}\n---\n\n${body}`;
-}
-
-function quote(text) {
-  const s = String(text);
-  if (/^[\p{Letter}\p{Number}][\p{Letter}\p{Number} \u3000._@/-]*$/u.test(s) && !/^(true|false|null|~)$/i.test(s)) {
-    return s;
-  }
-  return JSON.stringify(s);
 }
 
 try {

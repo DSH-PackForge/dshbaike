@@ -18,9 +18,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { addMaintainer, readMaintainers } from '../claim.mjs';
-import { loadRegistry, loadEntryFile } from './data.mjs';
-import { parseEntryId } from './registry.mjs';
-import { normalizeUsername, usernameProblem } from './util.mjs';
+import { DATA_DIR, loadRegistry, loadEntryFile } from './data.mjs';
+import { allocate, parseEntryId, REGISTRY_PATH } from './registry.mjs';
+import { skeleton } from './skeleton.mjs';
+import { ENTRY_KINDS, exists, normalizeUsername, readText, todayLocal, usernameProblem } from './util.mjs';
 
 /* ------------------------------------------------------------------ */
 /* Issue Forms 解析                                                    */
@@ -58,6 +59,52 @@ export function parseTitle(title) {
 /* ------------------------------------------------------------------ */
 /* 公共工具                                                            */
 /* ------------------------------------------------------------------ */
+
+
+/**
+ * 找同类型 + 同标题的**草稿**：用于「新增词条」的幂等。
+ *
+ * 为什么需要：机器人重跑一次（或同一份表单被重复提交）时，如果每次都重新领号，
+ * 就会一路吃掉编号。规则是——同标题的草稿已经存在，就复用它那个号。
+ */
+function findDraftByTitle(kind, title) {
+  const dir = path.join(DATA_DIR, kind);
+  if (!exists(dir)) return null;
+  for (const name of fs.readdirSync(dir).sort()) {
+    if (!/^\d+\.md$/.test(name)) continue;
+    const text = fs.readFileSync(path.join(dir, name), 'utf8');
+    // status 行后面跟着 # draft | published … 的说明注释，所以只取第一个词（踩过：整行比对导致幂等失效）
+    const status = ((/^status:\s*([A-Za-z]+)/m.exec(text) ?? [])[1] ?? '').trim();
+    const found = ((/^title:\s*(.+)$/m.exec(text) ?? [])[1] ?? '').trim().replace(/^["']|["']$/g, '');
+    if (status !== 'draft' || found !== title) continue;
+    const date = ((/^updatedAt:\s*(.+)$/m.exec(text) ?? [])[1] ?? '').trim();
+    const n = Number(name.slice(0, -3));
+    return { n, rel: `data/${kind}/${n}.md`, date: date || todayLocal() };
+  }
+  return null;
+}
+
+/** 表单的「初稿正文」+「事实来源」→ 词条正文（来源永远保留在正文里，便于维护者核对） */
+function renderNewEntryBody({ draftBody, sources, user }) {
+  const body = draftBody
+    ? draftBody
+    : '## TODO 第一节\n\n（还没有正文。可以继续用词条页的「改一句话」逐步补，或直接 fork + PR。）';
+  const src = sources
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => '- ' + line)
+    .join('\n');
+  return [
+    body,
+    '## 事实来源',
+    '',
+    src,
+    '',
+    `> 由 @${user} 在 Issue 表单里提供；发布前请逐条核对——本站只写能指到出处的事实。`,
+    '',
+  ].join('\n');
+}
 
 /** 读词条文件并返回 { entry, raw }；不存在则 null */
 export function readEntry(id) {
@@ -127,6 +174,77 @@ export function formatScalar(field, rawValue) {
 /* ------------------------------------------------------------------ */
 
 export const OPS = {
+  /**
+   * 新增词条：领号 + 建 draft 骨架 + 把表单内容填进去（docs/14 §1.2 的第 5 类代改）。
+   *
+   * 并发与编号（评审问过「撞号怎么办」）：
+   *   · 号取自**当前 main**（workflow 检出的是最新 main），nextNumber = max(counters, 已分配最大号) + 1；
+   *   · 同类型 + 同标题的草稿已存在就**复用它的号**（重跑与重复提交都不会继续吃号）；
+   *   · 真并发（两个 Issue 同时领到同一个号）时，第二个 PR 会在 registry.yml 上**冲突**——
+   *     可见、可恢复，维护者重跑一次即可；不会静默改错。
+   * 代价要写明白：**编号是永久的**，所以一个最终没合并的草稿 PR 会永久占掉一个号。
+   *
+   * 建出来的是 status: draft —— 不合并就永远不上线（两道闸照旧）。
+   */
+  'new-entry': {
+    id: 'new-entry',
+    title: '新增词条',
+    summary: (v) => `领号并建 draft 骨架（${v.id}）`,
+    apply({ form }) {
+      const who = requireUsername(form);
+      if (who.error) return who.error;
+      const user = who.username;
+
+      const rawKind = String(form['词条类型'] ?? '').trim();
+      const kind = (rawKind.match(/^[a-z][a-z-]*/) ?? [''])[0];
+      const title = String(form['标题'] ?? '').trim();
+      const summary = String(form['一句话摘要'] ?? '').trim();
+      const draftBody = String(form['初稿正文（可选）'] ?? '').trim();
+      const sources = String(form['事实来源'] ?? '').trim();
+
+      if (!kind || !ENTRY_KINDS.includes(kind)) {
+        return { ok: false, reason: 'incomplete', message: `「词条类型」没选，或不在允许值里（${ENTRY_KINDS.join(' | ')}）。` };
+      }
+      if (!title) return { ok: false, reason: 'incomplete', message: '表单缺「标题」。' };
+      if (!summary) return { ok: false, reason: 'incomplete', message: '表单缺「一句话摘要」——它会用在卡片与搜索里。' };
+      if (!sources) {
+        return { ok: false, reason: 'incomplete', message: '表单缺「事实来源」。本站只写能指到出处的事实；确实查不到的写「未核实」，但不能空着。' };
+      }
+
+      const date = todayLocal();
+      const body = renderNewEntryBody({ draftBody, sources, user });
+
+      const dup = findDraftByTitle(kind, title);
+      if (dup) {
+        return {
+          ok: true,
+          changed: false,
+          writes: [{ path: dup.rel, text: skeleton(kind, title, dup.date, { summary, body }) }],
+          id: `${kind}/${dup.n}`,
+          user,
+          credited: user,
+          summary: `复用已分配的编号 ${kind}/${dup.n}（同标题草稿已存在，未再吃号）`,
+        };
+      }
+
+      const alloc = allocate({ kind, title, now: date });
+      return {
+        ok: true,
+        changed: true,
+        writes: [
+          { path: `data/${kind}/${alloc.n}.md`, text: skeleton(kind, title, date, { summary, body }) },
+          // allocate() 已经把编号写进 registry 了；这里把同一份内容也作为 write 交出去，
+          // 好让幂等比对与提交都走同一条路（内容一致，重复落盘无害）。
+          { path: 'data/registry.yml', text: readText(REGISTRY_PATH) },
+        ],
+        id: `${kind}/${alloc.n}`,
+        user,
+        credited: user,
+        summary: `领号 ${kind}/${alloc.n}、建 draft 骨架（写完再发布）`,
+      };
+    },
+  },
+
   /** 认领维护：把用户名加进 maintainers（唯一一处改动） */
   claim: {
     id: 'claim',
@@ -320,14 +438,14 @@ export const OPS = {
 export const CONTENT_CLASS_TITLE = '内容变更';
 
 /**
- * **人工处理**的贡献类型（与 OPS 里那四类机器代改相对）。
+ * **人工处理**的贡献类型（与 OPS 里那五类机器代改相对）。
  *
- * 这些请求本身是合理的，只是机器人不做：新增词条要分配编号、纠错要人判断、
+ * 这些请求本身是合理的，只是机器人不做：纠错要人判断、
  * 写教程/派生概念是创作、站点改进是改站本身。登记在这里是为了让机器人**明确回一句
  * 「这类由人工处理」**——而不是回「认不出这是哪种表单，请用模板重新提交」
  * （作者用的就是模板，那句话等于死胡同）。
  */
-export const HUMAN_TASKS = ['新增词条', '纠错', '站点改进', '为它写一篇教程', '派生概念', '收录申请'];
+export const HUMAN_TASKS = ['纠错', '站点改进', '为它写一篇教程', '派生概念', '收录申请'];
 
 /** 标题是否属于「人工处理」那一类 */
 export function isHumanTask(title) {

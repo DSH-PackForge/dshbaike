@@ -9,7 +9,7 @@ name: 机器人代改（两道闸：Issue 里 /approve，PR 再 review）
 #   ② 执行完开 PR，**merge 之前再批一次**：main 的分支保护要求 Code Owners 批准（docs/14 §4）。
 #
 # 覆盖的操作（scripts/lib/ops.mjs 声明，Issue 标题前缀决定用哪个）：
-#   [认领维护] [改一个字段] [改正文里的一句话] [补充分区条目]
+#   [认领维护] [改一个字段] [改正文里的一句话] [补充分区条目] [新增词条]
 # 机器人改不了的情形（嵌套结构、定位不唯一、找不到原文）会明确拒绝并请作者 fork + PR。
 
 on:
@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   # ---- 第一道闸（a）：提交后立刻干跑并回帖，等维护者 /approve -------------------
-  # 只处理**内容变更**类的**四张单一意图表单**（前缀与 scripts/lib/ops.mjs 的操作标题一一对应，
+  # 只处理**内容变更**类的**五张单一意图表单**（前缀与 scripts/lib/ops.mjs 的操作标题一一对应，
   # 由 scripts/check-workflows.mjs 强制一致）。像「站点改进」那种关于百科本身的 Issue
   # 由人处理，机器人**不插话**——插话只会变成噪音。
   #
@@ -41,7 +41,8 @@ jobs:
       (startsWith(github.event.issue.title, '[认领维护]') ||
        startsWith(github.event.issue.title, '[改一个字段]') ||
        startsWith(github.event.issue.title, '[改正文里的一句话]') ||
-       startsWith(github.event.issue.title, '[补充分区条目]'))
+       startsWith(github.event.issue.title, '[补充分区条目]') ||
+       startsWith(github.event.issue.title, '[新增词条]'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,15 +96,15 @@ jobs:
           elif [ "$REASON" = "human-task" ]; then
             gh issue comment "$ISSUE" -R "$REPO" --body "🙋 **这类请求由人工处理**——表单没问题，你不需要再改什么。
 
-          > \${MESSAGE}
+          > ${MESSAGE}
 
           维护者会接手（一般几天内）。如果你愿意自己动手更快，也可以直接改文件提 PR：
 
-          1. 打开 https://github.com/\${REPO}/edit/main/data/ 找到对应目录（新增词条就先照抄一条同类词条，比如 `data/launcher/9.md`）；
+          1. 打开 https://github.com/${REPO}/edit/main/data/ 找到对应目录（新增词条就先照抄一条同类词条，比如 `data/launcher/9.md`）；
           2. 改完在提交对话框里选 **Create a new branch … and start a pull request**；
           3. 在 PR 里说清写的是什么、凭什么这么写（**出处**：上游链接 / 规范路径 / 代码位置）。
 
-          编号是永久的：断号不回填、删除留墓碑；内容纪律见 [CONTRIBUTING.md](https://github.com/\${REPO}/blob/main/CONTRIBUTING.md)。"
+          编号是永久的：断号不回填、删除留墓碑；内容纪律见 [CONTRIBUTING.md](https://github.com/${REPO}/blob/main/CONTRIBUTING.md)。"
           elif [ "$ESCALATE" = "true" ]; then
             gh issue comment "$ISSUE" -R "$REPO" --body "🙅 这个改动机器人**不能安全地做**：
 
@@ -133,7 +134,8 @@ jobs:
       (startsWith(github.event.issue.title, '[认领维护]') ||
        startsWith(github.event.issue.title, '[改一个字段]') ||
        startsWith(github.event.issue.title, '[改正文里的一句话]') ||
-       startsWith(github.event.issue.title, '[补充分区条目]'))
+       startsWith(github.event.issue.title, '[补充分区条目]') ||
+       startsWith(github.event.issue.title, '[新增词条]'))
     runs-on: ubuntu-latest
     outputs:
       allowed: ${{ steps.gate.outputs.allowed }}

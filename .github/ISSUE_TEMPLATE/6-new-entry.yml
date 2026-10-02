@@ -6,10 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        **这类请求由人工处理**（机器人只做四类代改：认领维护 / 改一个字段 / 改正文一句话 / 补充分区条目）。
-        提交后维护者会**分配编号、建好骨架、开 PR**并在本 Issue 下回帖——你不需要装 Node，也不用本地跑脚本。
-        想更快也可以自己来：照抄一条同类词条（如 `data/launcher/9.md`）改内容，提 PR 即可。
-        编号是永久的：断号不回填、删除留墓碑。
+        提交后机器人会**分配编号、用你填的内容建好 draft 骨架、开一个 PR**，并在本 Issue 下回帖编号。
+        你不需要装 Node，也不用本地跑脚本；**合并前是草稿态，不会上线**，你可以慢慢补。
+        编号是永久的：断号不回填、删除留墓碑（所以一个一直没合并的草稿会占掉那个号）。
   - type: dropdown
     id: kind
     attributes:
@@ -59,5 +58,13 @@ body:
       description: |
         我们只写能指到出处的事实。请列出你依据的规范文件、代码路径或上游链接；
         查不到的写「未核实」，不要猜。
+    validations:
+      required: true
+  - type: input
+    id: username
+    attributes:
+      label: GitHub 用户名
+      description: 必填——署名要用它：这条改动的提交作者会写成这个名字。只填用户名本身（不是显示名、不是邮箱、不要 @）；机器人会核实账号存在，填错直接拒绝。
+      placeholder: your-github-name
     validations:
       required: true
