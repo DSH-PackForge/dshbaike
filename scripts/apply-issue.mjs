@@ -126,6 +126,9 @@ function main(argv) {
     files: result.writes.map((w) => w.path).join(','),
     summary: result.summary ?? found.op.title,
     fingerprint: fp,
+    // 署名：提这个 Issue 的人（GitHub 认过的身份）+ 表单里写的用户名（认领维护那张表有）
+    author: process.env.ISSUE_AUTHOR ?? '',
+    credited: result.credited ?? '',
   });
   return 0;
 }

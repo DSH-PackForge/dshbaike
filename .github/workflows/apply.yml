@@ -162,6 +162,7 @@ jobs:
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
           EXPECT_FINGERPRINT: ${{ needs.gate.outputs.fingerprint }}
         run: node scripts/apply-issue.mjs
 
@@ -190,16 +191,20 @@ jobs:
         if: steps.apply.outputs.ok == 'true'
         run: node scripts/validate.mjs
 
-      - name: 开 PR（已执行过就跳过；组织禁止建 PR 时退回「一键开 PR」链接）
+      - name: 开 PR（署名贡献者；已执行过就跳过；建不了 PR 时退回链接）
         if: steps.apply.outputs.ok == 'true'
         id: pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 优先用 BOT_TOKEN（若仓库配了这个 secret）：组织策略禁止 Actions 创建 PR 时，
+          # 用一个人/机器账号的令牌就能绕过这条限制。没配就退回 GITHUB_TOKEN（受策略限制）。
+          GH_TOKEN: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
           ISSUE: ${{ github.event.issue.number }}
           OP: ${{ steps.apply.outputs.op }}
           SUMMARY: ${{ steps.apply.outputs.summary }}
           FILES: ${{ steps.apply.outputs.files }}
-          ACTOR: ${{ needs.gate.outputs.actor }}
+          AUTHOR: ${{ steps.apply.outputs.author }}
+          CREDITED: ${{ steps.apply.outputs.credited }}
+          APPROVER: ${{ needs.gate.outputs.actor }}
         run: |
           set -euo pipefail
           branch="bot/${OP}-${ISSUE}"
@@ -220,6 +225,28 @@ jobs:
             exit 0
           fi
 
+          # ---- 署名：把贡献者写成提交的共同作者（GitHub 会在提交与 PR 上显示他们） ----
+          # 提 Issue 的人（GitHub 认过的身份）+ 表单里写的用户名（认领维护那张表有），去重。
+          credits=()
+          for u in "$AUTHOR" "$CREDITED"; do
+            [ -z "$u" ] && continue
+            [ "$u" = "github-actions[bot]" ] && continue
+            case " ${credits[*]-} " in *" $u "*) continue ;; esac
+            credits+=("$u")
+          done
+          trailers=""
+          credit_line=""
+          for u in "${credits[@]+"${credits[@]}"}"; do
+            # noreply 邮箱才是账号认得的身份：现代格式是 <id>+<username>@users.noreply.github.com
+            uid=$(gh api "users/${u}" --jq '.id' 2>/dev/null || echo "")
+            email="${u}@users.noreply.github.com"
+            [ -n "$uid" ] && email="${uid}+${u}@users.noreply.github.com"
+            trailers="${trailers}Co-authored-by: ${u} <${email}>
+"
+            credit_line="${credit_line}@${u} "
+          done
+          echo "署名：${credit_line:-（无）}"
+
           git config user.name "dshbaike-bot"
           git config user.email "bot@users.noreply.github.com"
           git checkout -B "$branch"
@@ -227,16 +254,20 @@ jobs:
           if git diff --cached --quiet; then
             echo "没有实际改动"; echo "mode=none" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          git commit -m "chore(${OP}): ${SUMMARY}（来自 Issue #${ISSUE}）"
+          # 提交信息带上 Co-authored-by：贡献者的头像会出现在这条提交上，也算进他们的贡献
+          printf 'chore(%s): %s（来自 Issue #%s）\n\n%s' "$OP" "$SUMMARY" "$ISSUE" "$trailers" > /tmp/msg.txt
+          git commit -F /tmp/msg.txt
           git push --force-with-lease -u origin "$branch"
           body=$(printf '%s\n' \
-            "由 Issue #${ISSUE} 触发的自动改动，批准人：@${ACTOR}。" \
+            "由 Issue #${ISSUE} 的**表单**触发的自动改动。" \
             "" \
+            "- 提出者：${credit_line:-（未知）}（提交里已署名为 Co-authored-by）" \
+            "- 批准人：@${APPROVER}" \
             "- 操作：\`${OP}\`" \
             "- 改了：${SUMMARY}" \
             "- 文件：\`${FILES}\`（**只动这些**）" \
             "" \
-            "第一道闸（请求审批）已过；**这是第二道闸：请再审一遍具体改了什么**，然后再合并。" \
+            "第一道闸（\`/approve\`）已过；**这是第二道闸：请再审一遍具体改了什么**，然后再合并。" \
             "校验器（validate.mjs）已通过。机器人不会自己合并。")
           if url=$(gh pr create --base main --head "$branch" \
               --title "chore(${OP}): ${SUMMARY}（#${ISSUE}）" \

@@ -122,7 +122,7 @@ export const OPS = {
           ? { ok: false, reason: 'already', message: `${user} 已经是这一条的维护者。` }
           : { ok: false, reason: 'unsupported', message: '这一条的 front-matter 无法识别，请 fork 后手工改。' };
       }
-      return { ok: true, changed: true, writes: [{ path: found.rel, text: result.text }], id: found.parsed.id, user, summary: `把 ${user} 加进 maintainers` };
+      return { ok: true, changed: true, writes: [{ path: found.rel, text: result.text }], id: found.parsed.id, user, credited: user, summary: `把 ${user} 加进 maintainers` };
     },
   },
 
