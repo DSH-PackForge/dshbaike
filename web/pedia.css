@@ -2461,3 +2461,143 @@ body {
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   视觉升级 v1（docs/08 §4）
+   --------------------------------------------------------------------------
+   集中放在文件末尾**覆盖**前面的组件规则：同优先级后者胜，所以这一整块可以
+   整体删掉回退，也不会散进原有规则里难以维护。
+
+   改的是"现代化"里真正影响观感的四件事：圆角、阴影、过渡、焦点环。
+   没有引入任何框架、也没有引入网络字体——观感来自这些细节，不来自 React。
+   ========================================================================== */
+
+:root {
+  --r-box: 10px;
+  --r-card: 12px;
+  --r-pill: 999px;
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
+  --shadow-2: 0 6px 16px rgba(16, 24, 40, 0.09), 0 2px 5px rgba(16, 24, 40, 0.05);
+  --dur-fast: 0.14s;
+  --dur: 0.2s;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* 面上的容器：大圆角；需要层次的给柔和阴影（正文里的引用块/代码块只给圆角，避免"到处浮起来"） */
+.card,
+.zonecard,
+.box,
+.lead,
+.refcard,
+.completeness,
+.notice,
+.dropzone,
+.codeblock,
+.subsec__intro {
+  border-radius: var(--r-card);
+}
+
+.card,
+.zonecard,
+.box,
+.refcard,
+.completeness,
+.dropzone {
+  box-shadow: var(--shadow-1);
+}
+
+/* 交互元素统一过渡：悬停不再"硬跳" */
+.card,
+.zonecard,
+.kindchip,
+.tag,
+.badge,
+.btn,
+.icon-btn,
+.tabs__btn,
+.toc__list a,
+.zones__list a,
+.search__hit {
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+/* 卡片悬停：轻微抬升（1px 就够，多了会晃） */
+.card:hover,
+.zonecard:hover {
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+
+/* 标签 / 徽章 / 按钮：胶囊化 */
+.tag,
+.badge,
+.kindchip,
+.btn {
+  border-radius: var(--r-pill);
+}
+
+button.tag:hover,
+.btn:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-inset);
+}
+
+/* 排版：正文松一点、标题字距收一点 */
+body {
+  line-height: 1.72;
+}
+
+.titlebar h1,
+.pagehead h1 {
+  letter-spacing: -0.01em;
+}
+
+.section__head h2,
+.subsec__title {
+  letter-spacing: -0.005em;
+}
+
+/* 区块之间更透气；卡片内边距略放大 */
+.subsection {
+  margin-top: 36px;
+}
+
+.card {
+  padding: 12px 14px;
+}
+
+/* 链接：下划线留一点距离，不再贴着字 */
+.prose a,
+.crumbs a,
+.footer a,
+.infotable dd a,
+.toc__list a {
+  text-underline-offset: 2px;
+}
+
+/* 焦点环：键盘用户看得见（鼠标点击不出现） */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 信息表：只留细分隔线，弱化硬边框感 */
+.infotable__row {
+  border-bottom: 1px solid var(--border);
+}
+
+/* 深色模式：阴影在暗底上几乎看不见，换成更深、更收敛的两档 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.55);
+  }
+}
+
+:root[data-theme="dark"] {
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
