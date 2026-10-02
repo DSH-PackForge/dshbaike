@@ -205,13 +205,17 @@ jobs:
           branch="bot/${OP}-${ISSUE}"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
-          # 保险三：同一个请求不重复执行
-          existing=$(gh pr list --head "$branch" --state all --json url --jq '.[0].url // empty' 2>/dev/null || true)
-          if [ -n "$existing" ]; then
-            echo "这个请求已经执行过：$existing"
-            echo "mode=duplicate" >> "$GITHUB_OUTPUT"
-            echo "url=$existing" >> "$GITHUB_OUTPUT"
-            exit 0
+          # 保险三：同一个请求不重复执行。判据是**内容**而不是「有没有 PR」——
+          # 组织策略挡住建 PR 时只有分支没有 PR，那时按 PR 判断会重复推送；
+          # 而按内容判断，还能正确放行「改过正文后重新批准」的情形（内容不同就该推）。
+          if git fetch --quiet origin "$branch" 2>/dev/null; then
+            if git diff --quiet "origin/$branch" -- .; then
+              existing=$(gh pr list --head "$branch" --state all --json url --jq '.[0].url // empty' 2>/dev/null || true)
+              echo "内容与 $branch 上已执行的一致，不重复执行"
+              echo "mode=duplicate" >> "$GITHUB_OUTPUT"
+              echo "url=$existing" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           fi
 
           git config user.name "dshbaike-bot"
@@ -260,7 +264,13 @@ jobs:
           **还有第二道闸**：维护者审一遍 PR 并批准后才会合并（main 的分支保护要求 Code Owners 批准）。"
             gh issue close "$ISSUE" --reason completed || true
           elif [ "$MODE" = "duplicate" ]; then
-            gh issue comment "$ISSUE" --body "ℹ️ 这个请求已经执行过了：${PR_URL}"
+            if [ -n "${PR_URL:-}" ]; then
+              gh issue comment "$ISSUE" --body "ℹ️ 这个请求已经执行过了：${PR_URL}"
+            else
+              gh issue comment "$ISSUE" --body "ℹ️ 这个请求已经执行过了，内容与分支 \`${BRANCH}\` 完全一致，没有重复推送。
+
+          开 PR：https://github.com/${REPO}/pull/new/${BRANCH}"
+            fi
           elif [ "$MODE" = "manual" ]; then
             gh issue comment "$ISSUE" --body "✅ 改动已经做好并推到分支 \`${BRANCH}\`，**只差最后一下**：
 
