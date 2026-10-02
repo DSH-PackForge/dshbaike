@@ -2601,3 +2601,80 @@ body {
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.55);
 }
+
+/* ==========================================================================
+   视觉升级 v1.1：卡片层次（评审：卡片还不是很明显）
+   --------------------------------------------------------------------------
+   根因不是圆角，而是**白卡贴白底**：body 与 .card 都用 var(--bg)（#fff），
+   两者之间只剩一根 1px 边框 → 卡片没有"面"的感觉。
+   修法是把"页面底色"与"卡片的面色"分成两个令牌，白面浮在浅灰底上；
+   阴影做层次，边框退到几乎看不见（只做兜底）。
+   ========================================================================== */
+
+:root {
+  --bg-page: #e3e9f2;
+  --card-border: transparent;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.08), 0 10px 26px rgba(16, 24, 40, 0.13);
+  --shadow-card-hover: 0 4px 10px rgba(16, 24, 40, 0.16), 0 20px 44px rgba(16, 24, 40, 0.20);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-page: #0f1215;
+    --card-border: rgba(255, 255, 255, 0.09);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg-page: #0f1215;
+  --card-border: rgba(255, 255, 255, 0.09);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+body {
+  background: var(--bg-page);
+}
+
+/* 卡片与盒子：白面 + 更强阴影 + 几乎看不见的边框 */
+.card,
+.zonecard,
+.box,
+.lead,
+.refcard,
+.completeness,
+.dropzone {
+  background: var(--bg);
+  border-color: var(--card-border);
+  box-shadow: var(--shadow-card);
+}
+
+.card:hover,
+.zonecard:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: transparent;
+  transform: translateY(-2px);
+}
+
+/* 卡片之间拉开一点，层次才看得出来 */
+.cards {
+  gap: 16px;
+}
+
+.card {
+  padding: 16px 18px;
+}
+
+/* 卡片标题更醒目：它现在是一张"面"的主标题，不是列表项 */
+.card__name {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+/* 分区页的二级分区卡片同样处理（首页用的是 .zonecard） */
+.zonecard {
+  padding: 12px 14px;
+}
