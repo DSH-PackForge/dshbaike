@@ -290,6 +290,11 @@ jobs:
             echo "与 $branch 上已执行的内容一致（${FILES}），不重复执行"
             echo "mode=duplicate" >> "$GITHUB_OUTPUT"
             echo "url=$existing" >> "$GITHUB_OUTPUT"
+            # 这条路是「同样的改动又提交了一次」：不重推分支，但如果那个 PR 还开着，
+            # 顺手把 auto-merge 补挂上（比如 PR 是挂上这个功能之前开的，或者上次挂失败了）。
+            if [ -n "$existing" ] && ! gh pr merge -R "$REPO" "$existing" --auto --squash 2>/dev/null; then
+              echo "（那个 PR 的 auto-merge 没补挂上，不影响）"
+            fi
             exit 0
           fi
 
@@ -368,14 +373,23 @@ jobs:
             "- 改了：${SUMMARY}" \
             "- 文件：\`${FILES}\`（**只动这些**）" \
             "" \
-            "第一道闸（\`/approve\`）已过；**这是第二道闸：请再审一遍具体改了什么**，然后再合并。" \
-            "校验器（validate.mjs）已通过。机器人不会自己合并。")
+            "第一道闸（\`/approve\`）已过；**这是第二道闸：请再审一遍具体改了什么**。" \
+            "审完**点一次 Approve 就行**——本 PR 已挂 auto-merge（squash），批准后会自动合并，" \
+            "不需要再点一次「合并」。（万一批准之后本分支又推了新提交，分支保护会作废这次批准、" \
+            "自动合并停在原地等你重批——那是设计如此，不是故障。）" \
+            "校验器（validate.mjs）已通过。")
           if url=$(gh pr create -R "$REPO" --base main --head "$branch" \
               --title "chore(${OP}): ${SUMMARY}（#${ISSUE}）" \
               --label "bot-pr,needs-review" \
               --body "$body" 2>pr-error.txt); then
             echo "mode=auto" >> "$GITHUB_OUTPUT"
             echo "url=$url" >> "$GITHUB_OUTPUT"
+            # 挂上 auto-merge：第二道闸一过就自动合并，评审只点一次 Approve。
+            # 本仓库没有必需状态检查，所以「批准」就是最后一个条件。
+            # 挂不上也不影响正事——PR 照样在，人工合并即可，所以只提示、不失败。
+            if ! gh pr merge -R "$REPO" "$url" --auto --squash 2>merge-error.txt; then
+              echo "auto-merge 没挂上（不影响：人工合并即可）：$(tail -n 1 merge-error.txt)"
+            fi
           else
             echo "mode=manual" >> "$GITHUB_OUTPUT"
             echo "原因：$(tail -n 1 pr-error.txt)"
