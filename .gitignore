@@ -4,6 +4,7 @@ web/*/*.html
 web/*.html
 !web/index.html
 !web/*.template.html
+!web/promo.html
 
 # ä¾èµ–ä¸ç¼“å­˜
 node_modules/
@@ -21,5 +22,5 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
-# ¹¹½¨Çåµ¥£¨»úÆ÷×´Ì¬£¬²»Èë¿â£»¼û docs/10 ¡ì1£©
+# æ„å»ºæ¸…å•ï¼ˆæœºå™¨çŠ¶æ€ï¼Œä¸å…¥åº“ï¼›è§ docs/10 Â§1ï¼‰
 web/.pedia-manifest.json
