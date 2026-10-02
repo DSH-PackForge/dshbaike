@@ -176,9 +176,9 @@ entries:
     status: published
   - n: 1
     kind: spec
-    title: '规范编号 1（占位）'
+    title: 'DSH 社区生态互操作规范（dsh-ecosystem-spec）'
     createdAt: 2026-10-02
-    status: draft
+    status: published
   - n: 2
     kind: spec
     title: 'DSH-PackForge 规范仓库'

@@ -5,7 +5,7 @@
 #   ① 这六份规范**同属一个仓库**（DSH-PackForge/DSH-PackForge 的 specs/），原先拆成 8 条条目过度了；
 #   ② 收敛后又出现「两个条目指向同一条词条」的情况——条目数读起来是虚的。
 # 现在：**一节一条**，条目数 = 真正的内容单位。
-#   · spec/1 = 占位编号位（draft，先不放内容）
+#   · spec/1 = DSH 社区生态互操作规范（dsh-ecosystem-spec，社区侧总目）
 #   · spec/2 = 规范仓库总览（六份现行规范 + 历史版本都在这一条里）
 zone: specs
 title: 规范与协议
@@ -22,6 +22,17 @@ sections:
 howto: 按问题找出处：问「一个包能声明什么」看 manifest；问「.dspack 怎么装、文件落到哪」看 pack-structure；问「怎么才会被市场收录」看 publishing；问「启动器 canonical ID 与版本怎么判」看 launcher-registry；问「插件之间怎么互相告知版本与兼容需求、插件怎么写才与上游解耦」看社区的 dsh-std（元协议本体）；问「profile / patch 层 / DSH_HOME 是什么」看 DSH 本体那一侧——本站把这部分按概念词条写。要改规范就向对应的仓库提 PR，别在实现里私自分叉。
 itemFields: [specVersion, specStatus, fileName]
 items:
+  - name: DSH 社区生态互操作规范（dsh-ecosystem-spec）
+    section: current
+    blurb: 社区版互操作协议：由 dsh-TUI 与 DSH-Desktop-EAC 团队联合发起，收录插件元协议 dsh-std（插件如何告诉别人自己的版本、适配的 DSH 版本与兼容性需求）与运行环境元协议 dsh-distribution（多个整合包或独立运行时如何共存、互相通讯并隔离）及相关子协议，另有 registry、governance 与工程规范。项目自我说明为「并非官方标准」，只约束自愿采纳者。70 star（快照 2026-10-02）。
+    specVersion: null
+    specStatus: current
+    fileName: README.md
+    source: specs
+    entry: spec/1
+    tags: ["生态地基", "规范"]
+    links:
+      spec: https://github.com/T-Auto/dsh-ecosystem-spec
   - name: DSH-PackForge 规范仓库
     section: current
     blurb: 现行六份规范都在这一个仓库里：manifest v5（包里声明什么）、pack-structure v3（.dspack 怎么装）、index（市场索引 schemaVersion 2）、publishing v1（怎么被收录）、launcher-registry（启动器 canonical ID 表）、workspace-config v1（.dshpkcfg 格式）。一条词条讲清它们的分工与互相引用。
@@ -33,17 +44,6 @@ items:
     tags: ["生态地基", "规范"]
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/tree/main/specs
-  - name: DSH 社区生态互操作规范（dsh-ecosystem-spec）
-    section: current
-    blurb: 社区版互操作协议：由 dsh-TUI 与 DSH-Desktop-EAC 团队联合发起，收录插件元协议 dsh-std（插件如何告诉别人自己的版本、适配的 DSH 版本与兼容性需求）与运行环境元协议 dsh-distribution（多个整合包或独立运行时如何共存、互相通讯并隔离）及相关子协议，另有 registry、governance 与工程规范。项目自我说明为「并非官方标准」，只约束自愿采纳者。70 star（快照 2026-10-02）。
-    specVersion: null
-    specStatus: current
-    fileName: README.md
-    source: specs
-    entry: null
-    tags: ["生态地基", "规范"]
-    links:
-      spec: https://github.com/T-Auto/dsh-ecosystem-spec
   - name: 历史版本（manifest v1–v4、pack-structure v1–v2）
     section: history
     blurb: 六份现行规范都有前身，保留在仓库里可读。读它们不是为了守着旧写法，而是为了两件事：读旧包（市场里实测仍有包声明 manifestVersion 4，甚至 .tgz 时代的包）与理解字段怎么长出来的（v5 的 type/dshhome、v3 的 home/ 都是前面几版长出问题的答案）。
