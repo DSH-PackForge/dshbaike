@@ -2678,3 +2678,100 @@ body {
 .zonecard {
   padding: 12px 14px;
 }
+
+/* ==========================================================================
+   配色 v2：以品牌青绿为主色调（评审：灰底太难看了；参考 knotlink.cn 的高级感）
+   --------------------------------------------------------------------------
+   学的是**方法**不是色相：① 底色带主色倾向，不用中性灰；② 主色只做低透明度
+   辉光（chip/hover/选中态），不做大面积实底；③ 文字阶梯也带一点冷暖偏移。
+   主色沿用站点既有的青绿（站点身份），所以**改 --brand 一处，整套跟着走**。
+   ========================================================================== */
+
+:root {
+  /* 主色（改这一处即可整体换色） */
+  --brand: #0f7a70;
+  --brand-weak: #e2f2f0;
+  --brand-tint: rgba(15, 122, 112, 0.08);
+  --brand-tint-strong: rgba(15, 122, 112, 0.16);
+
+  /* 底：带青绿倾向的浅面，而不是中性灰 */
+  --bg-page: #edf3f3;
+  --bg: #ffffff;
+  --bg-subtle: #f2f7f7;
+  --bg-inset: #e6eeee;
+
+  /* 边框：比底色深一点点的同色系 */
+  --border: #dae6e5;
+  --border-strong: #c2d2d0;
+
+  /* 文字：带一点冷青，不纯灰 */
+  --text: #16272b;
+  --text-muted: #556a6d;
+  --text-faint: #7d8f92;
+
+  /* 链接：与主色同族但可区分 */
+  --link: #0e7490;
+  --link-visited: #7c5cbf;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #3fd0bd;
+    --brand-weak: #10312c;
+    --brand-tint: rgba(63, 208, 189, 0.1);
+    --brand-tint-strong: rgba(63, 208, 189, 0.2);
+
+    /* 深底带青绿倾向（不是中性炭灰）——knotlink 那种"蓝黑"换成我们的"青黑" */
+    --bg-page: #0a1413;
+    --bg: #111c1b;
+    --bg-subtle: #16211f;
+    --bg-inset: #1c2927;
+
+    --border: #23332f;
+    --border-strong: #33473f;
+
+    --text: #e3ecea;
+    --text-muted: #a2b3b0;
+    --text-faint: #7a8b89;
+
+    --link: #67c9dd;
+    --link-visited: #b9a3f0;
+  }
+}
+
+:root[data-theme="dark"] {
+  --brand: #3fd0bd;
+  --brand-weak: #10312c;
+  --brand-tint: rgba(63, 208, 189, 0.1);
+  --brand-tint-strong: rgba(63, 208, 189, 0.2);
+  --bg-page: #0a1413;
+  --bg: #111c1b;
+  --bg-subtle: #16211f;
+  --bg-inset: #1c2927;
+  --border: #23332f;
+  --border-strong: #33473f;
+  --text: #e3ecea;
+  --text-muted: #a2b3b0;
+  --text-faint: #7a8b89;
+  --link: #67c9dd;
+  --link-visited: #b9a3f0;
+}
+
+/* 主色辉光：选中/悬停用它，而不是把按钮涂成实心色块 */
+.tag--on,
+.tag[aria-pressed="true"],
+.kindchip--on {
+  background: var(--brand-tint-strong);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.card:hover,
+.zonecard:hover {
+  border-color: var(--brand-tint-strong);
+}
+
+/* 侧栏当前分区：品牌色淡底胶囊（原来只有左侧色条） */
+.zones__list a[aria-current="page"] {
+  background: var(--brand-tint);
+}
