@@ -2809,3 +2809,75 @@ body {
 .zones__list a[aria-current="page"] {
   background: var(--brand-tint);
 }
+
+/* ==========================================================================
+   视觉升级 v1.2：三处一致性问题（评审逐条指出）
+   ========================================================================== */
+
+/* ① 首页分区卡片：撑满网格单元，否则同一行的卡片高度参差（白卡比格子矮） */
+.zonegrid > li {
+  display: flex;
+}
+
+.zonecard {
+  flex: 1 1 auto;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 分区名与条数在卡片顶端一行对齐，简介自己长 */
+.zonecard__name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+/* ② 分区页的筛选条：用页面底色而不是白，免得灰底上贴一坨白矩形；
+   它是 sticky 的，所以不能透明（否则滚动内容会从底下穿出来） */
+.filterbar {
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ③ 词条右栏 */
+/* ③-a 别再拉伸：内容多高就多高（相关框只有一行就别占一大片） */
+.entry-grid__aside {
+  align-content: start;
+}
+
+.entry-grid__aside > * {
+  align-self: start;
+  height: auto;
+}
+
+/* ③-b 面底统一：右栏所有盒子都是白面 + 细边框，层次用边框与间距表达，
+   而不是"这个淡底那个白底"（原来 .completeness 淡底、.box 白底、
+   .infotable__grouphead 又淡底，三种面挤在一栏里） */
+.completeness {
+  background: var(--bg);
+  padding: 10px 12px;
+}
+
+.box__head,
+.infotable__grouphead {
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+}
+
+.box__body {
+  padding: 10px 12px;
+}
+
+/* ③-c 信息表的分组线更轻，别在盒子里再画一层重框 */
+.infotable {
+  border-top: 0;
+}
+
+.infotable__group + .infotable__group {
+  border-top: 1px solid var(--border);
+}
