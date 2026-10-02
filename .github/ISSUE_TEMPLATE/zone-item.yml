@@ -1,28 +1,39 @@
 name: 补充分区条目
-description: 给某个分区加一条资源（卡片：名称 + 一句话 + 外链），或把红链变成词条
-title: "[分区补充] "
+description: 给某个分区加一条资源（名称 + 一句话 + 外链），机器人写进 YAML 并开 PR
+title: "[补充分区条目] "
 body:
   - type: markdown
     attributes:
       value: |
-        分区条目很轻：**名称 + 一句话 + 至少一个外链**，写进 `data/zones/<zone>.yml` 即可。
-        有 `entry:` 就链到词条，没有就显示成红链「写这一条」——红链是合法状态，不是错误。
+        分区条目很轻：**名称 + 一句话 + 至少一个外链**。机器人会把它写进对应分区的
+        `items:` 里（哪一级、哪个二级分区由你指定），然后开 PR。
+
+        **请自己写一句话**，不要直接抄上游 description——抄来的句子在列表里读起来都一样。
   - type: dropdown
     id: zone
     attributes:
-      label: 哪个分区
+      label: 分区
+      description: 它属于哪一层；不确定就先去站上看看那一页。
       options:
-        - clients（界面与客户端）
-        - plugins（插件）
-        - packs（整合包）
-        - launchers（启动器）
-        - themes（主题与皮肤）
-        - skills（技能包）
-        - presets（预设与人设）
-        - recipes（指令与配方）
-        - toolchain（工具链）
-        - specs（规范与协议）
-        - assets（素材与本地化）
+        - clients
+        - launchers
+        - plugins
+        - themes
+        - assets
+        - skills
+        - presets
+        - recipes
+        - packs
+        - toolchain
+        - specs
+    validations:
+      required: true
+  - type: input
+    id: section
+    attributes:
+      label: 二级分区 id
+      description: 分区页里那一节的 id（如插件分区的 `markets` / `plugins`，主题分区的 `packs` / `loaders`）。填错机器人会告诉你可用的 id。
+      placeholder: markets
     validations:
       required: true
   - type: input
@@ -36,26 +47,23 @@ body:
     id: blurb
     attributes:
       label: 一句话介绍
-      description: 请自己写一句话，不要直接抄上游 description——抄来的句子在列表里读起来都一样。
+      description: 用你自己的话说清它解决什么问题；不要粘贴上游 README 的一整段。
     validations:
       required: true
   - type: textarea
     id: links
     attributes:
       label: 外部链接
-      description: 一行一个。可用的键：`github` / `npm` / `awesome` / `dshbase` / `market` / `docs` / `spec` / `url`
+      description: |
+        一行一个。可用的键：`github` / `npm` / `awesome` / `dshbase` / `market` / `docs` / `spec` / `url`。
+        也可以只贴一个完整 URL（会当成 `url`），或 `owner/repo`（会当成 `github`）。
       placeholder: |
         github: owner/repo
         npm: package-name
     validations:
       required: true
-  - type: input
-    id: entry
-    attributes:
-      label: 对应词条（可选）
-      description: 如果这一条已经有本站词条，填 `kind/n`（如 plugin/12）；留空则显示红链。
   - type: textarea
     id: note
     attributes:
       label: 补充说明（可选）
-      description: 例如风险提示（会不会拿到本机权限）、与其它插件抢 slot、快照日期。
+      description: 例如风险提示（会不会拿到本机权限）、与谁抢 slot、快照日期。

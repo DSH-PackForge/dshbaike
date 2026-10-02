@@ -1535,6 +1535,23 @@
 
     var actions = el('div', { class: 'titlebar__actions' }, [
       el('a', { class: 'btn', href: editHref(id), rel: 'noopener noreferrer external', target: '_blank', text: '编辑此条' }),
+      // 机器人代改通道（docs/14）：小改动填表单即可，机器人只改这一处并开 PR，维护者审核后合并
+      el('a', {
+        class: 'btn',
+        href: issueForm('replace.yml', { title: '[改正文里的一句话] ' + id, entry: id }),
+        rel: 'noopener noreferrer external',
+        target: '_blank',
+        text: '改一句话',
+        title: '只说清「原文 → 改成」，机器人替你把这一处改掉并开 PR（改动大请直接编辑）'
+      }),
+      el('a', {
+        class: 'btn',
+        href: issueForm('field.yml', { title: '[改一个字段] ' + id, entry: id }),
+        rel: 'noopener noreferrer external',
+        target: '_blank',
+        text: '改字段',
+        title: '补或改头部字段（更新日期、标签、安装命令…），机器人代改并开 PR'
+      }),
       el('a', { class: 'btn', href: correctHref(id, entry.title), rel: 'noopener noreferrer external', target: '_blank', text: '纠错' }),
       kind === 'tutorial' || kind === 'concept' ? null : el('a', {
         class: 'btn',
@@ -2676,7 +2693,13 @@
       main.appendChild(el('p', { class: 'notice notice--unknown' }, [
         el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '?' }),
         document.createTextNode('这个分区暂时没有条目（空分区是硬要求违反项）。'),
-        el('a', { href: SITE.issueNew + '?title=' + encodeURIComponent('[分区补充] ' + (zone.title || id)), rel: 'noopener noreferrer external', target: '_blank', text: '补充一条' })
+        el('a', {
+          href: issueForm('zone-item.yml', { title: '[补充分区条目] ' + id, zone: id }),
+          rel: 'noopener noreferrer external',
+          target: '_blank',
+          text: '补充一条',
+          title: '填名称 + 一句话 + 外链，机器人写进这个分区并开 PR'
+        })
       ]));
     }
 

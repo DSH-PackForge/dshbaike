@@ -1,0 +1,42 @@
+name: 改正文里的一句话
+description: 正文里有句话说错了/过时了？填原文与改法，机器人会替你把这一处改掉并开 PR
+title: "[改正文里的一句话] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        适合**小范围的事实修正**：一个数字过时了、一个文件名写错了、一句话表述不准。
+
+        机器人只做一件很窄的事：在正文里找到你给的那段原文，**且只找到一处**，替换掉。
+        找不到、或者找到多处，它会拒绝并让你自己来（不猜）。
+
+        > 改动大（重写一节、加新章节、调结构）→ 别用这个表单，直接
+        > [fork + PR](https://github.com/DSH-PackForge/dshbaike/blob/main/CONTRIBUTING.md) 更合适。
+  - type: input
+    id: entry
+    attributes:
+      label: 词条 id
+      description: 形如 `plugin/1`。从词条页点进来会自动填好。
+      placeholder: plugin/1
+    validations:
+      required: true
+  - type: textarea
+    id: from
+    attributes:
+      label: 原文片段
+      description: 从正文里**原样复制**一段（越长越好定位，但只包含你要改的部分）。注意不要贴 front-matter 里的字段。
+      placeholder: 它是「升级炸插件」场景里的第一道缓冲。
+    validations:
+      required: true
+  - type: textarea
+    id: to
+    attributes:
+      label: 改成
+      description: 替换后的文字。
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: 出处（可选但强烈建议）
+      description: 规范文件路径、代码位置或上游链接——有出处我们才敢合。
