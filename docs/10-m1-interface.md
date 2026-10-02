@@ -151,7 +151,9 @@ node scripts/linkcheck.mjs [--write]         # 可选：HEAD 检查外链，写 
 
 `page` ∈ `entry | zone | index | static`。前端**只依赖 `window.__PEDIA__` 与 `base`**，不解析 URL 猜页面（除了 hash 路由的分区/筛选状态）。
 注意 `static`（维度索引页）的正文是**构建期写好的**：boot() 不移除它、也不重渲染正文，只补站点外壳与交互。
-`web/mesh/`（全量插件生态图）是**第三方应用原样副本**，不走这套外壳——它自带 `index.html`/`styles.css`/`src/`。
+`web/mesh/`（全量插件生态图）是**第三方应用**：应用本体在 `web/mesh/app/`（构建期从 `vendor/` 原样拷来），
+外面 `web/mesh/index.html` 是**我们的说明壳**（渲染自 `web/mesh.template.html`：署名、数据来源、
+「未经本站核实」的口径 + 同源 iframe）。两边都不走站点外壳——那张图是全屏应用。
 
 **生成路径**：`web/<kind>/<n>.html`（如 `web/plugin/12.html`）、`web/<zone>.html`（如 `web/plugins.html`）、首页仍为 `web/index.html`。
 

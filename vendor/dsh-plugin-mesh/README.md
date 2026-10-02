@@ -23,8 +23,9 @@
 | 本地修改 | **无**。目录内所有文件与上游逐字节一致（含 `data/mesh.json`） |
 
 MIT 要求随副本保留版权声明与许可原文 —— 这就是 `LICENSE` 放在这里的原因。
-署名另外出现在**入口处**（插件分区页那张卡的说明文字）与本站 `README.md`，
-这样读者点进来之前就知道这是谁做的、以及它是**自动采集、未经本站核实**的数据。
+署名与口径说明出现在**读者能看到的三处**：本站 `README.md`、插件分区页那张入口卡，
+以及 `/mesh/` 页面顶部那条说明条（构建期由 `web/mesh.template.html` 渲染）——
+读者从我们这儿点进去时，先看到的就是「这是谁做的、数据谁采的、哪些不是本馆核实过的」。
 
 ## 更新数据（不是更新代码）
 
@@ -38,7 +39,7 @@ MIT 要求随副本保留版权声明与许可原文 —— 这就是 `LICENSE` 
 ```bash
 gh api repos/WTStarMark/dsh-plugin-mesh/contents/data/mesh.json \
   -H 'Accept: application/vnd.github.raw' > vendor/dsh-plugin-mesh/data/mesh.json
-node scripts/build.mjs            # 拷进 web/mesh/
+node scripts/build.mjs            # 拷进 web/mesh/app/（壳页会自动读到新的快照日期）
 ```
 
 ## 要更新它的代码（上游发了新版本）
@@ -59,5 +60,6 @@ node scripts/build.mjs
 - 它向**同源** `/api/ping` 要访问统计；本站没有这个接口 → 请求 404，
   它的代码会**整栏隐藏**（上游 README 明说「拿不到接口时整栏隐藏」），所以不是坏掉；
 - 头像与 favicon 直接取 `github.com`（HTTPS，不构成混合内容）；
-- 它被放在 `web/mesh/`，取数是**相对路径** `./data/mesh.json`，所以子路径部署也能用；
+- 它被放在 `web/mesh/app/`，取数是**相对路径** `./data/mesh.json`，所以子路径部署也能用；
+  外面那层 `web/mesh/index.html` 是**我们的**壳（说明条 + 同源 iframe），它自己那棵子树保持零修改；
 - 我们不修改它的任何文件：将来它坏了，先看上游是否已修，再整套更新。

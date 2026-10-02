@@ -59,8 +59,9 @@ dshbaike/                       # 仓库名；本地工作副本可能仍是 dsh
 │   ├── linkcheck.mjs           # 外链与图片可达性检查（HEAD，失败降级为 warn）
 │   └── lib/                    # 共享：front-matter 解析、Markdown 渲染、taxonomy 与 registry 读写
 ├── vendor/                     # 第三方项目原样副本（**不是我们的代码**，见各目录 README.md）
-│   └── dsh-plugin-mesh/        # 全量插件生态图（MIT）：构建期原样拷进 web/mesh/；数据由
-│                               #   .github/workflows/mesh-snapshot.yml 每天抓上游快照覆盖
+│   └── dsh-plugin-mesh/        # 全量插件生态图（MIT）：构建期原样拷进 web/mesh/app/，
+│                               #   外面套一层我们的说明壳 web/mesh/index.html（web/mesh.template.html）；
+│                               #   数据由 .github/workflows/mesh-snapshot.yml 每天抓上游快照覆盖
 ├── web/                        # 站点：模板与静态资源是事实源，data/ 与各 kind 目录是构建产物
 │   ├── index.html              # 首页（资源源区块 / 教程 / 搜索 / 统计）
 │   ├── entry.template.html     # 词条页外壳模板，构建期为每条词条生成一份
