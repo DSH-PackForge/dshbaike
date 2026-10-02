@@ -90,31 +90,6 @@ items:
     links:
       github: 121103qwq/DSH-Launcher
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
-  - name: DSH PackForge GUI / dspack CLI
-    section: launchers
-    blurb: 官方工具链形态的安装端：Electron 图形客户端加 dspack 命令行，导出、浏览、安装整合包；也是唯一同时出现在「工具链」分区的条目。
-    launcherId: dsh-packforge-app
-    lineage: 官方工具链
-    platforms: [windows]
-    selfVersioning: 可自报
-    importSupport: 支持 .dspack（profile / dshhome 两形态）
-    source: launchers
-    entry: tool/1
-    tags: ["插件市场与管理", "支持 .dspack"]
-    risk: [desktop-control, network, build-script]
-    links:
-      github: DSH-PackForge/dsh-packforge-app
-  - name: DeepSeek Harness 官方桌面端
-    section: launchers
-    blurb: 官方桌面端，在注册表里认领了 official-desktop。它的仓库与平台清单在本机可读副本里查不到，标未核实。
-    launcherId: official-desktop
-    lineage: 官方
-    selfVersioning: 可自报（方式未核实）
-    importSupport: null
-    source: launchers
-    entry: null
-    links:
-      registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
   - name: 裸 dsh 命令行
     section: bare
     blurb: 不依赖任何启动器：dsh --version 自报版本，dsh --profile <name> 直接起 profile。注册表把它作为「无启动器」这一档登记，是排查启动器问题时的对照组。
