@@ -1228,6 +1228,41 @@ table.data .col-key {
   padding: 2px 0;
 }
 
+/* 缺口清单里的动作：每个缺口都要能「做完」，不是只显示一句抱怨 */
+.completeness__field {
+  font-weight: 600;
+}
+
+.completeness__acts {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 2px 16px;
+}
+
+.completeness__act {
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  padding: 1px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--link);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.completeness__act:hover {
+  border-color: var(--link);
+  background: var(--bg-subtle);
+}
+
+.completeness__act--copy {
+  color: var(--text-muted);
+  font-family: inherit;
+}
+
 .completeness__missing .hint {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);

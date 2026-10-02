@@ -1245,13 +1245,16 @@
       if (btn.__bound) return;
       btn.__bound = true;
       btn.addEventListener('click', function () {
+        // `data-copy="1"` / 裸 `data-copy`：复制同块 <code> 的文本；
+        // `data-copy="<文本>"`：直接复制这个文本（缺口清单里的「复制片段」用它）
+        var explicit = btn.getAttribute('data-copy');
         var wrap = btn.closest('.codeblock');
         var code = wrap ? wrap.querySelector('code') : null;
-        var text = code ? code.textContent : '';
+        var text = explicit && explicit !== '1' ? explicit : (code ? code.textContent : '');
         var done = function () {
           btn.textContent = '已复制';
           btn.setAttribute('aria-live', 'polite');
-          setTimeout(function () { btn.textContent = '复制'; }, 1600);
+          setTimeout(function () { btn.textContent = btn.getAttribute('data-copy-label') || '复制'; }, 1600);
         };
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text, done); });
@@ -1460,6 +1463,23 @@
       }).filter(Boolean).join(' · ');
     }
     return String(v);
+  }
+
+  /** 「我来维护」表单：标题带词条 id（机器人按标题前缀识别），字段预填词条 id */
+  function claimHref(id) {
+    return issueForm('claim.yml', { title: '[认领维护] ' + id, entry: id });
+  }
+
+  /** 只给**真能机械补**的字段一个可粘贴片段；写内容类的字段不给（不硬凑） */
+  function repairSnippet(field) {
+    if (field === 'updatedAt') return 'updatedAt: ' + localToday();
+    return null;
+  }
+
+  function localToday() {
+    var d = new Date();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
   }
 
   function anchorExists(root, anchor) {
@@ -1938,17 +1958,47 @@
     var missingItems = asArray(c.missing);
     if (missingItems.length) {
       box.appendChild(el('ul', { class: 'completeness__missing' }, missingItems.map(function (m) {
-        var label = isPresent(m.label) ? String(m.label) : '缺 ' + String(m.field || '字段');
-        return el('li', {}, [
-          el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '⚠' }),
-          el('a', {
-            href: correctHref(id, entry.title) + '&labels=completeness,' + encodeURIComponent(String(m.field || 'field')),
+        var field = isPresent(m.field) ? String(m.field) : '';
+        var label = isPresent(m.label) ? String(m.label) : '缺 ' + (field || '字段');
+        // 每个缺口都要有**能做完的动作**，不是一句抱怨：
+        //   maintainers —— 认领不需要写内容，走表单 + Action 自动改文件开 PR；
+        //   其它字段 —— 直达 GitHub 网页编辑器；能机械补的再给一个可复制片段。
+        var acts = [];
+        if (field === 'maintainers') {
+          acts.push(el('a', {
+            class: 'completeness__act',
+            href: claimHref(id),
             rel: 'noopener noreferrer external',
             target: '_blank',
-            text: label,
-            title: '点击直达贡献入口补这一项'
-          }),
-          isPresent(m.hint) ? el('span', { class: 'hint', text: m.hint }) : null
+            text: '我来维护 →',
+            title: '填一个表单：机器人会把你的用户名加进 maintainers 并开 PR，你不用改文件'
+          }));
+        } else {
+          acts.push(el('a', {
+            class: 'completeness__act',
+            href: editHref(id),
+            rel: 'noopener noreferrer external',
+            target: '_blank',
+            text: '去编辑 →',
+            title: '打开这一条的 GitHub 网页编辑器：改完提交即可，GitHub 会问你要不要开 PR'
+          }));
+          var snip = repairSnippet(field);
+          if (snip) {
+            acts.push(el('button', {
+              type: 'button',
+              class: 'completeness__act completeness__act--copy',
+              'data-copy': snip,
+              'data-copy-label': '复制片段',
+              text: '复制片段',
+              title: '复制这一行，粘进编辑器即可'
+            }));
+          }
+        }
+        return el('li', {}, [
+          el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '⚠' }),
+          el('span', { class: 'completeness__field', text: label }),
+          isPresent(m.hint) ? el('span', { class: 'hint', text: m.hint }) : null,
+          el('span', { class: 'completeness__acts' }, acts)
         ]);
       })));
     } else {

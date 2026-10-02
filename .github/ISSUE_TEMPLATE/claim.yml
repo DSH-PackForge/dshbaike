@@ -1,0 +1,44 @@
+name: 我来维护这一条
+description: 认领某条词条的维护（只加一个用户名，机器会自动改文件并开 PR）
+title: "[认领维护] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        认领之后，你的用户名会出现在这条词条的「维护者」里——意思是**你愿意跟进它**：
+        上游变了、内容过时了，@ 你能叫得应。它不是一个荣誉称号，也不要求你写多少字。
+
+        提交后机器人会：把 `maintainers` 加上你 → 跑校验 → 开一个 PR → 在这里回帖。
+        你什么都不用改，维护者点一下合并就完成。
+
+        > **别改下面的字段名**（`词条 id` / `GitHub 用户名`）：机器人按这两个标签读表单。
+  - type: input
+    id: entry
+    attributes:
+      label: 词条 id
+      description: 形如 `plugin/1`、`concept/2`。从词条页点「⚠ 没有维护者」进来时会自动填好。
+      placeholder: plugin/1
+    validations:
+      required: true
+  - type: input
+    id: user
+    attributes:
+      label: GitHub 用户名
+      description: 只填用户名本身，不要 @、不要链接。
+      placeholder: your-github-name
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 你与这一条的关系（可选）
+      description: 例如「我在用这个插件」「我是上游作者」「我在这个包上踩过坑」。写清楚会让维护者更放心。
+  - type: checkboxes
+    id: ack
+    attributes:
+      label: 确认
+      options:
+        - label: 我愿意跟进这一条（上游变更、内容过时、他人纠错时能被 @ 到）
+          required: true
+        - label: 我读过贡献指南，知道维护者不等于「拥有」这一条，随时可以退出
+          required: true
