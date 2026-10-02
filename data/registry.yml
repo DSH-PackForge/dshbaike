@@ -25,7 +25,7 @@ zoneOrder:
 counters:
   client: 1
   launcher: 1
-  plugin: 3
+  plugin: 4
   mcp: 1
   theme: 1
   asset: 1
@@ -59,7 +59,7 @@ entries:
     title: client 半端
     createdAt: 2026-10-02
     status: published
-  - n: 1
+  - n: 3
     kind: plugin
     title: dsh-loader
     createdAt: 2026-10-02
@@ -69,7 +69,7 @@ entries:
     title: dsh-pack-plugin
     createdAt: 2026-10-02
     status: published
-  - n: 3
+  - n: 4
     kind: plugin
     title: dsh-packforge-app
     createdAt: 2026-10-02
@@ -152,5 +152,10 @@ entries:
   - n: 1
     kind: mcp
     title: 'MCP 客户端（dsh-mcp-client）'
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: plugin
+    title: '官方插件与半端（deepseek-harness 仓库）'
     createdAt: 2026-10-02
     status: published

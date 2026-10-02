@@ -2,7 +2,7 @@
 # 全量在外部源，本站只展示「有词条 + 有生态证据」的子集，并显式给出源头入口。
 zone: plugins
 title: 插件
-desc: 给 DSH 加功能：宿主侧 / 客户端侧插件、bundle 与兼容层。这里只列「本站写了词条」和「已被收录整合包用到」的条目；生态全貌在 awesome-dsh-plugin.com（4400 条）与 dshbase.com。
+desc: 给 DSH 加功能：官方本体的 packages/（本体就是一堆插件）+ 第三方的宿主侧 / 客户端侧插件与 bundle。这里只列「官方来源」「本站写了词条」「已被收录整合包用到」的条目；生态全貌在 awesome-dsh-plugin.com（4400 条）与 dshbase.com。
 kinds: [plugin]
 sections:
   - id: markets
@@ -24,21 +24,19 @@ sections:
       这是设计目标，不是进度落后。
   - id: plugins
     title: 插件
-    desc: 本站收录的插件聚合页：只收被教程引用过、或被整合包用到的
+    desc: 本站收录的插件聚合页：官方本体 + 被教程引用过、或被整合包用到的第三方插件
 howto: 装插件用 `dsh plugin --profile <name> add <npm 包名 | github:owner/repo>`。GitHub 来源会在安装时跑构建脚本，pnpm 默认拦截，需要按提示把键名加进该 profile 的 pnpm-workspace.yaml 的 allowBuilds 后再装一次；只装可信来源，并尽量锁 commit（github:owner/repo#sha）。落点是 profile 目录，见「profile」与「$DSH_HOME」两条概念。
 itemFields: [role, entryGate]
 items:
-  - name: dsh-loader
+  - name: 官方插件与半端（deepseek-harness 仓库）
     section: plugins
-    blurb: 版本感知的运行时兼容层：在 DSH 升级、内部包版本变化之后，让第三方插件不必改源码就能继续挂上。升级炸插件时的第一根救命稻草。
-    role: compat
+    blurb: 地基：DSH 本体就是一堆插件，全部住在官方仓库的 packages/ 下（61 个一级分组、本机 profile 实装 251 个 @deepseek-ai/* 包）。想加能力之前先看这里有没有现成的——第三方插件补的是它没有的那部分。
     entryGate: pack
     source: curated
     entry: plugin/1
-    tags: ["开发与运行时"]
+    tags: ["官方", "生态地基"]
     links:
-      github: dsh-plugins/dsh-loader
-      npm: "@dsh-plugin/dsh-loader"
+      github: deepseek-ai/deepseek-harness
   - name: dsh-pack-plugin
     section: plugins
     blurb: 整合包管理 bundle（host + client 双半端）：.dspack 导出 / 安装、多 profile 切换、市场浏览、工作区配置与任务中心，零官方源码改动。
@@ -50,13 +48,24 @@ items:
     links:
       github: DSH-PackForge/dsh-pack-plugin
       npm: "@dsh-packforge/dsh-pack-plugin"
+  - name: dsh-loader
+    section: plugins
+    blurb: 版本感知的运行时兼容层：在 DSH 升级、内部包版本变化之后，让第三方插件不必改源码就能继续挂上。升级炸插件时的第一根救命稻草。
+    role: compat
+    entryGate: pack
+    source: curated
+    entry: plugin/3
+    tags: ["开发与运行时"]
+    links:
+      github: dsh-plugins/dsh-loader
+      npm: "@dsh-plugin/dsh-loader"
   - name: dsh-packforge-app
     section: plugins
     blurb: 打包与安装工具：Electron 图形客户端加 dspack CLI，一键导出、浏览、安装整合包；包成分表的解析器就在它的 core 里。
     role: bundle
     entryGate: tutorial
     source: curated
-    entry: plugin/3
+    entry: plugin/4
     tags: ["插件市场与管理"]
     links:
       github: DSH-PackForge/dsh-packforge-app

@@ -20,7 +20,7 @@ items:
     form: gui
     language: javascript
     source: curated
-    entry: plugin/3
+    entry: plugin/4
     tags: ["插件市场与管理"]
     risk: [desktop-control, build-script]
     links:

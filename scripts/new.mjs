@@ -109,7 +109,7 @@ function skeleton(kind, title, date) {
       '# install: dsh plugin add <…>',
       '# role: bundle | client | bundle+client | theme | compat',
       '# positioning: TODO 用生态语境说清它解决什么问题（不要照抄上游 description）',
-      '# entryGate: tutorial     # tutorial | pack | maintainer（插件收录门槛，规则 15）',
+      '# entryGate: tutorial     # official | tutorial | pack | maintainer（插件收录门槛，规则 15）',
     ],
     tutorial: [
       '# difficulty: beginner | intermediate | advanced',

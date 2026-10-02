@@ -105,7 +105,7 @@ plugins:
       url: https://github.com/dsh-plugins/dsh-loader
     npm: "@dsh-plugin/dsh-loader"
     repo: dsh-plugins/dsh-loader
-    entry: plugin/1
+    entry: plugin/3
     note: npm scope（@dsh-plugin）与 GitHub owner（dsh-plugins）不同名，是两个独立坐标。
   - name: dsh-pack-plugin
     market:
@@ -121,7 +121,7 @@ plugins:
       url: https://github.com/DSH-PackForge/dsh-packforge-app
     npm: null
     repo: DSH-PackForge/dsh-packforge-app
-    entry: plugin/3
+    entry: plugin/4
     note: 市场安装命令是 `dsh plugin add github:DSH-PackForge/dsh-packforge-app`（GitHub 坐标）；是否另发 npm 包未核实。
 
 packs:

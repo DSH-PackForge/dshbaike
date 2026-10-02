@@ -116,7 +116,7 @@ const ENUMS = {
   layer: ['runtime', 'plugin', 'agent', 'workspace', 'ecosystem'],
   role: ['bundle', 'client', 'bundle+client', 'theme', 'compat'],
   packType: ['profile', 'dshhome'],
-  entryGate: ['tutorial', 'pack', 'maintainer'],
+  entryGate: ['official', 'tutorial', 'pack', 'maintainer'],
   sourceKind: ['plugin-directory', 'guide', 'market', 'registry', 'spec', 'tool', 'topic'],
   relation: ['complementary', 'overlapping', 'upstream'],
   relationType: ['requires', 'recommends', 'conflicts', 'replaces', 'integrates'],
@@ -141,6 +141,12 @@ const CALIBER = /实测|未核实|已核实|未测试|未验证/;
 
 /** 插件引用块里禁止出现的空泛理由（规则 9） */
 const BANNED_WHY = ['很好用', '很强大', '非常强大', '牛逼', '神器', 'yyds', '好用', '强烈推荐', '必备'];
+
+/**
+ * 官方组织（规则 15 的 `official` 门槛）：repo owner 或 npm scope 落在这里就属「官方来源」，
+ * 天然配得上插件区的一页。名单写死、可核实、不易被绕过——比「有人认领」更客观。
+ */
+const OFFICIAL_OWNERS = new Set(['deepseek-ai']);
 
 /** zone 文件的通用键（不在 `itemFields` 白名单里的额外键就是规则 23 的 error） */
 const ZONE_KEYS = new Set([
@@ -734,7 +740,15 @@ function checkPluginEntry(ctx, reporter, entry, extras) {
   }
   const usedInPacks = (data.usedInPacks ?? []).length > 0;
   const hasMaintainer = !isMissing(data.maintainers);
+  // 官方来源：本体仓库/官方组织发的包天然配得上这一页——这一格是**客观可核实**的
+  // （看 repo owner 或 npm scope），不需要也不该由「有人认领」来给它背书。
+  // 此前门槛里没有这一格，结果官方本体条目反而收不进来（实测：插件区第一条就是它）。
+  const owner = !isMissing(repo)
+    ? String(repo).split('/')[0].toLowerCase()
+    : (!isMissing(npm) ? String(npm).replace(/^@/, '').split('/')[0].toLowerCase() : '');
+  const isOfficial = OFFICIAL_OWNERS.has(owner);
   const satisfied = [
+    isOfficial ? 'official' : null,
     referencedBy.length ? 'tutorial' : null,
     usedInPacks ? 'pack' : null,
     hasMaintainer ? 'maintainer' : null,
@@ -750,7 +764,7 @@ function checkPluginEntry(ctx, reporter, entry, extras) {
         R('entryGate'),
         15,
         `entryGate 声明为 \`${declared}\`，但实际不满足${satisfied.length ? `（实际满足：${satisfied.join(', ')}）` : '任何收录门槛'}`,
-        '门槛 = 被本站教程引用 / 被已收录整合包使用 / 有 maintainer 认领',
+        '门槛 = 官方组织发布 / 被本站教程引用 / 被已收录整合包使用 / 有 maintainer 认领',
       );
     }
   }
@@ -760,8 +774,8 @@ function checkPluginEntry(ctx, reporter, entry, extras) {
       file,
       R('repo') ?? null,
       15,
-      `插件词条 ${id} 不满足任何收录门槛（没被教程引用、没被整合包使用、没有 maintainer）`,
-      '三条门槛满足任意一条即可，见 docs/02 §1.2',
+      `插件词条 ${id} 不满足任何收录门槛（不是官方来源、没被教程引用、没被整合包使用、没有 maintainer）`,
+      '四条门槛满足任意一条即可，见 docs/02 §1.2',
     );
   }
   if (bodyText.length === 0) {

@@ -63,11 +63,18 @@
 
 满足**任意一条**即可建词条，不满足的只在教程里以引用块出现：
 
-1. **被至少一篇本站教程引用**（`plugins[].why` 非空）——有机生长，最主要来源；
-2. **被至少一个已收录整合包使用**——可从市场 manifest 的 `bundles` / `dependencies` 反查生成候选（实测 8 个包 → 26 个不同包名）；
-3. **有维护者认领**（`maintainers` 非空）并说明为什么值得单独一页。
+1. **官方来源**（`repo` 的 owner 或 `npm` 的 scope 是官方组织，如 `deepseek-ai`）——
+   本体就是插件的产地，它天然配得上插件区的一页；这一格**客观可核实**，不需要谁来认领；
+2. **被至少一篇本站教程引用**（`plugins[].why` 非空）——有机生长，最主要来源；
+3. **被至少一个已收录整合包使用**——可从市场 manifest 的 `bundles` / `dependencies` 反查生成候选（实测 8 个包 → 26 个不同包名）；
+4. **有维护者认领**（`maintainers` 非空）并说明为什么值得单独一页。
 
 门槛由 `validate.mjs` 检查（第 15 条规则）：不满足任一条件的插件词条会被拒绝，避免词条库退化成第二个 awesome 列表。
+
+> 第 1 条是后补的（2026-10-02）：官方本体条目（插件区第一条）此前**四条都不满足**——
+> 它不是第三方插件、没被教程引用、整合包的 `bundles` 写的是官方包名而词条里没有对应坐标、
+> 也没人认领。缺这一格的真实后果不是「官方条目收不进来」，而是有人为了让校验通过
+> **编一个门槛**（我第一版就写了 `pack`，被规则当场拦下）。
 
 ---
 
@@ -137,6 +144,12 @@ entities:
 ## 2. 编号契约：自增数字、永不复用
 
 MC百科的链接不会烂，靠的是数字即身份。我们照抄这一点：
+
+> **一次例外，已发生（2026-10-02）**：上线前做了一次**插件区编号重置**——
+> 官方插件（deepseek-harness 仓库）插到 `plugin/1`，原 `plugin/1` dsh-loader 让到 `plugin/3`，
+> 原 `plugin/3` dsh-packforge-app 让到 `plugin/4`（`plugin/2` dsh-pack-plugin 不动）。
+> 当时站点尚未上线、没有外部链接指向这些编号，所以**直接改号、不建墓碑**（评审：这次不需要墓碑机制）。
+> 从这次之后契约恢复严格：**编号一分配就不动，删除留墓碑**（见 §2.1 与规则 4）。
 
 ```yaml
 # data/registry.yml
@@ -244,7 +257,7 @@ plugins:                    # 插件引用块，见 §5
 | `providedBy` | object | 采集（**只引用，不落库**） | 外部源事实与快照：`awesome`（stars / dl / added / 详情页 href）、`npm`（latest / publishedAt）、`github`（stars / pushedAt / license / archived）、`dshbase`（是否有中文指南） |
 | `usedInPacks` | string[] | 采集 | 反查市场 manifest 的 `bundles` / `dependencies` 得到「出现在哪些整合包」——纯自动，首版就做 |
 | `referencedByTutorials` | string[] | 构建期派生 | 引用它的教程（来自反向索引） |
-| `entryGate` | enum | 校验用 | 记录满足的收录门槛：`tutorial` \| `pack` \| `maintainer`（见 §1.2） |
+| `entryGate` | enum | 校验用 | 记录满足的收录门槛：`official` \| `tutorial` \| `pack` \| `maintainer`（见 §1.2） |
 
 > 三个必须遵守的边界：**① 不复制上游正文**（README 整篇搬进词条就退回成 awesome 详情页了，只做摘要 + 出处链接）；**② 热度数字一律引用外部源并标快照时间**，我们不自建统计；**③ 没有采集到的字段显示「未声明」**，不推断。
 
@@ -394,7 +407,7 @@ plugins:                    # 插件引用块，见 §5
 | 12 | 引用/外链可达性（构建期 HEAD 检查，失败降级为 warn 并标注「链接待核」） | warn |
 | 13 | `screenshots` 指向的图片存在；枚举字段取值合法 | error |
 | 14 | 正文长度下限（防空壳词条） | warn |
-| 15 | **插件词条必须满足收录门槛之一**（被教程引用 / 被整合包使用 / 有 maintainer），且 `entryGate` 与实际相符 | error |
+| 15 | **插件词条必须满足收录门槛之一**（官方来源 / 被教程引用 / 被整合包使用 / 有 maintainer），且 `entryGate` 与实际相符 | error |
 | 16 | 插件词条：`repo`/`npm` 至少一个；`relations[].target` 指向存在的 `plugin/<n>`；`compat.dsh` 每项都带「实测 / 未核实」口径；`providedBy` 的每项都带快照时间 | error |
 | 17 | 分区文件：`zone` 唯一、`desc` 与 `howto` 必填、条目 `name`/`blurb`/`links` 齐备 | error |
 | 18 | 分区条目的 `entry` 指向存在的词条（**留空即红链，是合法状态**） | error |

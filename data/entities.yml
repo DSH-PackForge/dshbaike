@@ -4,7 +4,7 @@
 # refs 由 collect.mjs 写、带快照时间；M1 首版留空（尚无采集产物），人工只维护 id 与 keys。
 version: 1
 entities:
-  - id: plugin/1
+  - id: plugin/3
     keys:
       - "repo:dsh-plugins/dsh-loader"
       - "npm:@dsh-plugin/dsh-loader"
@@ -14,7 +14,7 @@ entities:
       - "repo:DSH-PackForge/dsh-pack-plugin"
       - "npm:@dsh-packforge/dsh-pack-plugin"
     refs: []
-  - id: plugin/3
+  - id: plugin/4
     keys:
       - "repo:DSH-PackForge/dsh-packforge-app"
     refs: []
