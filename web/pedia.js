@@ -383,6 +383,21 @@
     return document.createTextNode(String(v));
   }
 
+/**
+   * 链接坐标 → 绝对 URL（docs/02 §3.3 的 links 约定）。
+   *
+   * 数据里的写法是**裸坐标**：`links.github: owner/repo`、`links.npm: "@scope/name"`。
+   * 直接塞进 href 会被浏览器当成**相对路径**——点卡片上的「GitHub」会跳到本站的 /owner/repo
+   * （线上实测踩到过）。所以已知坐标在这补前缀；已经是绝对 URL 的原样放行。
+   */
+  function linkHref(key, value) {
+    var v = String(value).trim();
+    if (/^https?:\/\//i.test(v)) return v;
+    if (key === 'github') return 'https://github.com/' + v.replace(/^\/+/, '');
+    if (key === 'npm') return 'https://www.npmjs.com/package/' + v.replace(/^npm:/, '').replace(/^\/+/, '');
+    return v;
+  }
+
   function extLink(href, text, cls) {
     if (!isPresent(href)) return missing();
     return el('a', { href: String(href), rel: 'noopener noreferrer external', target: '_blank', class: cls, text: text || String(href) });
@@ -2417,7 +2432,7 @@
       ? frag([document.createTextNode('词条 → '), entryLink(String(p.entry), null)])
       : el('a', { class: 'redlink', href: redlinkHref(null, p.name), dataset: { redlink: '1' }, text: '尚无词条（写这一条）', title: '尚未收录 · 写这一条' }));
     Object.keys(isPlainObject(p.links) ? p.links : {}).forEach(function (k) {
-      if (isPresent(p.links[k])) foot.push(extLink(p.links[k], LINKS_ZH[k] || k));
+      if (isPresent(p.links[k])) foot.push(extLink(linkHref(k, p.links[k]), LINKS_ZH[k] || k));
     });
 
     return el('article', { class: 'refcard', 'aria-label': '插件引用卡：' + (p.name || '') }, [
@@ -2957,7 +2972,7 @@
     if (isPlainObject(it.links)) {
       Object.keys(it.links).forEach(function (k) {
         if (!isPresent(it.links[k])) return;
-        linkItems.push(el('li', {}, extLink(it.links[k], LINKS_ZH[k] || k)));
+        linkItems.push(el('li', {}, extLink(linkHref(k, it.links[k]), LINKS_ZH[k] || k)));
       });
     }
 

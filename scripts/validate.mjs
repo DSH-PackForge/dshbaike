@@ -213,6 +213,7 @@ function main(argv) {
     checkZoneKinds(ctx, reporter);
     checkZoneSections(ctx, reporter);
     checkZoneOrder(ctx, reporter);
+    checkLinkShapes(ctx, reporter);
     checkSourcesConfig(ctx, reporter);
   } else {
     // 只校验给定文件：跨文件检查仍用全量数据
@@ -1179,6 +1180,45 @@ function checkZoneKinds(ctx, reporter) {
       `词条类型 \`${kind}\` 没有被任何分区声明`,
       `在 data/zones/<分区>.yml 里加 kinds: [${kind}]，否则它的词条没有所属分区`,
     );
+  }
+}
+
+/**
+ * 规则 27：`links.*` 的值要么是绝对 URL，要么是**已知键的裸坐标**。
+ *
+ * 站点的渲染层会把 `github: owner/repo` 与 `npm: @scope/name` 补成绝对 URL；
+ * 但别的键写裸值会被浏览器当成相对路径（点出去变成"本站的 /xxx"，线上踩过）。
+ * 这里给 warn 而不是 error：形态错不至于拦住贡献，但要在本地报出来。
+ */
+function checkLinkShapes(ctx, reporter) {
+  const BARE_OK = { github: /^[\w.-]+\/[\w.-]+$/, npm: /^(@[\w.-]+\/)?[\w.-]+$/ };
+  const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const walk = (file, lines, links, lineOfKey) => {
+    if (!isObj(links)) return;
+    for (const [key, value] of Object.entries(links)) {
+      if (isMissing(value)) continue;
+      const v = String(value).trim();
+      if (/^https?:\/\//i.test(v) || v.startsWith('mailto:')) continue;
+      const ok2 = BARE_OK[key] ? BARE_OK[key].test(v) : false;
+      if (ok2) continue;
+      reporter.warn(
+        file,
+        lineOfKey(key),
+        27,
+        `links.${key} 写的是 \`${v}\`——既不是绝对 URL，也不是已知的裸坐标`,
+        'github 写 owner/repo、npm 写 @scope/name（渲染层会补前缀）；其它键请写完整 URL，否则点出去会变成站内相对路径',
+      );
+    }
+  };
+  for (const zone of ctx.zones) {
+    (zone.data.items ?? []).forEach((item) => walk(zone.file, zone.lines, item?.links, (k) => lineOf(zone.lines, k)));
+  }
+  for (const entry of ctx.entries) {
+    const providers = entry.data?.providedBy;
+    if (!isObj(providers)) continue;
+    for (const p of Object.values(providers)) {
+      walk(entry.file, entry.lines, p?.links, (k) => lineOf(entry.lines, k));
+    }
   }
 }
 
