@@ -208,14 +208,14 @@ jobs:
           # 保险三：同一个请求不重复执行。判据是**内容**而不是「有没有 PR」——
           # 组织策略挡住建 PR 时只有分支没有 PR，那时按 PR 判断会重复推送；
           # 而按内容判断，还能正确放行「改过正文后重新批准」的情形（内容不同就该推）。
-          if git fetch --quiet origin "$branch" 2>/dev/null; then
-            if git diff --quiet "origin/$branch" -- .; then
-              existing=$(gh pr list --head "$branch" --state all --json url --jq '.[0].url // empty' 2>/dev/null || true)
-              echo "内容与 $branch 上已执行的一致，不重复执行"
-              echo "mode=duplicate" >> "$GITHUB_OUTPUT"
-              echo "url=$existing" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
+          # 注意用 FETCH_HEAD：`git fetch origin <branch>` 只写 FETCH_HEAD，
+          # 不会创建 origin/<branch> 引用（用后者会让这个判断静默失效）。
+          if git fetch --quiet origin "$branch" && git diff --quiet FETCH_HEAD -- .; then
+            existing=$(gh pr list --head "$branch" --state all --json url --jq '.[0].url // empty' 2>/dev/null || true)
+            echo "内容与 $branch 上已执行的一致，不重复执行"
+            echo "mode=duplicate" >> "$GITHUB_OUTPUT"
+            echo "url=$existing" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           git config user.name "dshbaike-bot"
