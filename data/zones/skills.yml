@@ -2,7 +2,6 @@
 zone: skills
 title: 技能包
 desc: 以 SKILL.md 为单位的可加载能力，通常随包分发或由本机安装态决定。这里收的是「有公开来源、能被别人装上」的技能与技能合集。
-dataSource: curated
 kinds: [skill]
 sections:
   - id: packs

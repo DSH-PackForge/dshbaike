@@ -77,16 +77,19 @@ node scripts/linkcheck.mjs [--write]         # 可选：HEAD 检查外链，写 
   "title": "界面与客户端",
   "desc": "你从哪、以什么界面使用 DSH：……",
   "howto": "装法与落点随类型不同，见每个条目的说明。",
+  "kinds": ["client"],             // 这个分区收哪种词条（docs/12）
+  "sections": [                    // 二级分区（docs/06 §2.0.1），**顺序即展示顺序**
+    { "id": "official", "title": "官方客户端", "desc": "…", "intro": null, "introHtml": null }
+  ],
   "itemFields": ["form", "shippedBy", "profile", "platforms"],
-  "sources": [ { "id": "awesome", "name": "awesome-dsh-plugin.com", "url": "…", "status": "active", "coverage": "4400 条" } ],
-  "snapshot": "2026-10-01",
   "items": [
     {
       "name": "官方 Web UI",
       "blurb": "浏览器里的完整界面，dsh web 启动。",
-      "source": "curated",             // 来源徽章：awesome | market | launchers | specs | curated
+      "section": "official",        // 归到哪个二级分区
+      "source": "curated",          // 条目级来源徽章：awesome | market | launchers | specs | curated
       "links": { "github": "deepseek-ai/deepseek-harness" },
-      "entry": "plugin/12",            // 可空 → 红链
+      "entry": "plugin/12",         // 可空 → 红链
       "entryTitle": "…",               // entry 存在时由构建填充
       "completeness": 78,              // entry 存在时为数字，否则 null
       "tags": ["UI 增强"],

@@ -5,6 +5,8 @@
 > 定位前提（本版）：**侧重资源整合与教程**。插件词条要做，但**只做「被用到或被认领」的那些**，不追求生态全覆盖（全貌交给 `awesome-dsh-plugin.com` 的 4400 条与 `dshbase.com`）。
 >
 > 数据口径：整合包与插件名来自对 `dsh-pack-market/index/packs/*/manifest.json` 的全量解析（8 个包）；概念事实来自对 DSH 权威实现副本（`~/.dsh/profiles/node_modules/@deepseek-ai/`，实测 `@deepseek-ai/dsh` = `0.1.0-rc.6`）的核查；外部源数据来自 2026-10-01 的实际抓取。**都是快照，不是实时值。**
+>
+> ⚠️ **本文表格里的「事实源」列是旧口径**（`external-index` / `curated-list`）：那套「分区优先消费外部源、无源才人工清单」的模型已废弃（理由见 [07](07-multi-source-zones.md) 顶部）。实际落地见 [12](12-m2-kinds.md) 与 [06 §2.0.1](06-zones-and-entries.md)：分区由 `kinds` + 二级分区 `sections` + 条目组成，内容我们自己写，外部数字以「引用 + 快照」出现。**数量目标仍然有效。**
 
 ---
 

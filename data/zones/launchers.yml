@@ -3,7 +3,6 @@
 zone: launchers
 title: 启动器
 desc: .dspack 的安装端，也是「怎么装上并起得来」那一步的承载者。事实源是规范仓库的 launcher-registry.md 与它的机器可读版 launchers.json，当前共 5 条已认领 ID。
-dataSource: launchers
 kinds: [launcher]
 sections:
   - id: launchers

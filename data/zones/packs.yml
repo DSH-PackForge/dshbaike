@@ -3,7 +3,6 @@
 zone: packs
 title: 整合包
 desc: 一次装一整套：.dspack 单文件包（manifest v5 的 profile / dshhome 两形态）。装法由启动器或 dspack CLI 承担，本站只做入口与成分说明。
-dataSource: market
 kinds: [pack]
 sections:
   - id: general

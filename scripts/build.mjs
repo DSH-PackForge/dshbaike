@@ -733,44 +733,15 @@ function buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt) {
     };
   });
 
-  // 来源区块（docs/07 §3）：手写声明 + 所有声明覆盖本分区的「源」词条。
-  // 源是复数，而且会继续长出来——所以这里按源自己声明的 zones 聚合，
-  // 新增一个源只需加一条源词条，分区页不用改模板。
-  const manualSources = (Array.isArray(data.sources) ? data.sources : []).map((s) => ({
-    id: s?.id ?? s?.name ?? null,
-    name: s?.name ?? null,
-    url: s?.url ?? null,
-    status: s?.status ?? null,
-    coverage: s?.coverage ?? null,
-    snapshot: s?.snapshot ?? null,
-  }));
-  const aggregatedSources = [];
-  for (const entry of entryOutputs.values()) {
-    if (entry.kind !== 'source') continue;
-    const zones = entry.meta?.zones;
-    if (!Array.isArray(zones) || !zones.map(String).includes(String(zone.zone))) continue;
-    aggregatedSources.push({
-      id: entry.meta?.url ?? entry.id,
-      name: entry.title ?? null,
-      url: entry.meta?.url ?? null,
-      status: entry.meta?.adapter?.status ?? null,
-      coverage: entry.meta?.coverage ?? null,
-      snapshot: entry.updatedAt ?? entry.meta?.updatedAt ?? null,
-    });
-  }
-  const sourceMap = new Map();
-  for (const s of [...aggregatedSources, ...manualSources]) {
-    if (isMissing(s.id) && isMissing(s.url)) continue;
-    const key = String(s.id ?? s.url);
-    sourceMap.set(key, { ...(sourceMap.get(key) ?? {}), ...s, id: key });
-  }
+  // 分区页**不再有「本分区的来源」区块**：那套「分区优先消费外部源、无源才人工清单」
+  // 的模型已经不成立（评审 2026-10-02）。现在每个分区有自己的词条类型与二级分区，
+  // 外部源要么作为二级分区里的一个条目（如「插件市场」），要么只是词条的出处，不再单列一块。
 
   return deepSort({
     id: zone.zone,
     title: data.title ?? null,
     desc: data.desc ?? null,
     howto: data.howto ?? null,
-    dataSource: data.dataSource ?? 'curated',
     // 这个分区收哪些词条类型（docs/12 §2）：前端据此把「本分区能长出哪些详情」讲清楚
     kinds: sortStrings(data.kinds ?? []),
     // 二级分区（docs/06 §2.0.1）：intro 是编辑综述，构建期就渲染成 HTML，
@@ -785,7 +756,6 @@ function buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt) {
       introHtml: isMissing(s?.intro) ? null : renderMarkdown(String(s.intro), { base: BASE, hasEntry: false }).html,
     })),
     itemFields,
-    sources: sortBy([...sourceMap.values()], (s) => String(s.id ?? '')),
     items,
   });
 }

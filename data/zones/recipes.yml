@@ -3,7 +3,6 @@
 zone: recipes
 title: 指令与配方
 desc: 改 DSH 的行为与语气，但不装任何插件：cordis.patch.yml 片段（禁用一个内置组件、改默认模型、换配色令牌）与 AGENTS.md 指令模板。相当于 MC百科的合成表——一小段可粘贴的配置，换一个明确的行为变化。
-dataSource: curated
 kinds: [recipe]
 sections:
   - id: instructions

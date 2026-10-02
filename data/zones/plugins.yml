@@ -3,7 +3,6 @@
 zone: plugins
 title: 插件
 desc: 给 DSH 加功能：宿主侧 / 客户端侧插件、bundle 与兼容层。这里只列「本站写了词条」和「已被收录整合包用到」的条目；生态全貌在 awesome-dsh-plugin.com（4400 条）与 dshbase.com。
-dataSource: awesome
 kinds: [plugin]
 sections:
   - id: markets
@@ -111,7 +110,7 @@ items:
       market: https://github.com/DSH-PackForge/dsh-pack-market
   - name: 看全量去源头
     section: markets
-    blurb: 本站刻意不做插件全量收录。要按分类、Star、下载量、最新收录浏览整个生态，请直接去源站；四个源的分工与状态见本分区的来源区块。
+    blurb: 本站刻意不做插件全量收录。要按分类、Star、下载量、最新收录浏览整个生态，请直接去源站；四个源的分工见本二级分区的综述，状态与快照在各自的资源源词条里。
     role: compat
     source: curated
     entry: null

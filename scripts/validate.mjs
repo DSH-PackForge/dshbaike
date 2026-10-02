@@ -122,8 +122,7 @@ const ENUMS = {
   relationType: ['requires', 'recommends', 'conflicts', 'replaces', 'integrates'],
   roleType: ['owner', 'maintainer', 'contributor', 'translator', 'upstream'],
   risk: ['desktop-control', 'network', 'credentials', 'build-script'],
-  dataSource: ['curated', 'awesome', 'market', 'launchers', 'specs'],
-  /** 分区条目的来源徽章（docs/02 §1.3） */
+  /** 分区条目的来源徽章（docs/02 §1.3）。注意：**分区级**的 dataSource 已废弃（docs/07） */
   sourceBadge: ['awesome', 'market', 'launchers', 'specs', 'curated'],
   /** 规范文件状态：historical 是「被新版取代但仍可读」，不是 deprecated（那份还有效、只是旧） */
   specStatus: ['current', 'historical', 'draft', 'deprecated'],
@@ -146,12 +145,10 @@ const ZONE_KEYS = new Set([
   'zone',
   'title',
   'desc',
-  'dataSource',
   'kinds',
   'sections',
   'howto',
   'itemFields',
-  'sources',
   'snapshot',
   'items',
   'updatedAt',
@@ -524,7 +521,7 @@ function checkEntry(ctx, reporter, entry) {
 
   // ---- 规则 13：枚举字段 + 截图存在 ----
   for (const [field, allowed] of Object.entries(ENUMS)) {
-    if (field === 'status' || field === 'risk' || field === 'dataSource') continue;
+    if (field === 'status' || field === 'risk' || field === 'sourceBadge') continue;
     if (isMissing(data[field])) continue;
     if (!allowed.includes(String(data[field]))) {
       reporter.error(file, R(field), 13, `${field} \`${data[field]}\` 不在允许值里（${allowed.join(' | ')}）`);
@@ -910,12 +907,17 @@ function checkZone(ctx, reporter, zone) {
   if (isMissing(data.title)) reporter.error(file, R('title'), 17, `分区 \`${zoneName}\` 缺少 title`);
   if (isMissing(data.desc)) reporter.error(file, R('desc'), 17, `分区 \`${zoneName}\` 缺少 desc（一句话定义，必填）`);
   if (isMissing(data.howto)) reporter.error(file, R('howto'), 17, `分区 \`${zoneName}\` 缺少 howto（顶部「怎么用」，必填）`);
-  if (!isMissing(data.dataSource) && !ENUMS.dataSource.includes(String(data.dataSource))) {
-    reporter.error(file, R('dataSource'), 17, `dataSource \`${data.dataSource}\` 不在允许值里（${ENUMS.dataSource.join(' | ')}）`);
-  }
   for (const key of Object.keys(data)) {
     if (!ZONE_KEYS.has(key)) {
-      reporter.error(file, R(key), 17, `分区文件里出现了未知键 \`${key}\``, `允许的通用键：${[...ZONE_KEYS].join(', ')}`);
+      reporter.error(
+        file,
+        R(key),
+        17,
+        `分区文件里出现了未知键 \`${key}\``,
+        key === 'dataSource' || key === 'sources'
+          ? '`dataSource` / `sources` 已废弃：分区页不再有「本分区的来源」区块（docs/07 已标记废弃）'
+          : `允许的通用键：${[...ZONE_KEYS].join(', ')}`,
+      );
     }
   }
 

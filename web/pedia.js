@@ -2479,7 +2479,6 @@
 
     var id = zone.id || (window.__PEDIA__ || {}).kind || '';
     var items = asArray(zone.items);
-    var sources = normalizeSources(zone);
 
     renderMasthead({ currentZone: id });
 
@@ -2505,8 +2504,6 @@
         el('div', { class: 'box__body' }, dropZone({ hit: 'profiles' }))
       ]));
     }
-
-    main.appendChild(sourcesSection(sources, id, zone.dataSource));
 
     main.appendChild(filterBar(items, id));
 
@@ -2566,55 +2563,6 @@
     bindZoneFilter(items, zone, id);
     bindCopyButtons(main);
     if (zone.title) document.title = String(zone.title) + ' | DSH百科';
-  }
-
-  function normalizeSources(zone) {
-    var s = zone.sources;
-    var out = [];
-    if (Array.isArray(s)) {
-      s.forEach(function (x) { if (isPlainObject(x)) out.push(x); });
-    } else if (isPlainObject(s)) {
-      Object.keys(s).forEach(function (k) {
-        var v = s[k];
-        if (isPlainObject(v)) out.push(Object.assign({ id: k }, v));
-      });
-    }
-    return out;
-  }
-
-  function sourcesSection(sources, zoneId, dataSource) {
-    var hasSources = sources.length > 0;
-    var head = el('div', { class: 'section__head' }, [
-      el('h2', { text: '本分区的来源（' + sources.length + '）' }),
-      el('span', {
-        class: 'section__note',
-        text: hasSources
-          ? '我们不是唯一入口；源的状态与快照照实标注'
-          : '本分区还没有成规模的外部源：条目由本站人工清单维护（' + (dataSource || 'curated') + '）'
-      })
-    ]);
-    var body = hasSources
-      ? el('ul', { class: 'sources' }, sources.map(function (s) {
-        var statusKey = isPresent(s.status) ? String(s.status) : 'unknown';
-        var statusLabel = { active: '活跃', stale: '快照陈旧', dead: '疑似失效', unknown: '状态未声明' }[statusKey] || '状态未声明';
-        var statusCls = { active: 'ok', stale: 'warn', dead: 'danger', unknown: 'unknown' }[statusKey] || 'unknown';
-        return el('li', { class: 'source', dataset: { status: statusKey } }, [
-          el('span', { class: 'source__name', text: s.name || s.id || '未命名源' }),
-          badge(statusLabel, statusCls),
-          el('span', { class: 'source__facts' }, [
-            document.createTextNode(isPresent(s.coverage) ? '收录 ' + (isPlainObject(s.coverage) ? (s.coverage.items || s.coverage.count || '无数据') + ' 条' : String(s.coverage)) : '收录量 无数据'),
-            document.createTextNode(' · 快照 '),
-            isPresent(s.snapshot || s.at || (isPlainObject(s.coverage) && s.coverage.at)) ? document.createTextNode(fmtDate(s.snapshot || s.at || s.coverage.at)) : missing(),
-            isPresent(s.note) ? document.createTextNode(' · ' + s.note) : null
-          ]),
-          el('span', { class: 'source__go' }, isPresent(s.url) ? extLink(s.url, '去源头看全量') : missing())
-        ]);
-      }))
-      : el('p', {
-          class: 'section__empty',
-          text: '这一层的资源还没有成规模的外部源在收录，所以「一站式」在这里体现为人工清单与外链入口，而不是转发别人的目录。'
-        });
-    return el('section', { class: 'section', 'aria-label': '本分区的来源' }, [head, body]);
   }
 
   function filterBar(items, zoneId) {

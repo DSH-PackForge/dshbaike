@@ -2,7 +2,6 @@
 zone: themes
 title: 主题与皮肤
 desc: 换掉 DSH 的样子：主题引擎、配色令牌、壁纸与图标包。主题改的是同一个界面里的样子；换掉界面本身属于「界面与客户端」。
-dataSource: curated
 kinds: [theme]
 sections:
   - id: packs

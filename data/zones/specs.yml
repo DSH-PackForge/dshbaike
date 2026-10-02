@@ -3,7 +3,6 @@
 zone: specs
 title: 规范与协议
 desc: manifest、pack-structure、index、publishing、launcher-registry 等契约文档。谁说了算的问题在这一层结束：有争议时以规范仓库的文件为准，而不是以某个实现或某个包的现状为准。
-dataSource: specs
 kinds: [spec]
 sections:
   - id: current
@@ -14,13 +13,6 @@ sections:
     desc: 旧版本仍然可读：读它是为了理解字段怎么长出来的
 howto: 读的顺序建议按版本读：manifest 从 v1 到 v5 看字段是怎么长出来的；pack-structure v3 是当前 .dspack 容器契约；index/index.md 是市场索引 schemaVersion 2；launcher-registry.md 与发布流程各一份。要改规范就向该仓库提 PR，别在实现里私自分叉。
 itemFields: [specVersion, specStatus, fileName]
-sources:
-  - id: spec-repo
-    name: DSH-PackForge 规范仓库
-    url: https://github.com/DSH-PackForge/DSH-PackForge
-    status: active
-    coverage: "manifest v1–v5 · pack-structure v1–v3 · index · publishing · workspace-config · launcher-registry"
-    snapshot: 2026-10-01
 items:
   - name: manifest v5（当前）
     section: current

@@ -149,7 +149,7 @@ node scripts/new.mjs tutorial "为什么升级后插件会失效"
 | `web/data/search.json` | 轻量检索索引：id / kind / 标题 / 别名 / 标签 / 摘要 | 首页与搜索结果页（分栏） |
 | `web/data/taxonomy.json` | 分类树 + 每类计数 | 导航与筛选 |
 | `web/data/plugins/index.json` | 插件词条的轻量索引（规模 = 本站词条数，不是生态全量） | `#/plugins` 索引页 |
-| `web/data/zones/<zone>.json` | 分区页数据：标题 / 定义 / `howto` / `itemFields` 白名单 / **来源区块**（覆盖该分区的所有源 + 状态）/ 条目卡片（多源合并、`entry` 链接与红链标记 / 标签 / 风险徽章 / 专属字段 / 完整度小标） | 十一个分区页 |
+| `web/data/zones/<zone>.json` | 分区页数据：标题 / 定义 / `howto` / `kinds`（收哪种词条）/ **`sections` 二级分区（含编辑综述 `introHtml`）** / `itemFields` 白名单 / 条目卡片（按二级分区分组、`entry` 链接与红链标记 / 标签 / 风险徽章 / 专属字段 / 完整度小标）。~~来源区块~~已废弃（[07](07-multi-source-zones.md)） | 十一个分区页 |
 | `web/data/entities.json` | 归并后的实体表：`id` / `keys` / `refs`（各源字段并列，带快照时间） | 分区页卡片、插件词条的外部源区 |
 | `web/data/links.json` | 外链与图片的可达性检查结果 | 页面上的「链接待核」标注 |
 

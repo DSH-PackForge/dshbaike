@@ -2,7 +2,6 @@
 zone: presets
 title: 预设与人设
 desc: 改 DSH 的行为与语气：agent preset（一个会话用哪些插件行）与 persona / 角色设定。预设决定「这个智能体是什么」，人设决定「它怎么说话」。
-dataSource: curated
 kinds: [preset]
 sections:
   - id: builtin

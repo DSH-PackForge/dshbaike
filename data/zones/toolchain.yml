@@ -3,7 +3,6 @@
 zone: toolchain
 title: 工具链
 desc: 打包、安装、市场索引与调试工具。这一层的共同点是「在 DSH 之外运行」：它们读写包、写索引、或替你检查一份包合不合规。
-dataSource: curated
 kinds: [tool]
 sections:
   - id: pack

@@ -79,17 +79,25 @@
 zone: themes
 title: 主题与皮肤
 desc: 换掉 DSH 的样子：主题引擎、配色令牌、壁纸与图标包。      # 一句话定义，必填
-dataSource: curated        # curated | awesome | market | launchers | specs
 howto: 装法与落点随类型不同，见每个条目的说明。                # 顶部「怎么用」，必填
+kinds: [theme]                                                 # 这个分区收哪种词条（docs/12）
+sections:                                                      # 二级分区（docs/06 §2.0.1）
+  - id: packs
+    title: 主题包
+    desc: 换出来的一整套外观
+  - id: loaders
+    title: 主题加载器
+    desc: 把它加载进界面的那个机制或插件
 itemFields: [form, shippedBy, profile, platforms]              # 专属字段白名单（通用字段之外只允许这些）
 items:
-  - name: 官方 Web UI
-    blurb: 浏览器里的完整界面，dsh web 启动（等价于 --profile web）。
+  - name: dsh-myskin
+    section: packs                                             # 归到哪个二级分区
+    blurb: 主题引擎一类的实现，换配色与外观。
     form: web                                                  # web | desktop | tui | headless | cli
-    shippedBy: official                                        # official | third-party | launcher
+    shippedBy: third-party                                     # official | third-party | launcher
     links: { github: "deepseek-ai/deepseek-harness" }
-    entry: plugin/12                       # 可选：本站词条；留空即渲染成红链「写这一条」
-    tags: [主题与外观, UI 增强]            # 二级标签，复用 awesome 的 cat 键
+    entry: theme/1                         # 可选：本站词条；留空即渲染成红链「写这一条」
+    tags: [主题与外观, UI 增强]
     risk: [build-script]                   # 可选：desktop-control | network | credentials | build-script
 ```
 
@@ -97,10 +105,14 @@ items:
 
 1. 条目必填 `name` / `blurb` / `links`（至少一个链接）；**宁缺毋滥**，一条冗余条目比没有更糟。
 2. `entry` 指向的词条必须存在（校验 error）；**红链由「没有 `entry`」自然表达**，不需要额外的红链数据结构。
-3. `dataSource` 为 `awesome` / `market` / `launchers` / `specs` 的分区，`items` 由采集生成，人工只补 `blurb` / `tags` / `risk`——合并规则同 §7（人工优先，采集只填空白）。
+3. **分区页的内容由我们自己写**：`sections` 分组 + 条目（有的指向本站词条，有的是外链入口）。
+   外部源的数字以「引用 + 快照」的形式写进二级分区的 `intro` 综述里（样板见插件分区的「插件市场」）。
+   > 早先这里是「`dataSource` 为 awesome / market / launchers 的分区，items 由采集生成」——
+   > 那套「分区优先消费外部源」的模型已废弃，见 [07](07-multi-source-zones.md) 顶部的说明。
 4. **分区层不追求完整**：目标是「找到入口」，不是「穷举生态」。想做全量的冲动应该转成外链。
-5. **分区专属字段走 `itemFields` 白名单**（如「界面与客户端」的 `form` / `shippedBy` / `profile`、「启动器」的 `lineage`）；条目出现白名单外的键即 error——防止条目变成随手塞字段的垃圾袋。
-6. **同一个实体可以同时挂在多个分区**（例如官方桌面端既是启动器也是一种客户端形态）。数据只有一份，靠 `entities.yml` 归并；分区页各自渲染一次卡片。分区的划分与生成规则见 [06](06-zones-and-entries.md) §2。
+5. **分区专属字段走 `itemFields` 白名单**；条目出现白名单外的键即 error——防止条目变成随手塞字段的垃圾袋。
+   通用卡片键（含 `section`）不必声明进 `itemFields`。
+6. **同一个实体可以同时挂在多个分区**。数据只有一份，靠 `entities.yml` 归并；分区页各自渲染一次卡片。分区的划分与生成规则见 [06](06-zones-and-entries.md) §2。
 
 ### 1.4 实体归并：多源同物只出现一次（`data/entities.yml`）
 

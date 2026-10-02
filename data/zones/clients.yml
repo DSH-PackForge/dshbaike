@@ -4,7 +4,6 @@
 zone: clients
 title: 界面与客户端
 desc: 你从哪、以什么界面使用 DSH：官方 Web UI、各类桌面端、终端界面（TUI）、无界面 CLI 与 headless 跑法。「启动器」管的是装上与起得来，这里管的是用起来是什么样。
-dataSource: curated
 kinds: [client]
 sections:
   - id: official

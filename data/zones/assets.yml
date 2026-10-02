@@ -3,7 +3,6 @@
 zone: assets
 title: 素材与本地化
 desc: 图标、字体、界面文案与本地化包。这一层解决的不是「DSH 能做什么」，而是「它看起来、读起来像不像中文用户的东西」。
-dataSource: curated
 kinds: [asset]
 sections:
   - id: locale
