@@ -16,12 +16,19 @@ Issue 表单
 【第一道闸（b）】维护者在**这个 Issue 里回复 `/approve`** → gate job 校验批准人权限，
             并取出「批准这条评论之前」那一版回帖里的指纹（= 他当时看到的那一版）
    ↓
-【执行】apply job：指纹一致才写文件 → 跑 validate → 开 PR
+【执行】apply job：指纹一致才写文件 → 跑 validate → **机器人自己开 PR（署名贡献者）**
    ↓
-【第二道闸】PR 带 bot-pr + needs-review，main 的分支保护要求 Code Owners 批准
+【第二道闸】PR 带 bot-pr + needs-review，自动请求 Code Owners 审核，
+            main 的分支保护让它停在 `BLOCKED`，批准后才能合并
    ↓
    维护者审 PR → 合并（机器人从不合并）
 ```
+
+**署名**：提交信息带 `Co-authored-by: <贡献者> <id+用户名@users.noreply.github.com>`，
+所以贡献者的头像会出现在这条提交上、也算进他们的贡献。署名取两个来源、去重：
+**提 Issue 的人**（GitHub 认过的身份）与**表单里写的 GitHub 用户名**（目前只有「认领维护」那张表有）。
+PR 作者仍是 `github-actions`——**这一点很重要**：如果 PR 作者是维护者自己，
+他就不能批准自己的 PR，第二道闸就形同虚设。
 
 **为什么是两道闸**：第一道审的是**意图**（这个请求该不该做），第二道审的是**结果**
 （它具体改成了什么样）。只留一道的话，要么维护者被迫先信任一个还没发生的改动，
@@ -114,18 +121,25 @@ Issue 表单
 | `[补充分区条目] themes` | 往 `packs` 追加一条卡片，validate 0/0 |
 | `[改一个字段] concept/1` | `updatedAt` 更新为表单给的值（**不带引号**，与文件既有风格一致——机器人的 diff 要干净到可以直接审） |
 | `[改正文里的一句话]`（真实句子） | 正文里那一处被替换 |
-| **两道闸**（`[改一个字段]` 全流程） | check job 干跑并回帖「等审核」→ apply job **waiting**（pending deployment，审核者=维护者）→ 批准后两个 job 都 success → 分支只差开 PR |
+| **两道闸**（`[改一个字段]` 全流程） | check job 干跑并回帖「等审核 + 指纹」→ `/approve` → apply job 改文件、跑校验、**自己开 PR**（PR #10）：作者 `github-actions`、标签 `bot-pr`/`needs-review`、自动请求 Code Owners 审核、状态 `BLOCKED` 等第二道闸 |
+| **署名** | 提交里 `Co-authored-by: hxh230802 <106608151+hxh230802@users.noreply.github.com>`（noreply 邮箱才认得到账号）；PR 描述写明提出者与批准人 |
 | 片段在正文里出现多次 | `ambiguous` + `escalate=true` → 回帖教 fork + PR |
 | 改嵌套字段 `compat` | `unsupported` + `escalate=true` → 同上 |
 | 二级分区 id 写错 | `unknown-section` + `escalate=false` → 提示改表单重试 |
 
-> **一处组织策略限制**：本组织禁止 GitHub Actions 创建 PR
-> （`Write permissions for workflows are disabled by the organization`），
-> 所以 `gh pr create` 会被拒。workflow 因此**带回退**：分支与提交照做，
-> 回帖里给出 `https://github.com/<repo>/pull/new/<branch>`，**只差人点一下**。
-> 想完全自动：组织管理员在 `Settings → Actions → General → Workflow permissions`
-> 打开「允许 GitHub Actions 创建并批准 PR」。
-> 另一条路是存 PAT 当 secret；**本仓库没这么做**——长期凭据换一次点击，不划算。
+> **组织策略（已解决）**：组织原本禁止 Actions 创建 PR
+> （`The organization does not allow GitHub Actions to create or approve pull requests`），
+> 我们试过仓库级覆盖，被组织挡回。维护者随后在
+> `Settings → Actions → General → Workflow permissions` 勾上
+> 「Allow GitHub Actions to create and approve pull requests」——**现在机器人自己开 PR**，
+> 实测 PR #10：作者 `github-actions`、标签 `bot-pr`/`needs-review`、自动请求 Code Owners 审核、
+> 状态 `MERGEABLE / BLOCKED`（等第二道闸）。workflow 里仍写成
+> `secrets.BOT_TOKEN || secrets.GITHUB_TOKEN`：万一将来策略又变，配一个账号令牌即可绕过，零代码改动。
+>
+> **改 workflow 后必须本地先过 YAML**：`node scripts/check-workflows.mjs`（CI 里也跑）。
+> 实测踩过——`run: |` 块标量里一个顶到第 0 列的收尾引号让整个 workflow 解析失败，
+> 而 GitHub **不报错**，只把那次推送记成 "workflow file issue"，真正的事件根本不触发。
+> 这类失败**没有任何提示**，只能靠本地校验拦住。
 
 ## 6. 还没做的（同一套模式可以直接加）
 
