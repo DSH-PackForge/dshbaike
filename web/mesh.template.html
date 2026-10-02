@@ -30,20 +30,26 @@ var t=localStorage.getItem('dsh-pedia-theme');if(t&&t!=='auto')d.setAttribute('d
 var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent',a);}catch(e){}})();
 </script>
 <base href="/">
-<link rel="stylesheet" href="pedia.css">
+<!-- 只链主题令牌（accent.css 自带 :root 的 --bg/--text/--border/--brand…），
+     **不链 pedia.css**：那是整站的样式表，带 body/main/容器的宽度与边距规则，
+     套在一个全屏应用外面会把它的宽度挤掉（实测 1470 的窗口里只给它 1290，
+     于是它三栏布局的中间那栏只剩 754，读者看到的就是一块空白）。 -->
 <link rel="stylesheet" href="accent.css">
 <style>
-  /* 这一页不走站点外壳（侧栏/页脚）：里面那张图是全屏应用，多一层壳反而挤。
-     说明条占一行，下面 iframe 铺满剩余高度。 */
+  /* 这一页不走站点外壳（侧栏/页脚）：里面那张图是全屏应用。
+     用 grid 两行（说明条 auto + 应用 1fr）而不是 flex + min-height，
+     这样 iframe 拿到的就是**确定的**剩余高度，不依赖布局时序。 */
   html,
   body {
     height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
   body {
-    margin: 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto 1fr;
     background: var(--bg);
     color: var(--text);
     font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -53,9 +59,9 @@ var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent'
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px 14px;
+    gap: 4px 12px;
     margin: 0;
-    padding: 8px 14px;
+    padding: 6px 14px;
     border-bottom: 1px solid var(--border);
     background: var(--bg-subtle);
   }
@@ -71,9 +77,10 @@ var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent'
   }
 
   .mesh-note__text {
-    flex: 1 1 420px;
+    flex: 1 1 320px;
     margin: 0;
     font-size: 13px;
+    line-height: 1.5;
     color: var(--text-muted);
   }
 
@@ -93,14 +100,14 @@ var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent'
   }
 
   .mesh-frame {
-    flex: 1 1 auto;
     display: block;
     width: 100%;
-    min-height: 60vh;
+    height: 100%;
+    min-height: 0;
     border: 0;
   }
 
-  @media (max-width: 760px) {
+  @media (max-width: 900px) {
     .mesh-note__text {
       flex-basis: 100%;
     }
@@ -113,10 +120,9 @@ var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent'
   <span class="mesh-note__text">
     这张图是
     <a href="https://github.com/WTStarMark/dsh-plugin-mesh" rel="noopener noreferrer external" target="_blank">WTStarMark/dsh-plugin-mesh</a>
-    （MIT 许可）——本站<strong>原样托管、未做任何修改</strong>；数据由上游每小时自动采集，
-    <strong>其中的数字与分类未经本站核实</strong>。
-    我们人工核实过的条目在 <a href="plugins.html">插件分区</a>，自己的关系数据在
-    <a href="data/graph.json">data/graph.json</a>。
+    （MIT）——本站<strong>原样托管、未做修改</strong>；数据由上游每小时自动采集，
+    <strong>数字与分类未经本站核实</strong>。我们核实过的条目在 <a href="plugins.html">插件分区</a>，
+    自己的关系数据在 <a href="data/graph.json">data/graph.json</a>。
   </span>
   <span class="mesh-note__meta">{{MESH_SNAPSHOT}}</span>
 </p>
@@ -127,5 +133,9 @@ var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent'
     或去 <a href="https://github.com/WTStarMark/dsh-plugin-mesh">上游仓库</a> 看它的说明。
   </p>
 </noscript>
+<!-- 这里刻意**不放任何脚本**：它的画布只在初始化时按容器量一次，也**不监听 resize**
+     （上游现状，见 vendor/dsh-plugin-mesh/README.md 的运维要点）。所以我们的责任是让它
+     一开始就拿到最终尺寸——这正是本页只用 grid 两行、且只链 accent.css（令牌）而不链
+     pedia.css（整站布局）的原因。窗口尺寸变化后画布不会跟着变，那是上游的限制。 -->
 </body>
 </html>
