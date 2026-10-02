@@ -1130,6 +1130,7 @@ function sitemapUrls(model, entryOutputs, indexes = []) {
   const list = [
     { loc: `${SITE_URL}/`, lastmod: null },
     { loc: `${SITE_URL}/tags.html`, lastmod: null },
+    { loc: `${SITE_URL}/about.html`, lastmod: null },
     // 全量插件生态图（第三方项目，构建期拷进 web/mesh/）
     { loc: `${SITE_URL}/mesh/`, lastmod: null },
   ];

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#2f6fb8">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://dshbaike.com/about.html">
+<title>关于本站与维护者 | DSH百科</title>
+<meta name="description" content="DSH百科是谁在维护、按什么规矩写、怎么参与：站点由 DSH-PackForge 维护，词条级维护者可以认领，内容只写能指到出处的部分。">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DSH百科">
+<meta property="og:title" content="关于本站与维护者 | DSH百科">
+<meta property="og:description" content="DSH百科是谁在维护、按什么规矩写、怎么参与。">
+<meta property="og:url" content="https://dshbaike.com/about.html">
+<meta property="og:image" content="https://dshbaike.com/og-image.png">
+<base href="/">
+<script>
+/* 尽早应用主题与主题色（键名与 pedia.js / accent.js 一致） */
+(function(){try{var d=document.documentElement;
+var t=localStorage.getItem('dsh-pedia-theme');if(t&&t!=='auto')d.setAttribute('data-theme',t);
+var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent',a);}catch(e){}})();
+</script>
+<!-- 手写静态页：走 page: 'static' 分支（该分支不移除正文，只补顶栏/侧栏） -->
+<script>window.__PEDIA__ = { base: "./", page: "static", kind: null, n: null, title: "关于本站" };</script>
+<link rel="stylesheet" href="pedia.css">
+<link rel="stylesheet" href="accent.css">
+</head>
+<body data-page="static">
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="masthead" id="site-masthead"></header>
+<noscript>
+  <p class="notice notice--warn"><span class="notice__icon" aria-hidden="true">!</span>
+  这一页的内容都在页面里，不启用 JavaScript 也能读；站点导航需要 JavaScript。</p>
+</noscript>
+
+<div class="layout">
+  <main id="main" tabindex="-1">
+    <div class="prerender" data-prerender="about">
+      <article class="prose">
+        <h1>关于本站与维护者</h1>
+        <p>DSH百科是一站式的 DeepSeek Harness 中文百科：把「怎么装、怎么配、各家长什么样」整理成
+          能查、能核对、能照着做的页面。</p>
+
+        <h2>谁在维护</h2>
+        <p><strong>站点</strong>由 <a href="https://github.com/DSH-PackForge" rel="noopener noreferrer external" target="_blank">DSH-PackForge</a>
+          维护：仓库在 <a href="https://github.com/DSH-PackForge/dshbaike" rel="noopener noreferrer external" target="_blank">DSH-PackForge/dshbaike</a>，
+          域名 <code>dshbaike.com</code>。本站<strong>没有后端</strong>：页面是构建期生成的静态 HTML，
+          每次改动都走 GitHub 上的提交与评审。</p>
+        <p><strong>词条级维护者</strong>是另一回事，也是本站维护方式的重点：每条词条都可以由人
+          <em>认领维护</em>（词条页上的「我来维护」），认领之后，改这一条的请求会先请他们过目。
+          所以本站没有一份统一的「编辑名单」——你打开任意一条词条，页面自己会告诉你
+          <strong>这一条是谁在跟进</strong>。</p>
+
+        <h2>按什么规矩写</h2>
+        <p>这些不是口号，是站点实际执行的规则（可以在任意页面上核对）：</p>
+        <ul>
+          <li><strong>只写能指到出处的</strong>：每条外部事实都带来源与<strong>快照日期</strong>（如「69 star，快照 2026-10-02」）。
+            查不到出处就写「未核实」，不猜、不补全。</li>
+          <li><strong>不替读者做决定</strong>：本站标「具备什么能力」（如某启动器的平台、版本格式、
+            是否支持 <code>.dspack</code>），不写「哪个更好」。缺点只写事实与代价，不做负面定性。</li>
+          <li><strong>刻意不全量收录</strong>：插件生态有数千个条目，全量目录交给
+            <a href="https://awesome-dsh-plugin.com/zh/" rel="noopener noreferrer external" target="_blank">awesome-dsh-plugin.com</a> 与
+            <a href="https://dshbase.com/" rel="noopener noreferrer external" target="_blank">dshbase.com</a>——它们做得比我们好。
+            本站收的是<strong>被教程引用过、或被整合包用到</strong>的那些，为它写一篇能解释机制与坑的聚合页。</li>
+          <li><strong>倾向可核查的形式</strong>：结论尽量给可复现的做法（命令、字段、文件路径），
+            而不是「据说」「一般情况下」。</li>
+        </ul>
+
+        <h2>怎么参与</h2>
+        <ul>
+          <li><strong>发现一个小错</strong>：词条页上有「改一句话」「改字段」「纠错」等表单，
+            填完由自动化提交改动、再由人过一遍——不需要你装任何东西、也不需要懂 Git。</li>
+          <li><strong>认领一条词条</strong>：词条页上的「我来维护」；认领后你会成为它的维护者。</li>
+          <li><strong>写一条新词条</strong>：红链（「写这一条」）或
+            <a href="https://github.com/DSH-PackForge/dshbaike/issues/new?template=6-new-entry.yml" rel="noopener noreferrer external" target="_blank">新增词条</a> 表单；
+            编号与骨架由自动化处理，你负责内容与出处。</li>
+          <li><strong>站点本身的问题</strong>（导航、搜索、样式、渲染、想加分区或词条类型）：
+            <a href="https://github.com/DSH-PackForge/dshbaike/issues/new?template=7-meta.yml" rel="noopener noreferrer external" target="_blank">走这张表</a>——这类要人来判断与设计。</li>
+        </ul>
+
+        <h2>与其它站点的关系</h2>
+        <ul>
+          <li><a href="https://awesome-dsh-plugin.com/zh/" rel="noopener noreferrer external" target="_blank">awesome-dsh-plugin.com</a>：社区精选目录，负责「发现」；</li>
+          <li><a href="https://dshbase.com/" rel="noopener noreferrer external" target="_blank">dshbase.com</a>：中文入门与排错；</li>
+          <li><a href="https://github.com/DSH-PackForge/dsh-pack-market" rel="noopener noreferrer external" target="_blank">dsh-pack-market</a>：整合包索引与启动器认领（数据上游）；</li>
+          <li><a href="https://github.com/DSH-PackForge/DSH-PackForge" rel="noopener noreferrer external" target="_blank">DSH-PackForge 规范仓库</a>：<code>manifest</code>、<code>pack-structure</code>、<code>index</code> 等契约的定义者；</li>
+          <li><a href="https://github.com/WTStarMark/dsh-plugin-mesh" rel="noopener noreferrer external" target="_blank">dsh-plugin-mesh</a>：按功能铺开的全量生态图（自动采集，未经本站核实）；</li>
+          <li><a href="https://github.com/WTStarMark/dsh-myskin" rel="noopener noreferrer external" target="_blank">dsh-myskin</a>：本站配色参考的海洋风格皮肤框架。</li>
+        </ul>
+
+        <h2>致谢</h2>
+        <p>本站的吉祥物「大肥鱼」素材来自
+          <a href="https://github.com/YunYueSama/codex-deepseek-pet" rel="noopener noreferrer external" target="_blank">YunYueSama/codex-deepseek-pet</a>
+          （按其署名许可使用，完整许可文本随仓库分发）。生态图与皮肤配色分别参考上面两个项目。
+          页脚列出的生态各站，是本站愿意把读者送过去的地方。</p>
+
+        <p class="faint">如果你希望在这里加上维护者自己的介绍（ID、在做什么、为什么做这个站），
+          欢迎<a href="https://github.com/DSH-PackForge/dshbaike/issues/new?template=7-meta.yml" rel="noopener noreferrer external" target="_blank">告诉我们</a>——
+          本站的原则是不替人写履历，所以这一节只写当事人自己愿意公开的部分。</p>
+      </article>
+    </div>
+  </main>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="pedia.js" defer></script>
+<script src="accent.js" defer></script>
+<script src="indexlinks.js" defer></script>
+</body>
+</html>

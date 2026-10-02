@@ -1123,6 +1123,10 @@
         joinWith(ECO.map(function (e) { return extLink(e.url, e.label); }), ' · ')
       )),
       el('p', { class: 'footer__line' }, [
+        el('a', { href: 'about.html', text: '关于本站与维护者' }),
+        document.createTextNode(' · '),
+      ]),
+      el('p', { class: 'footer__line' }, [
         document.createTextNode('发现交给 awesome，入门交给 dshbase，解释交给我们。 · '),
         el('a', { href: SITE.contributing, rel: 'noopener noreferrer external', target: '_blank', text: '贡献指南（领号流程）' }),
         document.createTextNode(' · '),
