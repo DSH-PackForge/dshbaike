@@ -311,6 +311,9 @@ function main(argv) {
   // 汇总页：所有索引页的入口（人和爬虫都能一页看全）
   push(writes, nextManifest, 'tags.html', renderTagsHub(indexTemplate?.text ?? null, indexes));
 
+  // 维护者名册（数据源是词条自己的 maintainers）
+  push(writes, nextManifest, 'maintainers.html', renderMaintainersPage(indexTemplate?.text ?? null, entryOutputs));
+
   /* ---- SEO：sitemap.xml 与 robots.txt（P1） ---- */
   push(writes, nextManifest, 'sitemap.xml', sitemapXml(sitemapUrls(model, entryOutputs, indexes)));
   push(writes, nextManifest, 'robots.txt', robotsTxt());
@@ -381,7 +384,7 @@ function isOwnedArtifact(rel) {
   if (p === 'mesh' || p.startsWith('mesh/')) return true;
   if (p === 'sitemap.xml' || p === 'robots.txt') return true;
   if (/^(tag|platform)\/[a-z0-9-]+\.html$/.test(p)) return true;
-  if (p === 'tags.html') return true;
+  if (p === 'tags.html' || p === 'maintainers.html') return true;
   if (/^[a-z]+\/\d+\.html$/.test(p)) return true;
   if (/^[a-z]+\.html$/.test(p) && p !== 'index.html') return true;
   return false;
@@ -1071,15 +1074,20 @@ function prerenderZone(output, entryOutputs, indexes = []) {
     const list = grouped.get(sec.id) ?? [];
     if (!list.length) continue;
     L.push(`<h2>${escapeHtml(sec.title ?? sec.id)}</h2>`);
+    // 二级分区的**综述**（`intro`，构建期已渲染成 introHtml）也要进来：
+    // 之前只渲染了 title/desc + 卡片，于是那段说明（含「去哪儿找全量」这类表格）
+    // 只存在于 JSON 里，无 JS 的读者与爬虫都看不到。
     if (sec.collapsed) {
       // 默认折叠的节：说明与条目折进 <details>（内容仍在 HTML 里，爬虫与无 JS 用户都能读）
       L.push(`<details class="collapse subsec__fold"><summary>说明与条目（${list.length} 条）</summary>`);
       if (sec.desc) L.push(`<p>${escapeHtml(sec.desc)}</p>`);
+      if (sec.introHtml) L.push(sec.introHtml);
       emit(list);
       L.push('</details>');
       continue;
     }
     if (sec.desc) L.push(`<p>${escapeHtml(sec.desc)}</p>`);
+    if (sec.introHtml) L.push(sec.introHtml);
     emit(list);
   }
   const rest = grouped.get('') ?? [];
@@ -1131,6 +1139,7 @@ function sitemapUrls(model, entryOutputs, indexes = []) {
     { loc: `${SITE_URL}/`, lastmod: null },
     { loc: `${SITE_URL}/tags.html`, lastmod: null },
     { loc: `${SITE_URL}/about.html`, lastmod: null },
+    { loc: `${SITE_URL}/maintainers.html`, lastmod: null },
     // 全量插件生态图（第三方项目，构建期拷进 web/mesh/）
     { loc: `${SITE_URL}/mesh/`, lastmod: null },
   ];
@@ -1349,6 +1358,92 @@ function renderTagsHub(template, indexes) {
     prerender: L.join('\n'),
     canonical: `${SITE_URL}/tags.html`,
     payload: { base: BASE, page: 'static', kind: null, n: null, title: '全部索引' },
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* 维护者名册（maintainers.html）                                       */
+/*                                                                     */
+/* 数据源就是词条自己的 `maintainers`（词条级维护者，docs/14）——不另立名单， */
+/* 所以谁接手了哪一条，永远和词条页面说的是同一份事实。                    */
+/* ------------------------------------------------------------------ */
+
+/** maintainers 可能是 `"login"`（单元素被 YAML 解析成标量）、`[a, b]`、空数组或 null */
+function normalizeMaintainers(value) {
+  if (isMissing(value)) return [];
+  const list = Array.isArray(value) ? value : [value];
+  return list.map((v) => String(v).trim()).filter(Boolean);
+}
+
+/** 登录名 → 他接手的词条 */
+function collectMaintainers(entryOutputs) {
+  const by = new Map();
+  for (const output of entryOutputs.values()) {
+    if (output.status === 'deleted') continue;
+    for (const login of normalizeMaintainers(output.meta?.maintainers)) {
+      if (!by.has(login)) by.set(login, []);
+      by.get(login).push({ id: output.id, kind: output.kind, n: output.n, title: output.title ?? output.id });
+    }
+  }
+  return [...by.entries()]
+    .map(([login, entries]) => ({ login, entries: sortBy(entries, (e) => e.id) }))
+    .sort((a, b) => (a.login.toLowerCase() < b.login.toLowerCase() ? -1 : 1));
+}
+
+function renderMaintainersPage(template, entryOutputs) {
+  const people = collectMaintainers(entryOutputs);
+  const L = [];
+  L.push('<div class="prerender" data-prerender="maintainers">');
+  L.push('<h1>维护者名册</h1>');
+  L.push('<p>本站的词条可以由人<strong>接手维护</strong>：接手之后，改这一条的请求会先请你过目，' +
+    '上游变了、内容过时了也能 @ 到你。这一页把所有接手过词条的人挂在一起——' +
+    '名单不是我们指定的，而是每条词条自己的 <code>maintainers</code> 汇总出来的。</p>');
+
+  if (!people.length) {
+    L.push('<p class="faint">现在还没有人接手任何词条。第一条会出现在这里——' +
+      '在任意词条页点「我来维护」，或者直接在 Issue 里说一声就行。</p>');
+  } else {
+    L.push('<ul class="roster">');
+    for (const person of people) {
+      const login = escapeHtml(person.login);
+      const mono = escapeHtml(person.login.slice(0, 1).toUpperCase());
+      L.push('<li class="roster__item">');
+      L.push(`<span class="roster__avatar"><span class="roster__mono" aria-hidden="true">${mono}</span>` +
+        `<img src="https://github.com/${encodeURIComponent(person.login)}.png" alt="" loading="lazy" ` +
+        'referrerpolicy="no-referrer" width="48" height="48"></span>');
+      L.push('<span class="roster__body">');
+      L.push(`<a class="roster__name" href="https://github.com/${encodeURIComponent(person.login)}" ` +
+        `rel="noopener noreferrer external" target="_blank">${login}</a>`);
+      L.push(`<span class="roster__count">接手 ${person.entries.length} 条</span>`);
+      L.push('<span class="roster__entries">');
+      L.push(sortBy(person.entries, (e) => e.kind === 'launcher' ? 0 : 1)
+        .map((e) => `<a href="${e.kind}/${e.n}.html">${escapeHtml(e.title)}</a>`)
+        .join(' · '));
+      L.push('</span>');
+      L.push('</span>');
+      L.push('</li>');
+    }
+    L.push('</ul>');
+    L.push(`<p class="faint">共 ${people.length} 位维护者，覆盖 ${people.reduce((a, p) => a + p.entries.length, 0)} 条词条。` +
+      '想让你的名字也出现在这里：在词条页点「我来维护」。</p>');
+  }
+
+  L.push('<h2>接手之后你会负责什么</h2>');
+  L.push('<ul>');
+  L.push('<li>这一条被改动前，会先请你过目（你就是它的第一道关）；</li>');
+  L.push('<li>上游变了、链接挂了、数字过时了，我们可以 @ 到你；</li>');
+  L.push('<li>你自己改这一条时，可以直接批自己的请求（不必等别人）。</li>');
+  L.push('</ul>');
+  L.push('<p class="faint">不要求你会写 Markdown、也不要求你本地跑脚本——' +
+    '表单提交后由自动化改文件并开 PR。</p>');
+
+  L.push('</div>');
+  return applyTemplate(template, {
+    title: '维护者名册 | DSH百科',
+    desc: `接手维护 DSH百科词条的人：共 ${people.length} 位，覆盖 ${people.reduce((a, p) => a + p.entries.length, 0)} 条词条。`,
+    prerender: L.join('\n'),
+    canonical: `${SITE_URL}/maintainers.html`,
+    payload: { base: BASE, page: 'static', kind: null, n: null, title: '维护者名册' },
   });
 }
 

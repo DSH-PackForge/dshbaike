@@ -25,7 +25,9 @@ const check = (name, got, want) => {
 console.log('== ① 路由：标题 → 操作 + 编号 ==');
 // 一张表单 = 一个意图：站点深链把编号写进标题（GitHub 不能预填表单字段，只能预填标题）
 const routes = [
-  ['[认领维护] plugin/1', {}, 'claim', 'plugin/1'],
+  ['[接手维护] plugin/1', {}, 'claim', 'plugin/1'],
+  ['[认领维护] plugin/1', {}, 'claim', 'plugin/1'], // 旧标题仍要能解析
+  ['[接手维护] plugin/1', { 'GitHub 用户名': 'someone' }, 'claim', 'plugin/1'],
   ['[改一个字段] concept/1', {}, 'field', 'concept/1'],
   ['[改正文里的一句话] plugin/1', {}, 'replace', 'plugin/1'],
   ['[补充分区条目] themes', {}, 'zone-item', 'themes'],

@@ -248,7 +248,9 @@ export const OPS = {
   /** 认领维护：把用户名加进 maintainers（唯一一处改动） */
   claim: {
     id: 'claim',
-    title: '认领维护',
+    title: '接手维护',
+    // 兼容旧标题：这个操作以前叫「认领维护」，历史 Issue 仍然要能解析
+    alts: ['认领维护'],
     summary: (v) => `把 ${v.user} 加进 maintainers`,
     apply({ target, form }) {
       const id = (form['词条 id'] || target || '').trim().replace(/^`|`$/g, '');
@@ -466,13 +468,22 @@ export function findOp(title, form = {}) {
   if (!opTitle) return null;
   const all = Object.values(OPS);
 
-  const direct = all.find((op) => op.title === opTitle);
+  // op.alts 是**旧标题兼容**（这个操作以前叫别的名字，历史 Issue 仍要能解析）
+  const matches = (op, title) => op.title === title || (Array.isArray(op.alts) && op.alts.includes(title));
+  const direct = all.find((op) => matches(op, opTitle));
   if (direct) return { op: direct, target };
 
   if (opTitle === CONTENT_CLASS_TITLE) {
-    const named = all.find((op) => target.includes(op.title));
-    if (named) return { op: named, target: target.replace(named.title, '').trim() };
-    const picked = all.find((op) => op.title === String(form['操作类型'] ?? '').trim());
+    // 注意：这里必须判断"标题/别名**出现在 target 里**"，
+    // 不能写成 matches(op, op.title)（那恒为真，会永远命中第一个操作）。
+    const mentions = (op) => target.includes(op.title) ||
+      (Array.isArray(op.alts) && op.alts.some((a) => target.includes(a)));
+    const named = all.find(mentions);
+    if (named) {
+      const hit = [named.title, ...(Array.isArray(named.alts) ? named.alts : [])].find((x) => target.includes(x)) ?? named.title;
+      return { op: named, target: target.replace(hit, '').trim() };
+    }
+    const picked = all.find((op) => matches(op, String(form['操作类型'] ?? '').trim()));
     if (picked) return { op: picked, target };
   }
   return null;

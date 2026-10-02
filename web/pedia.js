@@ -1125,7 +1125,9 @@
         joinWith(ECO.map(function (e) { return extLink(e.url, e.label); }), ' · ')
       )),
       el('p', { class: 'footer__line' }, [
-        el('a', { href: 'about.html', text: '关于本站与维护者' }),
+        el('a', { href: 'about.html', text: '关于本站' }),
+        document.createTextNode(' · '),
+        el('a', { href: 'maintainers.html', text: '维护者名册' }),
         document.createTextNode(' · '),
       ]),
       el('p', { class: 'footer__line' }, [
@@ -1596,7 +1598,8 @@
    *  GitHub **不支持**用 URL 预填 YAML 表单字段，只有标题能预填，所以编号放标题里，
    *  机器人从标题尾部取编号（docs/14 §1.2）。 */
   function claimHref(id) {
-    return issueForm('1-claim.yml', { title: '[认领维护] ' + id });
+    // 「接手维护」而不是「认领」：认领在中文里更像失物招领，接手才是"接下来我负责"
+    return issueForm('1-claim.yml', { title: '[接手维护] ' + id });
   }
 
   /** 只给**真能机械补**的字段一个可粘贴片段；写内容类的字段不给（不硬凑） */
