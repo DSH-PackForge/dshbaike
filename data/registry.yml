@@ -176,9 +176,9 @@ entries:
     status: published
   - n: 1
     kind: spec
-    title: 'manifest v5（当前）'
+    title: '规范编号 1（预留）'
     createdAt: 2026-10-02
-    status: published
+    status: draft
   - n: 2
     kind: spec
     title: 'DSH-PackForge 规范仓库'

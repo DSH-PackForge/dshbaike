@@ -39,7 +39,7 @@ items:
     specStatus: current
     fileName: specs/manifest/v5.md
     source: specs
-    entry: spec/1
+    entry: spec/2
     tags: ["工具与能力"]
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/manifest/v5.md
@@ -50,7 +50,7 @@ items:
     specStatus: historical
     fileName: specs/manifest/v1.md
     source: specs
-    entry: spec/1
+    entry: spec/2
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/manifest/v1.md
   - name: pack-structure v1–v2（历史版本）
