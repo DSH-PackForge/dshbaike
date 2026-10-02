@@ -1157,7 +1157,9 @@ function sitemapUrls(model, entryOutputs, indexes = []) {
   for (const index of indexes) list.push({ loc: `${SITE_URL}/${index.kind}/${index.slug}.html`, lastmod: null });
   for (const zone of model.zones) list.push({ loc: `${SITE_URL}/${zone.zone}.html`, lastmod: null });
   for (const output of entryOutputs.values()) {
-    if (output.status === 'deleted') continue;
+    // 墓碑（deleted）与草稿（draft）都不进 sitemap：
+    // 前者是"保留链接但不该被搜到"，后者是"还没写完、不该被搜索引擎当内容推荐"
+    if (output.status === 'deleted' || output.status === 'draft') continue;
     list.push({
       loc: `${SITE_URL}/${output.kind}/${output.n}.html`,
       lastmod: output.updatedAt ?? null,
@@ -1466,7 +1468,8 @@ function renderEntryPage(template, output, entryOutputs, indexes = []) {
     desc,
     prerender: prerenderEntry(output, entryOutputs, indexes),
     canonical: `${SITE_URL}/${output.kind}/${output.n}.html`,
-    noindex: output.status === 'deleted',
+    // 草稿页也 noindex（spec/1 那种预留站位就是草稿）
+    noindex: output.status === 'deleted' || output.status === 'draft',
     payload: { base: BASE, page: 'entry', kind: output.kind, n: output.n, title: output.title },
   });
 }
