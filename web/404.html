@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 站点标识（scripts/logo.mjs 生成，入库） -->
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#2f6fb8">
+<!-- 404 页由 GitHub Pages 自动用于所有未知路径：它必须**不**被索引（noindex + robots 里也挡了）。
+     canonical 指向首页，避免这页自己被当成一个"正常页面"收进去。 -->
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://dshbaike.com/">
+<title>没有这个页面 | DSH百科</title>
+<meta name="description" content="这个地址在 DSH百科 上没有内容。给出去处：十二个一级分区、全部索引（按标签与平台）与首页。">
+<meta name="color-scheme" content="light dark">
+<base href="/">
+<script>
+/* 尽早应用主题与主题色，避免刷新时闪一下默认色（键名与 pedia.js / accent.js 一致）。 */
+(function(){try{var d=document.documentElement;
+var t=localStorage.getItem('dsh-pedia-theme');if(t&&t!=='auto')d.setAttribute('data-theme',t);
+var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent',a);}catch(e){}})();
+</script>
+<!-- 这一页不参与构建期预渲染：正文直接手写在 <main> 里，boot 的分支是 page: 'static'
+     （static 分支**不移除**正文，只补顶栏/侧栏），所以 <main> 里必须包在 data-prerender 里。 -->
+<script>window.__PEDIA__ = { base: "./", page: "static", kind: null, n: null, title: "没有这个页面" };</script>
+<link rel="stylesheet" href="pedia.css">
+<link rel="stylesheet" href="accent.css">
+</head>
+<body data-page="static">
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="masthead" id="site-masthead"></header>
+<noscript>
+  <p class="notice notice--warn"><span class="notice__icon" aria-hidden="true">!</span>
+  这一页的内容在页面里，不启用 JavaScript 也能读；站点导航与搜索需要 JavaScript。</p>
+</noscript>
+
+<div class="layout">
+  <main id="main" tabindex="-1">
+    <div class="prerender" data-prerender="404">
+      <article class="prose">
+        <h1>这个地址上没有内容</h1>
+        <p>可能是链接写错了、条目被撤下，或者那个词条还没人写。下面几条路都能走回去。</p>
+
+        <h2>一、按分区找</h2>
+        <p>本站分十二个一级分区，从「界面与客户端」到「规范与协议」：</p>
+        <ul>
+          <li><a href="clients.html">界面与客户端</a> —— 桌面端、终端界面、无界面与 headless 跑法</li>
+          <li><a href="plugins.html">插件</a> —— 官方与第三方插件、插件市场</li>
+          <li><a href="skills.html">技能包</a> —— 以 SKILL.md 为单位的可加载能力</li>
+          <li><a href="launchers.html">启动器</a> —— 图形启动器、包装器与命令行入口</li>
+          <li><a href="packs.html">整合包</a> —— 一次装一整套的 .dspack 单文件包</li>
+          <li><a href="mcps.html">MCP 与工具接入</a> —— 把外部工具接成模型能调用的能力</li>
+          <li><a href="themes.html">主题与皮肤</a> —— 主题引擎、配色令牌、壁纸与图标包</li>
+          <li><a href="assets.html">素材与本地化</a> —— 图标、字体、界面文案与本地化包</li>
+          <li><a href="presets.html">预设与人设</a> —— agent preset 与 persona 角色设定</li>
+          <li><a href="recipes.html">指令与配方</a> —— 可粘贴的配置片段</li>
+          <li><a href="toolchain.html">工具链</a> —— 打包、安装、市场索引与调试工具</li>
+          <li><a href="specs.html">规范与协议</a> —— manifest、pack-structure、index 等约定</li>
+        </ul>
+
+        <h2>二、按标签或平台找</h2>
+        <p>「支持 .dspack 的启动器」「Windows 上的 DSH」这类问题，我们在
+          <a href="tags.html">全部索引</a> 里按标签与平台分了页。</p>
+
+        <h2>三、直接搜</h2>
+        <p>页面左上角有搜索框（词条 / 插件 / 教程都能搜）；或者回
+          <a href="./">首页</a> 从「全部词条」与「十二个一级分区」进。</p>
+
+        <h2>如果你要找的词条本该在这里</h2>
+        <p>如果你确定这个东西该有词条，可以走
+          <a href="https://github.com/DSH-PackForge/dshbaike/issues/new?template=6-new-entry.yml" rel="noopener noreferrer external" target="_blank">新增词条</a>
+          表单（编号与骨架由自动化处理，不需要装任何东西）；找不到的链接也欢迎
+          <a href="https://github.com/DSH-PackForge/dshbaike/issues" rel="noopener noreferrer external" target="_blank">开个 issue</a> 告诉我们。</p>
+      </article>
+    </div>
+  </main>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="pedia.js" defer></script>
+<script src="accent.js" defer></script>
+<script src="indexlinks.js" defer></script>
+</body>
+</html>

@@ -5,6 +5,7 @@ web/*.html
 !web/index.html
 !web/*.template.html
 !web/promo.html
+!web/404.html
 # 第三方全量生态图：事实源在 vendor/dsh-plugin-mesh/（入库），web/mesh/ 是构建期拷出来的产物
 web/mesh/
 
