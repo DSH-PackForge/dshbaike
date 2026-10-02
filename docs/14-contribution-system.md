@@ -21,7 +21,8 @@ Issue 表单
 【第二道闸】PR 带 bot-pr + needs-review，自动请求 Code Owners 审核，
             main 的分支保护让它停在 `BLOCKED`，批准后才能合并
    ↓
-   维护者审 PR → 合并（机器人从不合并）
+   维护者审 PR → **点一次 Approve** → PR 上挂着的 auto-merge（squash）自动把它合掉
+   （机器人在开 PR 时挂 auto-merge，但它自己**不决定**合并：没有人的批准，它就停在 BLOCKED）
 ```
 
 **署名（归因要准）**：**提交作者 = 贡献者**（内容是人家定的），
@@ -199,11 +200,17 @@ B 类不能——「导航怎么改」没有机械解，只有设计判断。把
 **判据**：如果「机器人要改对」需要理解语义（改写一段话、调结构、判断哪个值对），
 就不该自动化。那不是技术限制，是责任边界——猜错的责任没人负。
 
-## 4. 审核：机器人永远不合并
+## 4. 审核：合并永远由人决定
 
 - 每个机器人 PR 都带 `bot-pr` + `needs-review` 标签；
 - `.github/CODEOWNERS` 让这些 PR 自动请求维护者审核；
-- workflow 里没有任何 merge 动作，**合并只能由人点**；
+- **人点一次 Approve 就够**（2026-10-02 起）：机器人开 PR 时会挂上 **auto-merge（squash）**，
+  批准一到它就把 PR 合掉、并自动删掉 `bot/...` 分支，维护者不必再点一次「合并」。
+  这里的关键是**决定权仍在人**：`main` 的分支保护要求 1 个 Code Owners 批准、
+  且 `require_code_owner_reviews` 为真、CODEOWNERS 只写了仓库维护者，
+  所以机器人**没有办法**让自己提的 PR 进入合并 —— 它只是执行已经批准的合并。
+  workflow 里也**不得**出现 `gh pr review --approve` / `gh pr merge --admin`，
+  这条约定由 `scripts/check-workflows.mjs` 第 ⑤ 项在 CI 里守着；
 - **`main` 已开分支保护**（2026-10-02）：要求 1 个来自 Code Owners 的批准、新提交会撤销旧批准、
   禁止强推与删分支；但 `enforce_admins: false`——**管理员（你）仍可直推 main**，
   被挡住的是 `github-actions`（它不是管理员，绕不过）。
