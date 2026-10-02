@@ -37,7 +37,7 @@ counters:
   spec: 1
   concept: 4
   tutorial: 3
-  source: 2
+  source: 3
 entries:
   - n: 1
     kind: concept
@@ -187,5 +187,10 @@ entries:
   - n: 1
     kind: plugin
     title: '官方插件与半端（deepseek-harness 仓库）'
+    createdAt: 2026-10-02
+    status: published
+  - n: 3
+    kind: source
+    title: dsh-plugin-mesh
     createdAt: 2026-10-02
     status: published
