@@ -73,6 +73,12 @@ jobs:
           FP: ${{ steps.dry.outputs.fingerprint }}
         run: |
           set -euo pipefail
+          # 这条改动动的是哪条词条、它的维护者是谁——要 @ 出来（docs/14 §1.4）
+          maint=$(node scripts/who-maintains.mjs --issue --one-line 2>/dev/null || true)
+          maint_mentions=""
+          if [ -n "${maint:-}" ]; then
+            maint_mentions=$(echo "$maint" | tr ',' '\n' | head -n 3 | sed 's/^/@/' | tr '\n' ' ')
+          fi
           if [ "$OK" = "true" ]; then
             gh issue comment "$ISSUE" -R "$REPO" --body "🕓 **已收到，等维护者批准后才动手。**
 
@@ -80,7 +86,8 @@ jobs:
 
           > ${SUMMARY}
           > 文件：\`${FILES}\`
-
+          ${maint_mentions:+
+          > 本条词条的维护者：${maint_mentions}——你们也可以直接回复 \`/approve\` 批准（第二道合并仍由仓库维护者过）}
           维护者看完在**本 Issue 里回复 \`/approve\`** 即可执行；执行完会开 PR，
           那个 PR 还要再审一次才能合并。
 
@@ -120,11 +127,15 @@ jobs:
       allowed: ${{ steps.gate.outputs.allowed }}
       fingerprint: ${{ steps.gate.outputs.fingerprint }}
       actor: ${{ steps.gate.outputs.actor }}
+      role: ${{ steps.gate.outputs.role }}
     steps:
       # 这个 job 也要 checkout：`gh` 的多数子命令（issue comment 等）要能确定「当前仓库」，
       # 在没有 git 仓库的目录里跑会失败于 `fatal: not a git repository`。
       # 同时每个 gh 调用都显式带 -R "$REPO"——不依赖 git 状态才不会静默失效。
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
 
       - name: 校验批准人权限 + 取出被审那一版的指纹
         id: gate
@@ -142,15 +153,30 @@ jobs:
             echo "机器人的评论不算批准"; exit 0
           fi
 
-          # 保险一：只有对这个仓库有写权限的人能批准（组织成员但只读也不行）
+          # 两道都认，但**都不需要给对方仓库权限**（docs/14 §1.4）：
+          #   ① 仓库维护者/有写权限的人；
+          #   ② **这条词条的维护者**——范围天然收窄：他只能批准自己那条词条的改动。
+          # 第二道闸（merge）仍在仓库维护者手里：分支保护要求 Code Owners 批准。
           perm=$(gh api "repos/${REPO}/collaborators/${COMMENT_USER}/permission" --jq '.permission' 2>/dev/null || echo none)
-          echo "批准人 ${COMMENT_USER} 的权限：${perm}"
+          maint=$(node scripts/who-maintains.mjs --issue --one-line 2>/dev/null || true)
+          echo "批准人 ${COMMENT_USER}：仓库权限=${perm}；本条词条维护者=${maint:-（无）}"
+
+          role=""
           case "$perm" in
-            admin|write) ;;
-            *)
-              gh issue comment "$ISSUE" -R "$REPO" --body "ℹ️ \`/approve\` 只有对本仓库有**写权限**的人可以下（@${COMMENT_USER} 目前是 \`${perm}\`）。"
-              exit 0 ;;
+            admin|write) role="repo" ;;
           esac
+          if [ -z "$role" ] && [ -n "${maint:-}" ]; then
+            case ",${maint}," in
+              *",${COMMENT_USER},"*) role="entry" ;;
+            esac
+          fi
+
+          if [ -z "$role" ]; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "ℹ️ \`/approve\` 需要是**这条词条的维护者**，或者对本仓库有**写权限**的人（@${COMMENT_USER} 两者都不是）。
+
+          本条词条的维护者：${maint:+$(echo "$maint" | sed 's/,/ /g' | sed 's/\([^ ]*\)/@\1/g')}${maint:-（还没有人认领）}"
+            exit 0
+          fi
 
           # 保险二：取「批准这条评论**之前**」机器人回帖里的审核指纹——
           # 也就是维护者当时看到的那一版；正文若在那之后被改过，apply 阶段会拒绝执行。
@@ -164,8 +190,9 @@ jobs:
 
           echo "fingerprint=$fp" >> "$GITHUB_OUTPUT"
           echo "actor=$COMMENT_USER" >> "$GITHUB_OUTPUT"
+          echo "role=$role" >> "$GITHUB_OUTPUT"
           echo "allowed=true" >> "$GITHUB_OUTPUT"
-          echo "已放行：指纹 $fp"
+          echo "已放行：指纹 $fp（批准人角色：$role）"
 
   # ---- 执行：批准之后才真的写文件、跑校验、开 PR -------------------------------
   apply:
@@ -229,7 +256,9 @@ jobs:
           FILES: ${{ steps.apply.outputs.files }}
           AUTHOR: ${{ steps.apply.outputs.author }}
           CREDITED: ${{ steps.apply.outputs.credited }}
+          NOTIFY: ${{ steps.apply.outputs.notify }}
           APPROVER: ${{ needs.gate.outputs.actor }}
+          APPROVER_ROLE: ${{ needs.gate.outputs.role }}
         run: |
           set -euo pipefail
           branch="bot/${OP}-${ISSUE}"
@@ -304,12 +333,23 @@ jobs:
             git commit -F /tmp/msg.txt
           fi
           git push --force-with-lease -u origin "$branch"
+          # 第一道闸是谁批的：仓库维护者还是**本条词条的维护者**（docs/14 §1.4）
+          if [ "${APPROVER_ROLE:-}" = "entry" ]; then
+            role_label="本条词条维护者"
+          else
+            role_label="仓库维护者"
+          fi
+          notify_line=""
+          if [ -n "${NOTIFY:-}" ]; then
+            notify_line=$(echo "$NOTIFY" | tr ',' '\n' | head -n 3 | sed 's/^/@/' | tr '\n' ' ')
+          fi
           body=$(printf '%s\n' \
             "由 Issue #${ISSUE} 的**表单**触发的自动改动。" \
             "" \
             "- 提出者（**提交作者**）：${credit_line:-（未知）}" \
             "- 代笔（共同作者）：github-actions[bot]" \
-            "- 批准人：@${APPROVER}" \
+            "- 第一道闸批准人：@${APPROVER}（**${role_label}**）" \
+            ${notify_line:+- 本条词条维护者：${notify_line}（也请过目）} \
             "- 操作：\`${OP}\`" \
             "- 改了：${SUMMARY}" \
             "- 文件：\`${FILES}\`（**只动这些**）" \

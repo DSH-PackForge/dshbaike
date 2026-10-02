@@ -27,6 +27,36 @@ const USAGE = `用法：node scripts/claim.mjs <kind>/<n> <github-username>
 /** GitHub 用户名规则见 lib/util.mjs（贡献系统的共享契约，docs/14） */
 
 /**
+ * 读出一段 front-matter 里的 maintainers（行内数组或块列表都认）。
+ * 用于「这条词条的维护者是谁」——机器人要 @ 他们（docs/14 §1.4）。
+ */
+export function readMaintainers(raw) {
+  const lines = String(raw ?? '').split('\n');
+  if (lines[0]?.trim() !== '---') return [];
+  let end = -1;
+  for (let i = 1; i < lines.length; i += 1) {
+    if (lines[i].trim() === '---') { end = i; break; }
+  }
+  if (end < 0) return [];
+  for (let i = 1; i < end; i += 1) {
+    const inline = /^\s*maintainers:\s*\[(.*)\]\s*$/.exec(lines[i]);
+    if (inline) {
+      return inline[1].split(',').map((s) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    }
+    if (/^\s*maintainers:\s*$/.test(lines[i])) {
+      const out = [];
+      for (let j = i + 1; j < end; j += 1) {
+        const item = /^\s*-\s*(.+?)\s*$/.exec(lines[j]);
+        if (!item) break;
+        out.push(item[1].replace(/^["']|["']$/g, ''));
+      }
+      return out;
+    }
+  }
+  return [];
+}
+
+/**
  * 把用户名加进 front-matter 的 maintainers。
  * 返回 { text, changed, how }；不碰正文（只在前 `---` 块内动手）。
  */

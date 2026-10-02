@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { addMaintainer } from '../claim.mjs';
+import { addMaintainer, readMaintainers } from '../claim.mjs';
 import { loadRegistry, loadEntryFile } from './data.mjs';
 import { parseEntryId } from './registry.mjs';
 import { normalizeUsername, usernameProblem } from './util.mjs';
@@ -146,7 +146,17 @@ export const OPS = {
           ? { ok: false, reason: 'already', message: `${user} 已经是这一条的维护者。` }
           : { ok: false, reason: 'unsupported', message: '这一条的 front-matter 无法识别，请 fork 后手工改。' };
       }
-      return { ok: true, changed: true, writes: [{ path: found.rel, text: result.text }], id: found.parsed.id, user, credited: user, summary: `把 ${user} 加进 maintainers` };
+      return {
+        ok: true,
+        changed: true,
+        writes: [{ path: found.rel, text: result.text }],
+        id: found.parsed.id,
+        user,
+        credited: user,
+        // 已有的维护者也要被叫到：有人来一起维护，他们该知道（docs/14 §1.4）
+        notify: readMaintainers(found.raw),
+        summary: `把 ${user} 加进 maintainers`,
+      };
     },
   },
 
@@ -195,6 +205,8 @@ export const OPS = {
         writes: [{ path: found.rel, text: lines.join('\n') }],
         id: found.parsed.id,
         credited: who.username,
+        // 改的是**这条词条**：它的维护者要被叫到（docs/14 §1.4）
+        notify: readMaintainers(found.raw),
         summary: `${at < 0 ? '新增' : '更新'}字段 \`${field}\``,
       };
     },
