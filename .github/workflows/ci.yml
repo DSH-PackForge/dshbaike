@@ -1,8 +1,9 @@
 name: 校验与构建
 
 # PR 上做两件事：校验数据契约（docs/02 §9 的规则）、干跑构建（产物不入库）。
-# 部署不在这里：仓库私有 + 组织 free 计划 → GitHub Pages 不可用，发布走 Cloudflare Pages
-# （见 docs/03 §8）。deploy.yml 等托管方确定后再加。
+# 部署不在这里：发布由 pages.yml 负责（GitHub Pages；仓库已公开，见 docs/03 §8）。
+# 也**故意不带** path 过滤之外的花样：main 的分支保护没把 CI 设为必需检查，
+# 因为它带 paths 过滤——只改文档的 PR 会永远等一个不会跑的检查（见 docs/14 §4）。
 
 on:
   pull_request:
