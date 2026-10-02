@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#12796f">
+<meta property="og:image" content="https://dshbaike.com/og-image.png">
+<title>{{TITLE}}</title>
+<link rel="canonical" href="{{CANONICAL}}">
+<meta property="og:url" content="{{CANONICAL}}">
+<meta name="description" content="{{DESC}}">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DSH百科">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESC}}">
+<!-- 维度索引页（docs/10 §7）：内容**全部**在构建期写进 HTML，前端不渲染正文，
+     只渲染站点导航与页脚（boot() 里 page === 'static' 分支）。 -->
+<base href="/">
+<!--{{PEDIA_BOOT}}-->
+<link rel="stylesheet" href="pedia.css">
+</head>
+<body data-page="static">
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="masthead" id="site-masthead"></header>
+<noscript>
+  <p class="notice notice--warn"><span class="notice__icon" aria-hidden="true">!</span>
+  这一页的内容全部写在页面里，不需要 JavaScript；站点导航与页脚需要 JavaScript。</p>
+</noscript>
+
+<div class="layout">
+  <main id="main" tabindex="-1"><!--{{PRERENDER}}--></main>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="pedia.js" defer></script>
+</body>
+</html>

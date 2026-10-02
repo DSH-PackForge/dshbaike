@@ -30,6 +30,7 @@ import {
 import { splitFrontMatter } from './lib/frontmatter.mjs';
 import { computeCompleteness, EXPECTED_FIELDS, FIELD_SOURCE, OPTIONAL_FIELDS } from './lib/fields.mjs';
 import { presentationFor } from './lib/presentation.mjs';
+import { createHash } from 'node:crypto';
 import { renderMarkdown, escapeHtml } from './lib/markdown.mjs';
 import { ENTRY_KINDS } from './lib/registry.mjs';
 import {
@@ -215,6 +216,7 @@ function main(argv) {
   /* ---- 词条页 / 分区页 ---- */
   const entryTemplate = loadTemplate('entry.template.html');
   const zoneTemplate = loadTemplate('zone.template.html');
+  const indexTemplate = loadTemplate('index-page.template.html');
   const rss = { entry: [], zone: [] };
   if (!entryTemplate) {
     rss.entry.push('web/entry.template.html 不存在，词条页改用内置最小外壳（等站点外壳工作流补齐后会自愈）');
@@ -234,8 +236,16 @@ function main(argv) {
     push(writes, nextManifest, `${zone.zone}.html`, html);
   }
 
+  /* ---- 维度索引页（P1 长尾组合页，docs/10 §7） ---- */
+  const indexes = buildDimensionIndexes(model, entryOutputs);
+  for (const index of indexes) {
+    const html = renderIndexPage(indexTemplate?.text ?? null, index, entryOutputs, indexes);
+    push(writes, nextManifest, `${index.kind}/${index.slug}.html`, html);
+    counts.indexes = (counts.indexes ?? 0) + 1;
+  }
+
   /* ---- SEO：sitemap.xml 与 robots.txt（P1） ---- */
-  push(writes, nextManifest, 'sitemap.xml', sitemapXml(sitemapUrls(model, entryOutputs)));
+  push(writes, nextManifest, 'sitemap.xml', sitemapXml(sitemapUrls(model, entryOutputs, indexes)));
   push(writes, nextManifest, 'robots.txt', robotsTxt());
 
   /* ---- 写盘 ---- */
@@ -300,6 +310,7 @@ function isOwnedArtifact(rel) {
   const p = rel.split(path.sep).join('/');
   if (p.startsWith('data/')) return true;
   if (p === 'sitemap.xml' || p === 'robots.txt') return true;
+  if (/^(tag|platform)\/[a-z0-9-]+\.html$/.test(p)) return true;
   if (/^[a-z]+\/\d+\.html$/.test(p)) return true;
   if (/^[a-z]+\.html$/.test(p) && p !== 'index.html') return true;
   return false;
@@ -1018,8 +1029,9 @@ function robotsTxt() {
 }
 
 /** 所有该被收录的页面：首页 + 分区页 + 词条页（墓碑不进 sitemap） */
-function sitemapUrls(model, entryOutputs) {
+function sitemapUrls(model, entryOutputs, indexes = []) {
   const list = [{ loc: `${SITE_URL}/`, lastmod: null }];
+  for (const index of indexes) list.push({ loc: `${SITE_URL}/${index.kind}/${index.slug}.html`, lastmod: null });
   for (const zone of model.zones) list.push({ loc: `${SITE_URL}/${zone.zone}.html`, lastmod: null });
   for (const output of entryOutputs.values()) {
     if (output.status === 'deleted') continue;
@@ -1030,6 +1042,163 @@ function sitemapUrls(model, entryOutputs) {
   }
   // 按 loc 排序保证逐字节确定性（两次构建必须一致）
   return list.sort((a, b) => (a.loc < b.loc ? -1 : a.loc > b.loc ? 1 : 0));
+}
+
+/* ------------------------------------------------------------------ */
+/* 维度索引页（P1 长尾组合页，docs/10 §7）                              */
+/*                                                                     */
+/* 目标查询是「某一类东西」：`支持 .dspack 的启动器`、`Windows 上的 DSH`。 */
+/* 页面内容全部来自已有结构化字段（分区条目的 tags / platforms + 词条的 tags）， */
+/* 所以新增一条词条，相关索引页会在下次构建自动更新，零人工维护。          */
+/*                                                                     */
+/* 两条硬规矩：① 去重后不足 2 条**不发页**（薄页伤站点）；② 按 entry/名字去重 */
+/* （同一条目可能登记在多个分区，如「裸 dsh 命令行」）。                    */
+/* ------------------------------------------------------------------ */
+
+function loadIndexSlugs() {
+  const file = fromRoot('data', 'index-slugs.yml');
+  if (!exists(file)) return { tags: {} };
+  const out = { tags: {} };
+  let section = null;
+  for (const line of readText(file).split(/\r?\n/)) {
+    const sec = /^([a-zA-Z]+):\s*$/.exec(line);
+    if (sec) { section = sec[1]; continue; }
+    if (!section) continue;
+    const m = /^\s{2}(.+?):\s*(\S+)\s*$/.exec(line);
+    if (m) {
+      if (!out[section]) out[section] = {};
+      out[section][m[1].trim()] = m[2].trim();
+    }
+  }
+  return out;
+}
+
+/** 标签名 → URL 片段：有登记用登记，没有则退化成稳定的短哈希（不随其它标签增删而变） */
+function slugFor(name, map, prefix) {
+  const explicit = map?.[name];
+  if (explicit) return explicit;
+  const ascii = String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (ascii) return ascii;
+  return `${prefix}-${createHash('sha1').update(String(name)).digest('hex').slice(0, 6)}`;
+}
+
+/**
+ * 把分区条目与词条按维度聚成索引。
+ * 返回 [{ kind: 'tag'|'platform', name, slug, items: [...] }]，按名字排序保证确定性。
+ */
+function buildDimensionIndexes(model, entryOutputs) {
+  const slugs = loadIndexSlugs();
+  const buckets = { tag: new Map(), platform: new Map() };
+  const push = (dim, name, item) => {
+    if (!name) return;
+    if (!buckets[dim].has(name)) buckets[dim].set(name, new Map());
+    const key = item.entry ?? `name:${item.name}`;
+    const bag = buckets[dim].get(name);
+    if (!bag.has(key)) bag.set(key, item);
+  };
+
+  // ① 分区条目：tags 与 platforms
+  for (const zone of model.zones) {
+    const data = zone.data ?? {};
+    const zoneTitle = data.title ?? zone.zone;
+    for (const item of Array.isArray(data.items) ? data.items : []) {
+      if (!item || isMissing(item.name)) continue;
+      const parsed = parseEntryId(item.entry);
+      const base = {
+        name: String(item.name),
+        blurb: isMissing(item.blurb) ? null : String(item.blurb),
+        entry: parsed?.id ?? null,
+        zone: zone.zone,
+        zoneTitle,
+      };
+      for (const t of Array.isArray(item.tags) ? item.tags : []) push('tag', String(t), base);
+      for (const p of Array.isArray(item.platforms) ? item.platforms : []) push('platform', String(p), base);
+    }
+  }
+
+  // ② 词条自己的 tags（词条侧的标签词表与分区条目不同，两边都要收）
+  for (const output of entryOutputs.values()) {
+    if (output.status === 'deleted') continue;
+    const base = {
+      name: output.title ?? output.id,
+      blurb: output.summary ?? null,
+      entry: output.id,
+      zone: output.zone?.id ?? null,
+      zoneTitle: output.zone?.title ?? null,
+    };
+    for (const t of output.tags ?? []) push('tag', String(t), base);
+  }
+
+  const result = [];
+  for (const dim of ['tag', 'platform']) {
+    for (const [name, bag] of buckets[dim]) {
+      const items = [...bag.values()];
+      if (items.length < 2) continue; // 门槛：薄页不发
+      result.push({
+        kind: dim,
+        name,
+        slug: slugFor(name, slugs.tags, 't'),
+        count: items.length,
+        items: sortBy(items, (i) => i.name),
+      });
+    }
+  }
+  return sortBy(result, (i) => `${i.kind}|${i.name}`);
+}
+
+/** 索引页的静态内容：标题 + 说明 + 条目列表 + 维度互链 */
+function prerenderIndex(index, entryOutputs, siblings = []) {
+  const L = [];
+  const dimZh = index.kind === 'tag' ? '标签' : '平台';
+  L.push('<div class="prerender" data-prerender="index">');
+  // 面包屑也由构建期写（前端不渲染这一页的正文）：首页 › 标签/平台 › 本条
+  L.push('<nav class="crumbs" aria-label="面包屑"><ol>');
+  L.push(`<li><a href="${BASE}">首页</a></li>`);
+  L.push(`<li><span>${dimZh}</span></li>`);
+  L.push(`<li><span>${escapeHtml(index.name)}</span></li>`);
+  L.push('</ol></nav>');
+  L.push('<article class="prose">');
+  L.push(`<h1>${escapeHtml(index.name)}：共 ${index.count} 条</h1>`);
+  L.push(`<p>带「${escapeHtml(index.name)}」${dimZh}的 DSH 客户端、启动器与相关词条清单。` +
+    '每条给出名字、一句话说明与词条链接；按名字排序。</p>');
+  L.push('<ul>');
+  for (const item of index.items) {
+    const label = escapeHtml(item.name);
+    const parsed = parseEntryId(item.entry);
+    const name = parsed ? `<a href="${parsed.kind}/${parsed.n}.html">${label}</a>` : label;
+    const blurb = item.blurb ? ` —— ${escapeHtml(item.blurb)}` : '';
+    const zone = item.zone ? ` <span class="faint">（${escapeHtml(item.zoneTitle ?? item.zone)}）</span>` : '';
+    L.push(`<li>${name}${zone}${blurb}</li>`);
+  }
+  L.push('</ul>');
+
+  // 同一维度的其它索引页互链（爬虫的横向入口，也方便读者继续逛）
+  const others = siblings.filter((s) => s.kind === index.kind && s.slug !== index.slug);
+  if (others.length) {
+    L.push(`<h2>其它${dimZh}索引</h2>`);
+    L.push('<ul>');
+    for (const s of sortBy(others, (s) => s.name)) {
+      L.push(`<li><a href="${s.kind}/${s.slug}.html">${escapeHtml(s.name)}（${s.count} 条）</a></li>`);
+    }
+    L.push('</ul>');
+  }
+
+  L.push('</article>');
+  L.push('</div>');
+  return L.join('\n');
+}
+
+function renderIndexPage(template, index, entryOutputs, siblings = []) {
+  const dimZh = index.kind === 'tag' ? '标签' : '平台';
+  const title = `${index.name}（${dimZh}）：共 ${index.count} 条 | DSH百科`;
+  const desc = `带「${index.name}」${dimZh}的 DSH 启动器、客户端与词条清单，共 ${index.count} 条，含每条的说明与词条链接。`;
+  return applyTemplate(template, {
+    title,
+    desc,
+    prerender: prerenderIndex(index, entryOutputs, siblings),
+    canonical: `${SITE_URL}/${index.kind}/${index.slug}.html`,
+    payload: { base: BASE, page: 'static', kind: index.kind, n: null, title: index.name },
+  });
 }
 
 function renderEntryPage(template, output, entryOutputs) {

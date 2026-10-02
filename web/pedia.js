@@ -3428,7 +3428,9 @@
 
     // 构建期预渲染的内容（P0，docs/10 §7）：现在由 JS 接管，先移除它，
     // 否则正文会在页面上出现两份。无 JS 时它就留在那里当正文（这正是 P0 的目的）。
-    var prerendered = document.querySelector('[data-prerender]');
+    // 维度索引页（tag/*.html、platform/*.html）的正文全部是构建期写好的，
+    // 前端不渲染它，所以**不要移除**——只渲染站点导航与页脚。
+    var prerendered = page === 'static' ? null : document.querySelector('[data-prerender]');
     if (prerendered && prerendered.parentNode) prerendered.parentNode.removeChild(prerendered);
 
     // 顶栏与页脚都要用 registry / zones/index，所以先取数据再渲染外壳。
@@ -3467,6 +3469,16 @@
             }
             return renderZone(zone);
           });
+        }
+        // 维度索引页（tag/*.html、platform/*.html）：正文由构建期写好、boot() 也不移除，
+        // 这里必须**显式什么都不做**——否则会掉进下面的兜底分支被当成首页渲染 ✗
+        // （这个 bug 截图才看得出来：静态 HTML 是对的，人打开却是首页）。
+        if (page === 'static') {
+          // 维度索引页：正文是构建期写好的，这里只补站点外壳（顶栏/侧栏），不渲染正文。
+          // 注意 renderMasthead 是**各页面渲染器自己调的**（entry/zone/index/browse 各一处），
+          // 所以这里必须显式调一次，否则页面没有导航（截图才看出来）。
+          renderMasthead({ currentZone: null });
+          return undefined;
         }
         return renderIndex();
       })

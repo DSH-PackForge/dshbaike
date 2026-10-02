@@ -1,0 +1,48 @@
+# 长尾索引页的 URL 片段（docs/10 §7 的「维度索引页」）
+#
+# 标签名是中文，直接进 URL 会变成一长串百分号编码，所以我们给它一个 ASCII 片段：
+#   /tag/dspack.html   ← 「支持 .dspack」
+#   /platform/windows.html
+#
+# **没来登记的标签不会消失**：构建期会退化成 `t-<6 位哈希>.html`（稳定、但不好看）。
+# 所以新标签只要值得长期做，来这里补一行即可——不补也能上线，只是地址难看。
+
+tags:
+  启动器: launchers
+  机制: mechanics
+  启动: boot
+  界面: interface
+  patch 层: patch-layer
+  profile: profile
+  多版本: multi-version
+  安装: install
+  市场收录: market-listed
+  打包: packaging
+  工具与能力: tooling
+  UI 增强: ui
+  主题与外观: appearance
+  开发与运行时: runtime
+  支持 .dspack: dspack
+  技能包: skills
+  插件市场与管理: plugin-market
+  MC 系: mc-style
+  MCP: mcp
+  娱乐: fun
+  工作流与自动化: automation
+  整合包: packs
+  Tauri: tauri
+  WinUI: winui
+  停更: unmaintained
+  免 root: no-root
+  外部源: external-sources
+  安卓: android
+  官方: official
+  工具接入: tool-bridge
+  插件形态: plugin-form
+  插件目录: plugin-dir
+  生态地基: ecosystem-base
+  生态管理: ecosystem-mgmt
+  移动端: mobile
+  规范: specs
+  轻量: lightweight
+  隔离环境: isolated-env
