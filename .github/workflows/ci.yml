@@ -7,6 +7,15 @@ name: 校验与构建
 
 on:
   pull_request:
+    # 机器人分支**故意不跑**：机器人开的 PR 作者是 github-actions[bot]，被 GitHub 当成
+    # 「首次贡献者」（仓库策略 = first_time_contributors），于是这个运行会停在
+    # 「Approve and run」等人放行 —— 那就等于每次机器人代改都多一次人工点击
+    # （评审：「理论上两次就够，你现在 3 次，不合理」）。
+    # 少跑一次不丢把关：机器人在 apply.yml 里**开 PR 之前已经跑过 validate.mjs**，
+    # 结论也写进了 PR 正文；而 main 上**没有**必需状态检查（见下面那段注释），
+    # 所以这里不跑也不影响可合并性。
+    branches-ignore:
+      - 'bot/**'
     paths:
       - 'data/**'
       - 'scripts/**'
