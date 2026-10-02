@@ -19,7 +19,7 @@ sections:
     title: 历史版本
     desc: 旧版本仍然可读：读它是为了理解字段怎么长出来的
     collapsed: true
-howto: 按问题找出处：问「一个包能声明什么」看 manifest；问「.dspack 怎么装、文件落到哪」看 pack-structure；问「怎么才会被市场收录」看 publishing；问「启动器 canonical ID 与版本怎么判」看 launcher-registry；问「插件之间怎么互相告知版本与兼容需求」看社区的 dsh-std；问「一台机器上多个整合包怎么共存」看 dsh-distribution；问「profile / patch 层 / DSH_HOME 是什么」看 DSH 本体那一侧——本站把这部分按概念词条写。要改规范就向对应的仓库提 PR，别在实现里私自分叉。
+howto: 按问题找出处：问「一个包能声明什么」看 manifest；问「.dspack 怎么装、文件落到哪」看 pack-structure；问「怎么才会被市场收录」看 publishing；问「启动器 canonical ID 与版本怎么判」看 launcher-registry；问「插件之间怎么互相告知版本与兼容需求、插件怎么写才与上游解耦」看社区的 dsh-std（元协议本体）；问「profile / patch 层 / DSH_HOME 是什么」看 DSH 本体那一侧——本站把这部分按概念词条写。要改规范就向对应的仓库提 PR，别在实现里私自分叉。
 itemFields: [specVersion, specStatus, fileName]
 items:
   - name: DSH-PackForge 规范仓库
