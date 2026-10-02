@@ -33,8 +33,9 @@ import { presentationFor } from './lib/presentation.mjs';
 import { createHash } from 'node:crypto';
 import { renderMarkdown, escapeHtml } from './lib/markdown.mjs';
 import { ENTRY_KINDS } from './lib/registry.mjs';
-// 生态全景图：数据（graph.json）与页面（graph.html）同源，都在 lib/graph.mjs 里。
-import { buildEcosystemGraph, EDGE_GROUPS, renderGraphSvg } from './lib/graph.mjs';
+// 生态全景图的数据（graph.json）：见 scripts/lib/graph.mjs。
+// 页面不再由本项目渲染——全量生态图用第三方项目（vendor/dsh-plugin-mesh）。
+import { buildEcosystemGraph } from './lib/graph.mjs';
 import {
   compareIds,
   displayPath,
@@ -222,11 +223,13 @@ function main(argv) {
     counts.zones += 1;
   }
 
+  /* ---- 维度索引（P1 长尾组合页，docs/10 §7）：先算好，页面预渲染要用它做内链 ---- */
+  const indexes = buildDimensionIndexes(model, entryOutputs);
+
   /* ---- 词条页 / 分区页 ---- */
   const entryTemplate = loadTemplate('entry.template.html');
   const zoneTemplate = loadTemplate('zone.template.html');
   const indexTemplate = loadTemplate('index-page.template.html');
-  const graphTemplate = loadTemplate('graph.template.html');
   const rss = { entry: [], zone: [] };
   if (!entryTemplate) {
     rss.entry.push('web/entry.template.html 不存在，词条页改用内置最小外壳（等站点外壳工作流补齐后会自愈）');
@@ -236,26 +239,34 @@ function main(argv) {
   }
 
   for (const output of entryOutputs.values()) {
-    const html = renderEntryPage(entryTemplate?.text ?? null, output, entryOutputs);
+    const html = renderEntryPage(entryTemplate?.text ?? null, output, entryOutputs, indexes);
     const rel = path.posix.join(output.kind, `${output.n}.html`);
     push(writes, nextManifest, rel, html);
   }
   for (const zone of model.zones) {
     const output = buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt);
-    const html = renderZonePage(zoneTemplate?.text ?? null, output, entryOutputs);
+    const html = renderZonePage(zoneTemplate?.text ?? null, output, entryOutputs, indexes);
     push(writes, nextManifest, `${zone.zone}.html`, html);
   }
 
-  /* ---- 生态全景图页（整张 SVG 构建期画好；入口在插件分区页上）---- */
-  push(writes, nextManifest, 'graph.html', renderGraphPage(graphTemplate?.text ?? null, graph));
+  /* 生态全景图不再由本站渲染：改用第三方那张全量插件生态图（vendor/dsh-plugin-mesh，
+     见下面的 web/mesh/ 拷贝）。我们只保留 graph.json 这份「核实过的关系」数据契约。 */
 
   /* ---- 维度索引页（P1 长尾组合页，docs/10 §7） ---- */
-  const indexes = buildDimensionIndexes(model, entryOutputs);
   for (const index of indexes) {
     const html = renderIndexPage(indexTemplate?.text ?? null, index, entryOutputs, indexes);
     push(writes, nextManifest, `${index.kind}/${index.slug}.html`, html);
     counts.indexes = (counts.indexes ?? 0) + 1;
   }
+
+  // 名称 → 索引页地址：前端 indexlinks.js 用它把内链也挂到真实页面上
+  push(writes, nextManifest, path.posix.join('data', 'indexes', 'index.json'), toJson({
+    generatedAt: null,
+    indexes: indexes.map((i) => ({ kind: i.kind, name: i.name, slug: i.slug, count: i.count })),
+  }));
+
+  // 汇总页：所有索引页的入口（人和爬虫都能一页看全）
+  push(writes, nextManifest, 'tags.html', renderTagsHub(indexTemplate?.text ?? null, indexes));
 
   /* ---- SEO：sitemap.xml 与 robots.txt（P1） ---- */
   push(writes, nextManifest, 'sitemap.xml', sitemapXml(sitemapUrls(model, entryOutputs, indexes)));
@@ -324,6 +335,7 @@ function isOwnedArtifact(rel) {
   if (p.startsWith('data/')) return true;
   if (p === 'sitemap.xml' || p === 'robots.txt') return true;
   if (/^(tag|platform)\/[a-z0-9-]+\.html$/.test(p)) return true;
+  if (p === 'tags.html') return true;
   if (/^[a-z]+\/\d+\.html$/.test(p)) return true;
   if (/^[a-z]+\.html$/.test(p) && p !== 'index.html') return true;
   return false;
@@ -913,7 +925,7 @@ function formatMetaValue(value) {
 }
 
 /** 词条页的静态内容：标题 / 别名 / 摘要 / 正文 / 相关教程 / 反向链接 / 信息表 / 标签 */
-function prerenderEntry(output, entryOutputs) {
+function prerenderEntry(output, entryOutputs, indexes = []) {
   const L = [];
   L.push('<div class="prerender" data-prerender="entry">');
   L.push('<article class="prose">');
@@ -950,14 +962,18 @@ function prerenderEntry(output, entryOutputs) {
     L.push('</dl>');
   }
 
-  if (output.tags?.length) L.push(`<p class="faint">标签：${output.tags.map(escapeHtml).join('、')}</p>`);
+  if (output.tags?.length) {
+    L.push(`<p class="faint">标签：${output.tags.map(escapeHtml).join('、')}</p>`);
+    const row = indexLinkRow(output.tags, indexes, 'tag');
+    if (row) L.push(row);
+  }
   L.push('</article>');
   L.push('</div>');
   return L.join('\n');
 }
 
 /** 分区页的静态内容：分区名与说明 + 各二级分区 + 条目（名字 + 一句话 + 词条链接） */
-function prerenderZone(output, entryOutputs) {
+function prerenderZone(output, entryOutputs, indexes = []) {
   const L = [];
   L.push('<div class="prerender" data-prerender="zone">');
   L.push('<article class="prose">');
@@ -970,6 +986,16 @@ function prerenderZone(output, entryOutputs) {
         (link.note ? `<span class="zone-cta__note">${escapeHtml(link.note)}</span>` : '') +
         '</a></aside>',
     );
+  }
+
+  // 这一区涉及的标签/平台：给出通往索引页的入口（索引页也给回链，形成互链）
+  {
+    const tagNames = [...new Set((output.items ?? []).flatMap((i) => i.tags ?? []))];
+    const platformNames = [...new Set((output.items ?? []).flatMap((i) => i.platforms ?? []))];
+    const tagRow = indexLinkRow(tagNames, indexes, 'tag');
+    const platRow = indexLinkRow(platformNames, indexes, 'platform');
+    if (tagRow) L.push(tagRow);
+    if (platRow) L.push(platRow);
   }
 
   const items = output.items ?? [];
@@ -1045,7 +1071,12 @@ function robotsTxt() {
 
 /** 所有该被收录的页面：首页 + 分区页 + 词条页（墓碑不进 sitemap） */
 function sitemapUrls(model, entryOutputs, indexes = []) {
-  const list = [{ loc: `${SITE_URL}/`, lastmod: null }, { loc: `${SITE_URL}/graph.html`, lastmod: null }];
+  const list = [
+    { loc: `${SITE_URL}/`, lastmod: null },
+    { loc: `${SITE_URL}/tags.html`, lastmod: null },
+    // 全量插件生态图（第三方项目，构建期拷进 web/mesh/）
+    { loc: `${SITE_URL}/mesh/`, lastmod: null },
+  ];
   for (const index of indexes) list.push({ loc: `${SITE_URL}/${index.kind}/${index.slug}.html`, lastmod: null });
   for (const zone of model.zones) list.push({ loc: `${SITE_URL}/${zone.zone}.html`, lastmod: null });
   for (const output of entryOutputs.values()) {
@@ -1216,81 +1247,87 @@ function renderIndexPage(template, index, entryOutputs, siblings = []) {
   });
 }
 
-function renderEntryPage(template, output, entryOutputs) {
+/**
+ * 「按标签/平台浏览」内链行：把这一页涉及的名字接到对应的索引页上。
+ * 只接**有索引页**的那些（构建期有门槛：不足 2 条不发页），所以不会出现死链。
+ */
+function indexLinkRow(names, indexes, kind) {
+  const byName = new Map(indexes.filter((i) => i.kind === kind).map((i) => [i.name, i]));
+  const hits = [];
+  for (const n of names ?? []) {
+    const hit = byName.get(String(n));
+    if (hit && !hits.includes(hit)) hits.push(hit);
+  }
+  if (!hits.length) return null;
+  const dimZh = kind === 'tag' ? '标签' : '平台';
+  const links = sortBy(hits, (h) => h.name)
+    .map((h) => `<a href="${h.kind}/${h.slug}.html">${escapeHtml(h.name)}</a>（${h.count}）`)
+    .join(' · ');
+  return `<p class="prerender__indexlinks">按${dimZh}浏览：${links}</p>`;
+}
+
+/** tags.html：所有维度索引页的汇总入口 */
+function renderTagsHub(template, indexes) {
+  const L = [];
+  L.push('<div class="prerender" data-prerender="index">');
+  L.push('<article class="prose">');
+  L.push(`<h1>全部索引：按标签与平台浏览（${indexes.length} 页）</h1>`);
+  L.push('<p>本站把「某一类东西」也做成页面：按标签、按平台列出对应的启动器、客户端与词条。' +
+    '每一页都给出名字、一句话说明与词条链接。</p>');
+  for (const [kind, dimZh] of [['tag', '标签'], ['platform', '平台']]) {
+    const list = sortBy(indexes.filter((i) => i.kind === kind), (i) => i.name);
+    if (!list.length) continue;
+    L.push(`<h2>按${dimZh}（${list.length}）</h2>`);
+    L.push('<ul>');
+    for (const i of list) {
+      L.push(`<li><a href="${i.kind}/${i.slug}.html">${escapeHtml(i.name)}</a>（${i.count} 条）</li>`);
+    }
+    L.push('</ul>');
+  }
+  L.push('</article>');
+  L.push('</div>');
+  return applyTemplate(template, {
+    title: '全部索引：按标签与平台浏览 | DSH百科',
+    desc: `按标签与平台浏览 DSH 百科：${indexes.length} 个索引页，覆盖启动器、客户端、插件、整合包与教程。`,
+    prerender: L.join('\n'),
+    canonical: `${SITE_URL}/tags.html`,
+    payload: { base: BASE, page: 'static', kind: null, n: null, title: '全部索引' },
+  });
+}
+
+function renderEntryPage(template, output, entryOutputs, indexes = []) {
   const title = `${output.title ?? output.id} | DSH百科`;
   const desc = output.summary ?? '';
   return applyTemplate(template, {
     title,
     desc,
-    prerender: prerenderEntry(output, entryOutputs),
+    prerender: prerenderEntry(output, entryOutputs, indexes),
     canonical: `${SITE_URL}/${output.kind}/${output.n}.html`,
     noindex: output.status === 'deleted',
     payload: { base: BASE, page: 'entry', kind: output.kind, n: output.n, title: output.title },
   });
 }
 
-function renderZonePage(template, output, entryOutputs) {
+function renderZonePage(template, output, entryOutputs, indexes = []) {
   const title = `${output.title ?? output.id} | DSH百科`;
   const desc = output.desc ?? '';
   return applyTemplate(template, {
     title,
     desc,
-    prerender: prerenderZone(output, entryOutputs),
+    prerender: prerenderZone(output, entryOutputs, indexes),
     canonical: `${SITE_URL}/${output.id}.html`,
     payload: { base: BASE, page: 'zone', zone: output.id, title: output.title },
   });
 }
 
 /**
- * 生态全景图页（graph.html）。
+ * 生态全景图**不由本站渲染**（评审 2026-10-02）：全量插件生态图改用第三方项目
+ * （`vendor/dsh-plugin-mesh`，MIT，构建期拷进 `web/mesh/`）。
  *
- * 整张 SVG 在构建期画好写进正文：无 JS 也能看图、也能点进词条；
- * pedia.js 只做渐进增强（切换派生边、悬停高亮邻居）。
- * 数据与 SVG 同源（都由 scripts/lib/graph.mjs 产出），不会各算各的。
+ * 本文件仍然产出 `data/graph.json` —— 那是「我们核实过的关系」的数据契约，
+ * 与那张全量图是两种东西：它的边是 topic 共现/同作者（相似度），我们的边带出处。
+ * 将来词条页要做「以某条词条为圆心的邻域星图」时，读的就是这份数据。
  */
-function renderGraphPage(template, graph) {
-  const counts = graph.counts;
-  const typeLines = Object.entries(counts.byType)
-    .sort((a, b) => b[1] - a[1])
-    .map(([type, n]) => `${type} ${n}`)
-    .join(' · ');
-  const legend = Object.entries(EDGE_GROUPS)
-    .filter(([, def]) => def.defaultOn)
-    .map(
-      ([key, def]) =>
-        `<li class="graph__legenditem" data-group="${key}">` +
-        `<span class="graph__swatch" style="background:${def.color}"></span>${escapeHtml(def.zh)}</li>`,
-    )
-    .join('');
-  const prerender = [
-    '<div class="graph" data-prerender>',
-    '<h1>生态全景图</h1>',
-    `<p class="lede">把 ${counts.nodes} 条词条与 ${counts.edges} 条关系画在一张图上：` +
-      '圆心是生态的起点，外圈每一块是一个分区，方块越大表示这条词条越完整。' +
-      '<strong>这张图只画能指到出处的关系</strong>——「像不像」那种相似度不进来。</p>',
-    '<div class="graph__toolbar">',
-    `<ul class="graph__legend">${legend}</ul>`,
-    '<div class="graph__actions">',
-    '<button type="button" class="btn graph__toggle" data-graph-toggle="references" aria-pressed="false">显示「正文提到」</button>',
-    '<button type="button" class="btn graph__toggle" data-graph-reset>取消高亮</button>',
-    '</div>',
-    '</div>',
-    `<div class="graph__stage">${renderGraphSvg(graph)}</div>`,
-    `<p class="graph__note faint">共 ${counts.nodes} 个词条、${counts.edges} 条边（${escapeHtml(typeLines)}）。` +
-      '边只来自 front-matter 的 <code>relations</code> / <code>prereq</code> / <code>related</code> 与构建期反向索引' +
-      '（教程引用、整合包引用、正文提到）；每条边都带 <code>why</code>，可以在 ' +
-      '<a href="data/graph.json">data/graph.json</a> 里逐条核对。空白的部分不是「没有关系」，' +
-      '而是「还没人写关系」——欢迎从孤岛开始补。</p>',
-    '</div>',
-  ].join('');
-  return applyTemplate(template, {
-    title: '生态全景图 | DSH百科',
-    desc: `DSH 百科生态全景图：${counts.nodes} 条词条、${counts.edges} 条关系，按分区铺开；每条边都指得到出处。`,
-    prerender,
-    canonical: `${SITE_URL}/graph.html`,
-    payload: { base: BASE, page: 'graph', title: '生态全景图' },
-  });
-}
 
 /* ------------------------------------------------------------------ */
 /* 增量清单                                                            */
