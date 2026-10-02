@@ -82,12 +82,30 @@ PR 作者仍是 `github-actions`——**这一点很重要**：如果 PR 作者�
 | 说的是什么 | 某条词条 / 某个分区的内容 | **百科这个站点本身** |
 | 例子 | 认领维护、改一个字段、改正文一句话、补充分区条目、纠错、新增词条 | 导航绕、搜索不好用、样式错乱、渲染坏了、表单流程别扭、想新增分区或词条类型 |
 | 谁处理 | **机器人代改**（有界操作 → PR → 两道闸）；`纠错`/`新增词条`目前由人接手 | **人**——要判断、要设计，甚至要动信息架构与代码 |
-| 表单 | `claim` / `field` / `replace` / `zone-item`（机器代改）+ `correction` / `new-entry`（人来接手） | `meta`（「站点改进 / 百科自身的问题」） |
+| 表单 | `1-entry-content`（改词条：认领维护／改一个字段／改正文里的一句话）+ `2-zone-content`（补充分区条目）+ `3-correction`、`4-new-entry`（人来接手） | `5-meta`（「站点改进 / 百科自身的问题」） |
 | 入口 | 词条页标题栏、词条页右侧缺口清单、分区页「补充一条」 | **页脚**「反馈百科本身的问题」 |
 
-**机器人只对 A 类的那四个前缀有反应**，B 类它**一声不吭**——它插话只会变成噪音。
-这个前缀表与 `scripts/lib/ops.mjs` 的操作标题由 `scripts/check-workflows.mjs` 强制一致：
-两处改名不一致时的表现是「机器人静默不工作」，属于最难发现的那类坏法，所以在本地与 CI 里钉死。
+**机器人只对 A 类的那两个前缀有反应**（`[内容变更]`、`[补充分区条目]`），B 类它**一声不吭**——
+它插话只会变成噪音。表单覆盖的操作集合、workflow 认的前缀、`scripts/lib/ops.mjs` 声明的操作，
+三者由 `scripts/check-workflows.mjs` 强制一致（漂移的表现是「机器人静默不工作」）。
+
+#### 选择器的「两级」怎么做的
+
+GitHub 的模板选择器**原生不支持分组**（[官方文档](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository)：
+`config.yml` 只有 `blank_issues_enabled` 与 `contact_links`），所以两级靠结构做：
+
+- **第一级（选择器里的一行）**：把三种「改词条」的操作**合并成一张 `1-entry-content`**，
+  于是选择器从 7 条降到 5 条：`1-entry-content` → `2-zone-content` → `3-correction`
+  → `4-new-entry` → `5-meta`；
+- **顺序**：官方文档明确「按文件名 alphanumerically 排」，所以用数字前缀定序；
+- **第二级（表单内）**：`1-entry-content` 的第一个字段是**「操作类型」下拉**
+  （认领维护 / 改一个字段 / 改正文里的一句话），选完按表头那张对照表填对应几项即可。
+
+> **一个更正**：GitHub **不支持**用 URL 预填 YAML 表单的字段
+> （`issues/new?template=…` 只认 `title`、`body`、`labels`、`assignees`、`milestone`、`projects`、`type`）。
+> 所以站点深链把**操作名与词条编号写进标题**：`[内容变更] 改一个字段 plugin/1`——
+> 机器人从标题尾部取编号，表单里的「词条 id」可以留空。之前那些
+> 「点进来会自动填好」的说法是错的，已改。
 
 **为什么值得分成两类**：它们的**处理方式**完全不同。A 类可以交给机器（有界、可校验、可回归），
 B 类不能——「导航怎么改」没有机械解，只有设计判断。把 B 类塞进「机器人代改」通道，

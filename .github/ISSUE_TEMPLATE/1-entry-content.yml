@@ -1,0 +1,92 @@
+name: 改词条内容（机器人代改）
+description: 认领维护 / 改一个字段 / 改正文里的一句话——填清楚，机器人只改那一处并开 PR（两道审核）
+title: "[内容变更] "
+labels: ["内容变更"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **先选「操作类型」，再按下面这张表填那一行要的字段就够了**，其余的留空：
+
+        | 操作类型 | 需要填 |
+        | --- | --- |
+        | 认领维护 | GitHub 用户名 |
+        | 改一个字段 | 字段名、新的值 |
+        | 改正文里的一句话 | 原文片段、改成 |
+
+        **词条 id** 三种都要；不过从词条页点「改一句话 / 改字段 / 我来维护」进来时，
+        标题尾部已经带了编号（例如 `[内容变更] 改一个字段 plugin/1`），这里留空也行。
+
+        机器人只改它声明的那一处，改完会**跑一遍校验并开 PR**，由维护者审核后才合并。
+        嵌套结构（`compat`、`relations` 这类）它改不了，会明确告诉你，那种请直接编辑文件。
+
+  - type: dropdown
+    id: op
+    attributes:
+      label: 操作类型
+      description: 选错也能重来——机器人会按你选的这一项去改，改不了会说清原因。
+      options:
+        - 认领维护
+        - 改一个字段
+        - 改正文里的一句话
+    validations:
+      required: true
+
+  - type: input
+    id: entry
+    attributes:
+      label: 词条 id
+      description: 形如 `plugin/1` 或 `concept/2`。从词条页点进来时标题里已带编号，可留空。
+      placeholder: plugin/1
+    validations:
+      required: false
+
+  - type: input
+    id: username
+    attributes:
+      label: GitHub 用户名
+      description: 只有「认领维护」需要。只填用户名本身，不要 @。
+      placeholder: your-github-name
+    validations:
+      required: false
+
+  - type: input
+    id: field
+    attributes:
+      label: 字段名
+      description: 只有「改一个字段」需要。小写字母的键名，如 `updatedAt`、`tags`、`install`。列表字段用逗号分隔。
+      placeholder: updatedAt
+    validations:
+      required: false
+
+  - type: textarea
+    id: value
+    attributes:
+      label: 新的值
+      description: 配合「字段名」使用；要清空就写 `null`。
+    validations:
+      required: false
+
+  - type: textarea
+    id: from
+    attributes:
+      label: 原文片段
+      description: 只有「改正文里的一句话」需要。从正文里**原样复制**一段（越长越好定位），不要贴 front-matter 里的字段。
+    validations:
+      required: false
+
+  - type: textarea
+    id: to
+    attributes:
+      label: 改成
+      description: 配合「原文片段」使用。
+    validations:
+      required: false
+
+  - type: input
+    id: source
+    attributes:
+      label: 出处（可选但强烈建议）
+      description: 你凭什么这么改？规范路径 / 代码位置 / 上游链接——有出处我们才敢合。
+    validations:
+      required: false

@@ -271,12 +271,30 @@ export const OPS = {
   },
 };
 
-/** 按标题里的操作名找操作（找不到返回 null） */
-export function findOp(title) {
+/** 合并表单的类别标题：`[内容变更] 改一个字段 plugin/1`（选择器里只有一条，操作在表单里选） */
+export const CONTENT_CLASS_TITLE = '内容变更';
+
+/**
+ * 按标题（与表单）找操作。解析顺序从**最明确**到最含糊：
+ *   ① `[补充分区条目] themes` —— 标题前缀就是操作名（独立表单与历史 Issue 都走这条）；
+ *   ② `[内容变更] 改一个字段 plugin/1` —— 站点深链把操作名与编号都塞进标题
+ *      （GitHub 不支持用 URL 预填 YAML 表单字段，只有标题能预填，所以编号放标题里）；
+ *   ③ `[内容变更] …` + 表单里的「操作类型」下拉 —— 从「New issue」直接进来的人选的那一项。
+ * 剩下的返回 null：机器人**不猜**，也**不插话**（由人来处理）。
+ */
+export function findOp(title, form = {}) {
   const { opTitle, target } = parseTitle(title);
   if (!opTitle) return null;
-  for (const op of Object.values(OPS)) {
-    if (op.title === opTitle) return { op, target };
+  const all = Object.values(OPS);
+
+  const direct = all.find((op) => op.title === opTitle);
+  if (direct) return { op: direct, target };
+
+  if (opTitle === CONTENT_CLASS_TITLE) {
+    const named = all.find((op) => target.includes(op.title));
+    if (named) return { op: named, target: target.replace(named.title, '').trim() };
+    const picked = all.find((op) => op.title === String(form['操作类型'] ?? '').trim());
+    if (picked) return { op: picked, target };
   }
   return null;
 }

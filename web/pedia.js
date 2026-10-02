@@ -529,10 +529,11 @@
   }
 
   function redlinkHref(id, label) {
-    // 走「新增词条」表单：编号与骨架由自动化处理，报告者不需要装 Node、不需要本地跑脚本
-    return issueForm('new-entry.yml', {
-      title: '[新增词条] ' + (label || id || ''),
-      entryTitle: label || id || ''
+    // 走「新增词条」表单：编号与骨架由自动化处理，报告者不需要装 Node、不需要本地跑脚本。
+    // 注意 GitHub **只能预填标题**（`body`/自定义字段名会被忽略，见 docs/14 §1.2），
+    // 所以这里只传 title，不传那些看起来能预填、实际无效的参数。
+    return issueForm('4-new-entry.yml', {
+      title: '[新增词条] ' + (label || id || '')
     });
   }
 
@@ -545,16 +546,14 @@
   function correctHref(id, title) {
     // 纠错走表单：字段结构化（词条 / 问题类型 / 哪里不对 / 建议改法 / 出处），
     // 维护者一眼看出改哪一行，而不是从一段自由文本里猜。
-    return issueForm('correction.yml', {
-      title: '[纠错] ' + (title || id || ''),
-      entry: id || ''
+    return issueForm('3-correction.yml', {
+      title: '[纠错] ' + (title || id || '')
     });
   }
 
   function deriveHref(kind, title) {
-    return issueForm('new-entry.yml', {
-      title: '[新增词条 · ' + kindZh(kind) + '] ' + (title || ''),
-      entryTitle: title || ''
+    return issueForm('4-new-entry.yml', {
+      title: '[新增词条 · ' + kindZh(kind) + '] ' + (title || '')
     });
   }
 
@@ -1027,7 +1026,7 @@
         document.createTextNode(' · '),
         // Issue 分两类（docs/14 §1.2）：内容变更走词条页上的表单，百科自身的问题走这张表
         el('a', {
-          href: issueForm('meta.yml', { title: '[站点改进] ' }),
+          href: issueForm('5-meta.yml', { title: '[站点改进] ' }),
           rel: 'noopener noreferrer external',
           target: '_blank',
           text: '反馈百科本身的问题',
@@ -1474,9 +1473,11 @@
     return String(v);
   }
 
-  /** 「我来维护」表单：标题带词条 id（机器人按标题前缀识别），字段预填词条 id */
+  /** 「我来维护」表单：标题里带操作名与词条编号——
+   *  GitHub **不支持**用 URL 预填 YAML 表单字段，只有标题能预填，所以编号放标题里，
+   *  机器人从标题尾部取编号（docs/14 §1.2）。 */
   function claimHref(id) {
-    return issueForm('claim.yml', { title: '[认领维护] ' + id, entry: id });
+    return issueForm('1-entry-content.yml', { title: '[内容变更] 认领维护 ' + id });
   }
 
   /** 只给**真能机械补**的字段一个可粘贴片段；写内容类的字段不给（不硬凑） */
@@ -1544,10 +1545,11 @@
 
     var actions = el('div', { class: 'titlebar__actions' }, [
       el('a', { class: 'btn', href: editHref(id), rel: 'noopener noreferrer external', target: '_blank', text: '编辑此条' }),
-      // 机器人代改通道（docs/14）：小改动填表单即可，机器人只改这一处并开 PR，维护者审核后合并
+      // 机器人代改通道（docs/14）：小改动填表单即可，机器人只改这一处并开 PR，维护者审核后合并。
+      // 标题里同时带操作名与编号：GitHub 不能预填 YAML 表单字段，能预填的只有标题。
       el('a', {
         class: 'btn',
-        href: issueForm('replace.yml', { title: '[改正文里的一句话] ' + id, entry: id }),
+        href: issueForm('1-entry-content.yml', { title: '[内容变更] 改正文里的一句话 ' + id }),
         rel: 'noopener noreferrer external',
         target: '_blank',
         text: '改一句话',
@@ -1555,7 +1557,7 @@
       }),
       el('a', {
         class: 'btn',
-        href: issueForm('field.yml', { title: '[改一个字段] ' + id, entry: id }),
+        href: issueForm('1-entry-content.yml', { title: '[内容变更] 改一个字段 ' + id }),
         rel: 'noopener noreferrer external',
         target: '_blank',
         text: '改字段',
@@ -2703,11 +2705,11 @@
         el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '?' }),
         document.createTextNode('这个分区暂时没有条目（空分区是硬要求违反项）。'),
         el('a', {
-          href: issueForm('zone-item.yml', { title: '[补充分区条目] ' + id, zone: id }),
+          href: issueForm('2-zone-content.yml', { title: '[补充分区条目] ' + id }),
           rel: 'noopener noreferrer external',
           target: '_blank',
           text: '补充一条',
-          title: '填名称 + 一句话 + 外链，机器人写进这个分区并开 PR'
+          title: '填名称 + 一句话 + 外链，机器人写进这个分区并开 PR（标题里已带分区，表单里再选一次也行）'
         })
       ]));
     }

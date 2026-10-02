@@ -63,27 +63,55 @@ process.stdout.write(run.stdout ?? '');
 process.stderr.write(run.stderr ?? '');
 let ok = run.status === 0;
 
-// ---- 额外检查：机器人路由的操作前缀必须与 ops.mjs 声明的操作标题一致 ----
-// 这两处分别是「workflow 决定要不要醒」与「脚本决定用哪个操作」，改名不一致时
-// 表现是**机器人静默不工作**（最难发现的那类坏法），所以在这里钉死。
+// ---- 额外检查：操作路由必须与 ops.mjs 声明一致，且两类表单都带 labels ----
+// 这些地方分别在「workflow 决定要不要醒」「表单决定用哪个操作」「Issue 能不能被筛出来」，
+// 任何一处漂移的表现都是**静默失效**（最难发现的那类坏法），所以在这里钉死。
 const opsSrc = fs.readFileSync(path.join(ROOT, 'scripts', 'lib', 'ops.mjs'), 'utf8');
 const declared = [...opsSrc.matchAll(/^\s*title:\s*'([^']+)'/gm)].map((m) => m[1]).sort();
 const applySrc = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'apply.yml'), 'utf8');
-const routed = [...applySrc.matchAll(/startsWith\(github\.event\.issue\.title,\s*'\[([^\]]+)\]'\)/g)]
-  .map((m) => m[1]).filter((v, i, a) => a.indexOf(v) === i).sort();
+const tplDir = EXTRA[0];
+
+// ① 合并表单（1-entry-content.yml）的「操作类型」下拉必须覆盖它该覆盖的操作
+const mergedPath = path.join(tplDir, '1-entry-content.yml');
+const merged = fs.readFileSync(mergedPath, 'utf8');
+const dropdown = (() => {
+  const at = merged.indexOf('label: 操作类型');
+  if (at < 0) return [];
+  const tail = merged.slice(at);
+  const opts = tail.match(/options:\n((?:\s*-\s*.+\n)+)/);
+  return opts ? opts[1].split('\n').map((l) => l.replace(/^\s*-\s*/, '').trim()).filter(Boolean) : [];
+})();
+
+// ② 独立表单（2-zone-content.yml）的标题前缀也是路由入口
+const standalone = [...fs.readdirSync(tplDir)]
+  .filter((f) => /^2-.*\.yml$/.test(f))
+  .flatMap((f) => [...fs.readFileSync(path.join(tplDir, f), 'utf8').matchAll(/^title:\s*"\[([^\]]+)\]\s*"/gm)].map((m) => m[1]));
+
+const routedOps = [...new Set([...dropdown, ...standalone])].sort();
 process.stdout.write(`\n路由检查：\n  ops.mjs 声明 ${declared.length} 个操作：${declared.join(' / ')}\n`);
-process.stdout.write(`  apply.yml 路由 ${routed.length} 个前缀：${routed.join(' / ')}\n`);
-const sameSet = declared.length === routed.length && declared.every((v, i) => v === routed[i]);
+process.stdout.write(`  合并表单下拉 ${dropdown.length} 项：${dropdown.join(' / ')}\n`);
+process.stdout.write(`  独立表单前缀 ${standalone.length} 个：${standalone.join(' / ')}\n`);
+const sameSet = declared.length === routedOps.length && declared.every((v, i) => v === routedOps[i]);
 if (sameSet) {
-  process.stdout.write('  OK   两处一致\n');
+  process.stdout.write('  OK   表单覆盖了全部操作，不多不少\n');
 } else {
   ok = false;
-  process.stdout.write('  FAIL 两处不一致——机器人会静默漏掉或错认操作，必须修：\n');
-  process.stdout.write(`       只在 ops.mjs 有：${declared.filter((d) => !routed.includes(d)).join(' ') || '（无）'}\n`);
-  process.stdout.write(`       只在 apply.yml 有：${routed.filter((r) => !declared.includes(r)).join(' ') || '（无）'}\n`);
+  process.stdout.write('  FAIL 表单与 ops.mjs 不一致——机器人会静默漏掉或错认操作：\n');
+  process.stdout.write(`       只在 ops.mjs：${declared.filter((d) => !routedOps.includes(d)).join(' ') || '（无）'}\n`);
+  process.stdout.write(`       只在表单：${routedOps.filter((r) => !declared.includes(r)).join(' ') || '（无）'}\n`);
 }
 
-const templates = collect(EXTRA[0]).filter((p) => path.basename(p) !== 'config.yml');
+// ③ workflow 的 if 必须认得这两类前缀，否则机器人根本不醒
+for (const prefix of ['[内容变更]', '[补充分区条目]']) {
+  if (applySrc.includes(`'${prefix}'`)) {
+    process.stdout.write(`  OK   apply.yml 认得前缀 ${prefix}\n`);
+  } else {
+    ok = false;
+    process.stdout.write(`  FAIL apply.yml 不认前缀 ${prefix}——那条路机器人不会醒\n`);
+  }
+}
+
+const templates = collect(tplDir).filter((p) => path.basename(p) !== 'config.yml');
 const noLabel = templates
   .map((p) => ({ p, src: fs.readFileSync(p, 'utf8') }))
   .filter(({ src }) => !/^labels:/m.test(src))

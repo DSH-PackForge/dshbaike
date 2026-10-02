@@ -41,6 +41,9 @@ jobs:
       - name: 校验词条、分区与编号契约
         run: node scripts/validate.mjs
 
+      - name: 贡献系统契约（路由 / 拒绝 / 不落盘）
+        run: node scripts/test-routing.mjs
+
       - name: 校验 workflow 与 Issue 表单的 YAML
         run: node scripts/check-workflows.mjs
 

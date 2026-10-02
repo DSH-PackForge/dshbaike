@@ -82,7 +82,9 @@ function main(argv) {
     return 1;
   }
 
-  const found = findOp(title);
+  const form = parseFormBody(body);
+  // 先解析表单：合并表单要靠「操作类型」下拉才知道用哪个操作
+  const found = findOp(title, form);
   if (!found) {
     process.stderr.write(`认不出这是哪种贡献表单：\`${title}\`\n`);
     emit({
@@ -90,12 +92,11 @@ function main(argv) {
       reason: 'unknown-op',
       escalate: 'false',
       fingerprint: fp,
-      message: '认不出这是哪种表单。请用仓库里的 Issue 模板重新提交（标题形如 `[认领维护] plugin/1`）。',
+      message: '认不出这是哪种表单。请用仓库里的 Issue 模板重新提交（标题形如 `[补充分区条目] themes` 或 `[内容变更] 改一个字段 plugin/1`）。',
     });
     return 1;
   }
 
-  const form = parseFormBody(body);
   const result = found.op.apply({ target: found.target, form });
 
   if (!result.ok) {
