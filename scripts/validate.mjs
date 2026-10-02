@@ -585,8 +585,10 @@ function checkEntry(ctx, reporter, entry) {
   }
 
   // ---- 规则 14：正文长度下限（warn） ----
+  // **草稿跳过**：draft 的定义就是"还没写完"，故意留空的占位条目（如 spec/1）每轮构建
+  // 都报一条 warn 只是噪声；改成 published 之后这条规则照常生效。
   const bodyText = String(entry.body ?? '').replace(/<!--[\s\S]*?-->/g, '').trim();
-  if (bodyText.length < BODY_MIN_LENGTH) {
+  if (String(data.status ?? '') !== 'draft' && bodyText.length < BODY_MIN_LENGTH) {
     reporter.warn(file, entry.bodyStartLine ?? null, 14, `正文只有 ${bodyText.length} 个字符（下限 ${BODY_MIN_LENGTH}），像空壳词条`);
   }
 
