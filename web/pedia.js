@@ -249,7 +249,8 @@
     'WinUI': { tone: 'sky', icon: 'window' },
     '多版本管理': { tone: 'violet', icon: 'layers' },
     '生态管理': { tone: 'amber' },
-    '支持 .dspack': { tone: 'slate' }
+    '支持 .dspack': { tone: 'slate' },
+    '停更': { tone: 'amber' }
   };
 
   /**

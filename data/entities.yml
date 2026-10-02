@@ -29,6 +29,14 @@ entities:
     keys:
       - "repo:121103qwq/DSH-Launcher"
     refs: []
+  - id: launcher/6
+    keys:
+      - "repo:yyh-001/DSH-X"
+    refs: []
+  - id: launcher/7
+    keys:
+      - "repo:Miyazawai/DSH-Melody-Launcher-Overture"
+    refs: []
   # 以下为「有生态证据但尚未建词条」的实体（docs/07 §5 第二档）。
   # 保留在这里的价值：同一个插件被多个整合包用不同坐标写法引用时，分区页不会出现两遍。
   - id: external:dsh-wildmon

@@ -24,7 +24,7 @@ zoneOrder:
 
 counters:
   client: 1
-  launcher: 5
+  launcher: 7
   plugin: 2
   mcp: 1
   theme: 1
@@ -117,6 +117,16 @@ entries:
   - n: 5
     kind: launcher
     title: DSH Launcher（121103qwq）
+    createdAt: 2026-10-02
+    status: published
+  - n: 6
+    kind: launcher
+    title: DSH-X
+    createdAt: 2026-10-02
+    status: published
+  - n: 7
+    kind: launcher
+    title: DSH 旋律启动器：序曲
     createdAt: 2026-10-02
     status: published
   - n: 1

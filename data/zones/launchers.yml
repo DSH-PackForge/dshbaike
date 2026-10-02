@@ -77,7 +77,7 @@ items:
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
   - name: DSH Launcher（121103qwq）
     section: launchers
-    blurb: 面向 Windows x64 的启动器与生态管理器（C#，MIT，30 star，快照 2026-10-02）——它的自我定位比「启动」更宽，把生态管理也算进职责。未认领 canonical ID（2026-10-02 查证）。
+    blurb: 面向 Windows x64 的启动器与生态管理器（C#，MIT，30 star，快照 2026-10-02）——它的自我定位比「启动」更宽，把生态管理也算进职责。未认领 canonical ID。最近一次推送 2026-09-15，是本区最久没动的一个（近乎停更）。
     launcherId: null
     lineage: 独立实现（C#）
     platforms: [windows]
@@ -85,11 +85,37 @@ items:
     importSupport: null
     source: curated
     entry: launcher/5
-    tags: ["生态管理", "支持 .dspack"]
+    tags: ["生态管理", "支持 .dspack", "停更"]
     risk: [desktop-control, network]
     links:
       github: 121103qwq/DSH-Launcher
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
+  - name: DSH-X
+    section: launchers
+    blurb: 轻量路线（这一区用得最多的一个）：选一个版本就启动 DSH 官方原版 Web 页面，不重做界面。自带便携 Node / npm / pnpm 与镜像源，所以不依赖系统环境；整合包支持写得最全——本地 .dspack / 直链 / GitHub Release / 内置市场都能装，也能把当前 profile 导出成 .dspack。622 star（快照 2026-10-02）。
+    launcherId: null
+    lineage: 独立实现（JavaScript）
+    platforms: [windows, macos]
+    selfVersioning: 未核实
+    source: curated
+    entry: launcher/6
+    tags: ["轻量", "整合包", "支持 .dspack"]
+    risk: [desktop-control, network]
+    links:
+      github: yyh-001/DSH-X
+  - name: DSH 旋律启动器：序曲
+    section: launchers
+    blurb: 从 MC 启动器借交互的 Windows 桌面启动器（Electron + React）：核心是「整合包 = 一套真隔离环境」（版本 + 插件 + 技能 + 预设 + 配置 + 会话），可同时养稳定包与尝鲜包、随点随切；首启自动带入官方默认整合包。它是 rirko/dsh-melody-launcher 的 C 端分支。57 star（快照 2026-10-02）。
+    launcherId: null
+    lineage: 独立实现（Electron）
+    platforms: [windows]
+    selfVersioning: 未核实
+    source: curated
+    entry: launcher/7
+    tags: ["MC 系", "整合包", "隔离环境"]
+    risk: [desktop-control, network]
+    links:
+      github: Miyazawai/DSH-Melody-Launcher-Overture
   - name: 裸 dsh 命令行
     section: bare
     blurb: 不依赖任何启动器：dsh --version 自报版本，dsh --profile <name> 直接起 profile。注册表把它作为「无启动器」这一档登记，是排查启动器问题时的对照组。
