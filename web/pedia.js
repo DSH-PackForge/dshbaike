@@ -916,23 +916,28 @@
     });
 
     // 「相关」不再需要一个展开按钮：它已经并进右侧信息栏（窄屏时信息栏排在最前，照样看得到）
-    // 侧栏最下面的按钮：向左收回
+    // 收起按钮：放在**侧栏顶部**、与站名同一行（原来在底部，11 个分区之下，
+    // 想收起得先滚到底——评审说太不方便）。紧凑图标按钮，文字给读屏。
     var collapseBtn = el('button', {
       type: 'button',
       class: 'rail-collapse',
       id: 'rail-collapse',
       'aria-controls': 'site-masthead',
-      'aria-expanded': 'true'
+      'aria-expanded': 'true',
+      title: '收起侧栏',
+      'aria-label': '收起侧栏'
     }, [
-      el('span', { class: 'rail-collapse__icon', 'aria-hidden': 'true', text: '‹' }),
-      el('span', { text: '收起侧栏' })
+      el('span', { class: 'rail-collapse__icon', 'aria-hidden': 'true', text: '‹' })
     ]);
 
     var inner = el('div', { class: 'masthead__inner' }, [
-      el('a', { class: 'brand', href: BASE, 'aria-label': SITE.name + ' 首页' }, [
-        // 站点标识（几何取自 scripts/logo.mjs 的 16×16 网格；svg 是装饰，名字才是语义）
-        el('span', { class: 'brand__mark', 'aria-hidden': 'true', html: BRAND_MARK_SVG }),
-        el('span', { class: 'brand__name', text: SITE.name })
+      el('div', { class: 'rail__top' }, [
+        el('a', { class: 'brand', href: BASE, 'aria-label': SITE.name + ' 首页' }, [
+          // 站点标识（几何取自 scripts/logo.mjs 的 16×16 网格；svg 是装饰，名字才是语义）
+          el('span', { class: 'brand__mark', 'aria-hidden': 'true', html: BRAND_MARK_SVG }),
+          el('span', { class: 'brand__name', text: SITE.name })
+        ]),
+        collapseBtn
       ]),
       el('nav', { class: 'zones', 'aria-label': '一级分区' }, list),
       el('div', { class: 'masthead__tools' }, [
@@ -940,8 +945,7 @@
           searchInput,
           el('div', { class: 'search__panel', id: 'site-search-panel', role: 'listbox', 'aria-label': '搜索结果', hidden: true })
         ]),
-        themeButton(),
-        collapseBtn
+        themeButton()
       ])
     ]);
 

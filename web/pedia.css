@@ -458,14 +458,33 @@ html.rail-collapsed .masthead {
 }
 
 /* 收起按钮（侧栏最下面） */
+/* 侧栏顶部一行：站名 + 收起按钮（都在最上面，随时够得着） */
+.rail__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 0 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* 站名在这一行里占满剩余宽度，底框交给 .rail__top 统一画 */
+.rail__top .brand {
+  flex: 1 1 auto;
+  padding: 0;
+  border-bottom: 0;
+}
+
+/* 收起按钮：紧凑图标按钮（原来是占满整行的文字按钮） */
 .rail-collapse {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  padding: 7px 10px;
+  flex: 0 0 auto;
+  padding: 5px 8px;
   font: inherit;
   font-size: var(--fs-sm);
+  line-height: 1;
   color: var(--text-muted);
   background: transparent;
   border: 1px solid var(--border);
