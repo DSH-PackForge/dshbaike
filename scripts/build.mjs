@@ -408,6 +408,15 @@ function pluginKeyOf(block) {
 
 function buildReverseIndex(model) {
   const byKey = new Map();
+  // 按**词条 id** 索引的「哪些教程提到它」：来源是教程的 plugins 块 + 教程正文的 [[]] 提及。
+  // 与 byKey 的区别：byKey 按插件的 npm/repo 坐标聚合（为了去重与门槛），
+  // 这个按词条本身聚合，所以**任何类型**的词条都能拿到（不只是插件）。
+  const tutorialsByEntry = new Map();
+  const addTutorialRef = (targetId, tutorialId) => {
+    if (!targetId || !tutorialId || targetId === tutorialId) return;
+    if (!tutorialsByEntry.has(targetId)) tutorialsByEntry.set(targetId, new Set());
+    tutorialsByEntry.get(targetId).add(tutorialId);
+  };
   const ensure = (key, name, entryId) => {
     if (!byKey.has(key)) byKey.set(key, { key, name: name ?? null, entryId: entryId ?? null, tutorials: [], packs: [], refs: [] });
     const item = byKey.get(key);
@@ -436,6 +445,8 @@ function buildReverseIndex(model) {
       if (!item.refs.some((r) => r.entry === ref.entry && r.repo === ref.repo && r.npm === ref.npm)) item.refs.push(ref);
       if (entry.kind === 'tutorial' && !item.tutorials.includes(entry.id)) item.tutorials.push(entry.id);
       if (entry.kind === 'pack' && !item.packs.includes(entry.id)) item.packs.push(entry.id);
+      // ① 教程的 plugins 块（刻意的引用，带 why）
+      if (entry.kind === 'tutorial') addTutorialRef(parseEntryId(block.entry)?.id ?? null, entry.id);
     }
   }
 
@@ -450,6 +461,17 @@ function buildReverseIndex(model) {
     }))
     .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 
+  // ② 教程正文里的 [[]] 提及（教程写到哪，谁的「相关教程」里就多一条）
+  for (const entry of model.entries) {
+    if (entry.kind !== 'tutorial') continue;
+
+    if (!entry.body) continue;
+    for (const m of String(entry.body).matchAll(/\[\[([^\]\n|]+)/g)) {
+      addTutorialRef(parseEntryId(m[1].trim())?.id ?? null, entry.id);
+    }
+  }
+
+
   const byEntryId = new Map();
   for (const item of plugins) {
     if (item.entryId) byEntryId.set(item.entryId, item);
@@ -458,6 +480,7 @@ function buildReverseIndex(model) {
   return {
     byKey,
     byEntryId,
+    tutorialsByEntry,
     output: { generatedAt: null, plugins },
   };
 }
@@ -521,9 +544,11 @@ function buildEntryOutput(model, entry, reverse, generatedAt) {
   const relatedIds = (Array.isArray(data.related) ? data.related : []).map((x) => parseEntryId(x)?.id).filter(Boolean);
   const backlinkIds = [...new Set([...prereqIds, ...relatedIds, ...wikiTargets])].filter((x) => x !== id);
 
+  // 「出现在哪些整合包」仍只对插件有意义（整合包按 npm/repo 坐标引用插件）
   const reverseRef = kind === 'plugin' ? reverse.byEntryId.get(id) : null;
   const usedInPacks = reverseRef ? reverseRef.packs : [];
-  const referencedByTutorials = reverseRef ? reverseRef.tutorials : [];
+  // 「相关教程」对**所有类型**都成立：教程写到哪，这里就长出一条（构建期派生，不用手维护）
+  const referencedByTutorials = [...(reverse.tutorialsByEntry?.get(id) ?? [])];
 
   const snapshot = latestSnapshot(data);
 
@@ -554,8 +579,10 @@ function buildEntryOutput(model, entry, reverse, generatedAt) {
   };
   if (kind === 'plugin') {
     output.usedInPacks = sortStrings(usedInPacks);
-    output.referencedByTutorials = sortStrings(referencedByTutorials);
   }
+  // 「相关教程」对**所有类型**都成立（构建期派生：教程的 plugins 块 + 教程正文的 [[]] 提及），
+  // 所以不放在上面的 plugin 分支里——它是词条的元数据，不是插件的专属字段。
+  output.referencedByTutorials = sortStrings(referencedByTutorials);
   return sortObjectKeys(deepSort(output));
 }
 

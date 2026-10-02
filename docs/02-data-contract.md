@@ -273,7 +273,7 @@ plugins:                    # 插件引用块，见 §5
 | `compat` | object | 人工（可由采集建议） | `dsh`（版本**枚举**，且必须标「实测 / 未核实」）、`runtime`（cli/desktop/web）、`platforms` |
 | `providedBy` | object | 采集（**只引用，不落库**） | 外部源事实与快照：`awesome`（stars / dl / added / 详情页 href）、`npm`（latest / publishedAt）、`github`（stars / pushedAt / license / archived）、`dshbase`（是否有中文指南） |
 | `usedInPacks` | string[] | 采集 | 反查市场 manifest 的 `bundles` / `dependencies` 得到「出现在哪些整合包」——纯自动，首版就做 |
-| `referencedByTutorials` | string[] | 构建期派生 | 引用它的教程（来自反向索引） |
+| `referencedByTutorials` | string[] | 构建期派生 | 提到它的教程（**所有类型都有**）：来源是教程的 `plugins` 引用块**或教程正文里的 `[[]]` 提及**；渲染进右侧「相关」框与「哪些教程用了它」页签。注意它**不影响**插件收录门槛——规则 15 只认 `plugins[].why` 那种刻意引用 |
 | `entryGate` | enum | 校验用 | 记录满足的收录门槛：`official` \| `tutorial` \| `pack` \| `maintainer`（见 §1.2） |
 | `risk` | enum[] | 风险徽章 | `desktop-control` 桌面操控 / `network` 网络访问 / `credentials` 凭据 / `build-script` 构建脚本。含义见下表 |
 

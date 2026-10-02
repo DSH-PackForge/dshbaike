@@ -64,7 +64,7 @@ node scripts/linkcheck.mjs [--write]         # 可选：HEAD 检查外链，写 
   "backlinks": [ { "id": "tutorial/1", "title": "写一个 DSH 插件" } ],
   "zone": { "id": "plugins", "title": "插件" },           // 该 kind 默认所属分区
   "usedInPacks": ["hxh230802.pokemon"],                    // 仅 plugin，构建期派生
-  "referencedByTutorials": ["tutorial/1"],                 // 仅 plugin，构建期派生
+  "referencedByTutorials": ["tutorial/1"],                 // 所有类型，构建期派生（教程的 plugins 块或正文提及）
   "snapshot": "2026-10-01"                                 // 外部源快照日期（无则 null）
 }
 ```

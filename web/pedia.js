@@ -1746,16 +1746,21 @@
         build: function () { return packsBlock(entry); }
       });
       specs.push({
-        key: 'tutorials',
-        label: '哪些教程用了它',
-        count: asArray(entry.referencedByTutorials).length,
-        build: function () { return tutorialsBlock(entry); }
-      });
-      specs.push({
         key: 'install',
         label: '装它会发生什么',
         count: installEffectCount(meta),
         build: function () { return installBlock(entry); }
+      });
+    }
+
+    // 「哪些教程用了它」不再是插件专属：任何类型的词条，只要被教程的 plugins 块或正文
+    // 提到过，就会出现这个页签（数据来自构建期的 referencedByTutorials）
+    if (asArray(entry.referencedByTutorials).length) {
+      specs.push({
+        key: 'tutorials',
+        label: '哪些教程用了它',
+        count: asArray(entry.referencedByTutorials).length,
+        build: function () { return tutorialsBlock(entry); }
       });
     }
 
@@ -2647,12 +2652,21 @@
       if (!isPresent(r)) return;
       items.push(entryLink(String(r), null));
     });
+    // 相关教程（构建期派生：教程的 plugins 块或正文提及）——它是**这一条的元数据**，
+    // 所以放在「相关」格里单独一个小标题，不跟"所属分区 / 相关词条"混在一个列表里。
+    var tutorials = asArray(entry.referencedByTutorials).filter(isPresent);
 
     return el('div', { class: 'box' }, [
       el('div', { class: 'box__head', text: '相关' }),
-      el('div', { class: 'box__body' }, el('ul', { class: 'toc__list' }, items.map(function (n) {
-        return el('li', {}, n);
-      })))
+      el('div', { class: 'box__body' }, [
+        el('ul', { class: 'toc__list' }, items.map(function (n) {
+          return el('li', {}, n);
+        })),
+        tutorials.length ? el('div', { class: 'box__subhead', text: '相关教程' }) : null,
+        tutorials.length ? el('ul', { class: 'toc__list' }, tutorials.map(function (t) {
+          return el('li', {}, entryLink(String(t), null));
+        })) : null
+      ])
     ]);
   }
 
