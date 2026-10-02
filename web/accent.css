@@ -1,0 +1,235 @@
+/* ==========================================================================
+   配色与主题色（独立文件：与 pedia.css 解耦，避免与并行改动互相覆盖）
+   --------------------------------------------------------------------------
+   **色值全部取自 dsh-myskin 的海洋令牌**（WTStarMark/dsh-myskin，
+   tests/fixtures/xingye-theme.tokens-only.json，92 个令牌）：
+   bg-base / bg-layer-1..3 / border-l1..2 / brand-primary / label-primary..tertiary /
+   state-* 一一对应过来，不是我另挑的近似色。
+
+   为什么默认是蓝（评审）：① 品牌对齐——DeepSeek 本身是蓝的，读者一眼认出同一生态；
+   ② 语义色 state-success 是绿 #12825e，原先的品牌青绿与它同色域，徽章会挤在一起；
+   ③ 蓝是百科/文档的既有约定。海洋蓝是这套里最沉得住气的那个，所以做默认。
+
+   三套可选（侧栏色点切换，localStorage 记忆）：
+     · 海洋（默认 #2f6fb8 / 暗 #7cc4ff）—— 取自 dsh-myskin 的海洋令牌
+     · DeepSeek 蓝（#4d6bfe / 暗 #8b9dff）—— 对齐 DeepSeek 品牌色
+     · 青绿（#0f7a70 / 暗 #3fd0bd）—— 本站原品牌色
+   换主题色时**底色/边框/文字/语义色一起切**，不会出现"蓝品牌配青灰底"。
+   对比度已算过（docs/08）：正文 16.79:1、品牌链接 5.14:1、成功 4.79:1，均达标。
+   ========================================================================== */
+
+/* ① 海洋（默认） */
+:root {
+  --brand: #2f6fb8;
+  --brand-weak: #dbe8f8;
+  --brand-tint: rgba(47, 111, 184, 0.08);
+  --brand-tint-strong: rgba(47, 111, 184, 0.14);
+  --link: #2f6fb8;
+  --link-visited: #6b4fa8;
+
+  --bg-page: #eaf1fa;
+  --bg: #ffffff;
+  --bg-subtle: #e6eefa;
+  --bg-inset: #dbe6f6;
+  --border: #ccdcf0;
+  --border-strong: #b3c9e4;
+
+  --text: #0c1e34;
+  --text-muted: #3c5674;
+  --text-faint: #6b87a6;
+
+  --ok: #12825e;
+  --warn: #a06a00;
+  --danger: #c0392b;
+  --unknown: #5d7893;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #7cc4ff;
+    --brand-weak: #1b3c5f;
+    --brand-tint: rgba(124, 196, 255, 0.1);
+    --brand-tint-strong: rgba(124, 196, 255, 0.18);
+    --link: #8fd0ff;
+    --link-visited: #b9a3f0;
+    --bg-page: #060f1d;
+    --bg: #0c1c2f;
+    --bg-subtle: #112741;
+    --bg-inset: #16314f;
+    --border: #1b3553;
+    --border-strong: #27496f;
+    --text: #e9f3ff;
+    --text-muted: #a7c2e0;
+    --text-faint: #7c9abc;
+    --ok: #4ed6a6;
+    --warn: #f0c674;
+    --danger: #ff8282;
+    --unknown: #6d89a9;
+  }
+}
+
+:root[data-theme="dark"] {
+  --brand: #7cc4ff;
+  --brand-weak: #1b3c5f;
+  --brand-tint: rgba(124, 196, 255, 0.1);
+  --brand-tint-strong: rgba(124, 196, 255, 0.18);
+  --link: #8fd0ff;
+  --link-visited: #b9a3f0;
+  --bg-page: #060f1d;
+  --bg: #0c1c2f;
+  --bg-subtle: #112741;
+  --bg-inset: #16314f;
+  --border: #1b3553;
+  --border-strong: #27496f;
+  --text: #e9f3ff;
+  --text-muted: #a7c2e0;
+  --text-faint: #7c9abc;
+  --ok: #4ed6a6;
+  --warn: #f0c674;
+  --danger: #ff8282;
+  --unknown: #6d89a9;
+}
+
+/* ② DeepSeek 蓝（对齐 DeepSeek 品牌色 #4d6bfe） */
+:root[data-accent="deepseek"] {
+  --brand: #4d6bfe;
+  --brand-weak: #eceffe;
+  --brand-tint: rgba(77, 107, 254, 0.08);
+  --brand-tint-strong: rgba(77, 107, 254, 0.16);
+  --link: #3550d8;
+  --bg-page: #eef1f8;
+  --bg: #ffffff;
+  --bg-subtle: #f4f6fb;
+  --bg-inset: #e6eaf5;
+  --border: #dde2ef;
+  --border-strong: #c6cee2;
+  --text: #181c2e;
+  --text-muted: #575e75;
+  --text-faint: #7f869b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-accent="deepseek"] {
+    --brand: #8b9dff;
+    --brand-weak: #171d38;
+    --brand-tint: rgba(139, 157, 255, 0.12);
+    --brand-tint-strong: rgba(139, 157, 255, 0.22);
+    --link: #a5b4ff;
+    --bg-page: #0b0e17;
+    --bg: #121624;
+    --bg-subtle: #171c2c;
+    --bg-inset: #1d2334;
+    --border: #242b40;
+    --border-strong: #354060;
+    --text: #e6e9f5;
+    --text-muted: #a4abc4;
+    --text-faint: #7c849e;
+  }
+}
+
+:root[data-theme="dark"][data-accent="deepseek"] {
+  --brand: #8b9dff;
+  --brand-weak: #171d38;
+  --brand-tint: rgba(139, 157, 255, 0.12);
+  --brand-tint-strong: rgba(139, 157, 255, 0.22);
+  --link: #a5b4ff;
+  --bg-page: #0b0e17;
+  --bg: #121624;
+  --bg-subtle: #171c2c;
+  --bg-inset: #1d2334;
+  --border: #242b40;
+  --border-strong: #354060;
+  --text: #e6e9f5;
+  --text-muted: #a4abc4;
+  --text-faint: #7c849e;
+}
+
+/* ③ 青绿（本站原品牌色） */
+:root[data-accent="teal"] {
+  --brand: #0f7a70;
+  --brand-weak: #e2f2f0;
+  --brand-tint: rgba(15, 122, 112, 0.08);
+  --brand-tint-strong: rgba(15, 122, 112, 0.16);
+  --link: #0e7490;
+  --bg-page: #edf3f3;
+  --bg: #ffffff;
+  --bg-subtle: #f2f7f7;
+  --bg-inset: #e6eeee;
+  --border: #dae6e5;
+  --border-strong: #c2d2d0;
+  --text: #16272b;
+  --text-muted: #556a6d;
+  --text-faint: #7d8f92;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-accent="teal"] {
+    --brand: #3fd0bd;
+    --brand-weak: #10312c;
+    --brand-tint: rgba(63, 208, 189, 0.1);
+    --brand-tint-strong: rgba(63, 208, 189, 0.2);
+    --link: #67c9dd;
+    --bg-page: #0a1413;
+    --bg: #111c1b;
+    --bg-subtle: #16211f;
+    --bg-inset: #1c2927;
+    --border: #23332f;
+    --border-strong: #33473f;
+    --text: #e3ecea;
+    --text-muted: #a2b3b0;
+    --text-faint: #7a8b89;
+  }
+}
+
+:root[data-theme="dark"][data-accent="teal"] {
+  --brand: #3fd0bd;
+  --brand-weak: #10312c;
+  --brand-tint: rgba(63, 208, 189, 0.1);
+  --brand-tint-strong: rgba(63, 208, 189, 0.2);
+  --link: #67c9dd;
+  --bg-page: #0a1413;
+  --bg: #111c1b;
+  --bg-subtle: #16211f;
+  --bg-inset: #1c2927;
+  --border: #23332f;
+  --border-strong: #33473f;
+  --text: #e3ecea;
+  --text-muted: #a2b3b0;
+  --text-faint: #7a8b89;
+}
+
+/* 主题色选择器：三枚色点 */
+.accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.accent__dot {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: box-shadow 0.14s ease, transform 0.14s ease;
+}
+
+.accent__dot:hover {
+  transform: scale(1.08);
+}
+
+.accent__dot[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
+}
+
+.accent__dot--ocean { background: #2f6fb8; }
+/* 兼容层（过渡期）：旧版选择器把海洋色叫 blue；data-accent="blue" 不定义覆盖，
+   于是自然落到 :root 的海洋默认色。等 pedia.js 的改动落地后这段可删。 */
+.accent__dot--blue { background: #2f6fb8; }
+.accent__dot--deepseek { background: #4d6bfe; }
+.accent__dot--teal { background: #0f7a70; }
+
+/* 站名旁那枚像素标记跟着主题色走（SVG 的 fill 是呈现属性，CSS 能覆盖它） */
+.brand__mark rect:nth-child(1) { fill: var(--brand-weak); }
+.brand__mark rect:nth-child(2) { fill: var(--brand); }

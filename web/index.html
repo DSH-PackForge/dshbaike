@@ -28,6 +28,7 @@ var t=localStorage.getItem('dsh-pedia-theme');if(t&&t!=='auto')d.setAttribute('d
 var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent',a);}catch(e){}})();
 </script>
 <link rel="stylesheet" href="pedia.css">
+<link rel="stylesheet" href="accent.css">
 <!-- 手写外壳自带 boot：直接双击打开或任何静态服务器下都可用。
      构建期若替换下面的 PEDIA_BOOT 占位符，注入值会覆盖这里的同名键。 -->
 <script>window.__PEDIA__ = { base: "./", page: "index", kind: null, n: null, title: "DSH百科" };</script>
@@ -49,5 +50,6 @@ var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent'
 <footer class="footer" id="site-footer"></footer>
 
 <script src="pedia.js" defer></script>
+<script src="accent.js" defer></script>
 </body>
 </html>
