@@ -9,6 +9,9 @@ body:
         分区条目很轻：**名称 + 一句话 + 至少一个外链**。机器人会把它写进对应分区的
         `items:` 里（哪一级、哪个二级分区由你指定），然后开 PR。
 
+        **「GitHub 用户名」是必填的**——署名要用它（提交作者会写成这个名字），
+        机器人会核实这个账号真的存在；填错会**直接拒绝**。
+
         **请自己写一句话**，不要直接抄上游 description——抄来的句子在列表里读起来都一样。
   - type: dropdown
     id: zone
@@ -35,6 +38,14 @@ body:
       label: 二级分区 id
       description: 分区页里那一节的 id（如插件分区的 `markets` / `plugins`，主题分区的 `packs` / `loaders`）。填错机器人会告诉你可用的 id。
       placeholder: markets
+    validations:
+      required: true
+  - type: input
+    id: username
+    attributes:
+      label: GitHub 用户名
+      description: 必填——署名要用它：这条改动的提交作者会写成这个名字。只填用户名本身（不是显示名、不是邮箱、不要 @）；机器人会核实账号存在，填错直接拒绝。
+      placeholder: your-github-name
     validations:
       required: true
   - type: input

@@ -116,6 +116,22 @@ const noLabel = templates
   .map((p) => ({ p, src: fs.readFileSync(p, 'utf8') }))
   .filter(({ src }) => !/^labels:/m.test(src))
   .map(({ p }) => path.basename(p));
+
+// ④ 机器人代改的两张表单必须**必填** GitHub 用户名——署名契约（docs/14）：
+// 署名靠它，所以它是输入里的必填项；少一处，那条路就会退化成「署不出名」。
+const botForms = templates.filter((p) => /^[12]-.*\.yml$/.test(path.basename(p)));
+const missingUser = botForms.filter((p) => {
+  const src = fs.readFileSync(p, 'utf8');
+  const at = src.indexOf('label: GitHub 用户名');
+  if (at < 0) return true;
+  return !/required:\s*true/.test(src.slice(at, at + 400));
+}).map((p) => path.basename(p));
+if (missingUser.length === 0) {
+  process.stdout.write(`  OK   ${botForms.length} 张机器代改表单都把「GitHub 用户名」设为必填\n`);
+} else {
+  ok = false;
+  process.stdout.write(`  FAIL 这些机器代改表单没有必填 GitHub 用户名（署名会没着落）：${missingUser.join(', ')}\n`);
+}
 if (noLabel.length) {
   process.stdout.write(`  FAIL 这些表单没有 labels（两类 Issue 就筛不出来了）：${noLabel.join(', ')}\n`);
   ok = false;

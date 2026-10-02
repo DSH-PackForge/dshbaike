@@ -90,7 +90,6 @@ PR 作者仍是 `github-actions`——**这一点很重要**：如果 PR 作者�
 三者由 `scripts/check-workflows.mjs` 强制一致（漂移的表现是「机器人静默不工作」）。
 
 #### 选择器的「两级」怎么做的
-
 GitHub 的模板选择器**原生不支持分组**（[官方文档](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository)：
 `config.yml` 只有 `blank_issues_enabled` 与 `contact_links`），所以两级靠结构做：
 
@@ -110,6 +109,25 @@ GitHub 的模板选择器**原生不支持分组**（[官方文档](https://docs
 **为什么值得分成两类**：它们的**处理方式**完全不同。A 类可以交给机器（有界、可校验、可回归），
 B 类不能——「导航怎么改」没有机械解，只有设计判断。把 B 类塞进「机器人代改」通道，
 要么机器改错，要么它只能说「我改不了」，两头都不讨好。
+
+### 1.3 署名契约：GitHub 用户名必填，且必须真实存在
+
+署名是这套系统的**输出**，那它的输入就不能是可选。所以：
+
+- **所有**机器代改的表单里，「GitHub 用户名」是**必填**字段（`1-entry-content`、`2-zone-content`）；
+- 校验分三道，任何一道不过就**直接拒绝**，绝不「凑一个署名」：
+  1. **有没有**（缺 → `incomplete`）；
+  2. **形状对不对**（GitHub 官方规则：字母数字与**单个**连字符、不能以连字符开头/结尾、≤39 位；
+     顺手写的 `@name` 会被规范化去掉 @；不合法 → `bad-username`）；
+  3. **账号真不真**——`apply-issue.mjs` 查 `GET /users/<name>`：404 → `unknown-user` **拒绝**；
+     API 出错 → `user-lookup-failed` **也拒绝**（无法核实就不写下坏署名，改一下表单就会重试）。
+- **提交作者 = 表单里这个用户名**（不再是「提 Issue 的人」）。两者不同时，提 Issue 的人
+  作为共同作者一并列出——他确实提交了这次请求。机器人永远是 Co-author。
+- 为什么这么较真：署名是我们**唯一**用来记「谁做的」的东西。写错一个字母，就会在提交里
+  留下一个指向不存在账号的名字——那比不署名更糟，因为它看起来是对的。
+
+守卫：`scripts/check-workflows.mjs` 会检查两张机器代改表单都把该字段设为 `required: true`；
+`scripts/test-routing.mjs` 覆盖「缺用户名 / 形状不合法 / 带 @ 规范化」三条。
 
 ## 2. 什么算「有界操作」
 

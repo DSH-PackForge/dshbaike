@@ -48,8 +48,10 @@ jobs:
         id: dry
         continue-on-error: true
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
         run: node scripts/apply-issue.mjs --dry-run
 
       - name: 回帖（待审核 / 不能改 / 表单不全）
@@ -173,6 +175,7 @@ jobs:
         id: apply
         continue-on-error: true
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
@@ -241,10 +244,11 @@ jobs:
           fi
 
           # ---- 署名（归因要准）：**提改动的人是提交作者，机器人只是 Co-author** ----
-          # 内容是人家定的，机器人只是代笔把它写进文件——所以作者是贡献者，共同作者是机器人。
-          # 取两个来源去重：提 Issue 的人（GitHub 认过的身份）+ 表单里写的用户名（认领那张表有）。
+          # 表单里的「GitHub 用户名」是必填且已核实存在的（apply-issue.mjs 查过 API）——
+          # 署名就写它，不再退回「提 Issue 的人」：谁做的改动，作者就是谁。
+          # 提 Issue 的人与它不是同一个时，作为共同作者一并列出（他确实提交了这次请求）。
           credits=()
-          for u in "$AUTHOR" "$CREDITED"; do
+          for u in "$CREDITED" "$AUTHOR"; do
             [ -z "$u" ] && continue
             [ "$u" = "github-actions[bot]" ] && continue
             case " ${credits[*]-} " in *" $u "*) continue ;; esac

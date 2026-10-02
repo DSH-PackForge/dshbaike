@@ -14,8 +14,10 @@
 
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import process from 'node:process';
 
 import { findOp, parseFormBody } from './lib/ops.mjs';
+import { normalizeUsername, usernameProblem } from './lib/util.mjs';
 
 /**
  * 请求指纹：标题 + 正文的哈希。
@@ -55,7 +57,27 @@ function argValue(argv, name) {
   return i >= 0 ? argv[i + 1] : null;
 }
 
-function main(argv) {
+/**
+ * 这个 GitHub 账号真的存在吗？
+ *
+ * 形状合法不等于账号存在——写错一个字母就会在提交里留下一个指向不存在账号的署名，
+ * 而那正是我们**唯一**用来记作者的东西。所以宁可拒绝，也不写下坏署名。
+ * 返回 true / false；API 出错时抛异常（调用方按「无法核实」处理，也是拒绝）。
+ */
+async function userExists(name, token) {
+  const res = await fetch(`https://api.github.com/users/${encodeURIComponent(name)}`, {
+    headers: {
+      accept: 'application/vnd.github+json',
+      'user-agent': 'dshbaike-bot',
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (res.status === 200) return true;
+  if (res.status === 404) return false;
+  throw new Error(`GitHub API 返回 ${res.status}`);
+}
+
+async function main(argv) {
   const title = argValue(argv, '--title') ?? process.env.ISSUE_TITLE ?? '';
   let body = process.env.ISSUE_BODY ?? '';
   const bodyFile = argValue(argv, '--body-file');
@@ -97,6 +119,57 @@ function main(argv) {
     return 1;
   }
 
+  // ---- 署名契约（docs/14）：先校验，再动手 ----------------------------------
+  // **所有**机器代改都必须带一个真实存在的 GitHub 用户名——署名靠它（提交作者写的就是它）。
+  // 三道：①表单里有没有；②形状合不合法；③账号真不真（查 API）。任何一道不过就**直接拒绝**。
+  const rawName = form['GitHub 用户名'];
+  const name = normalizeUsername(rawName);
+  const offline = argv.includes('--offline') || process.env.OFFLINE === 'true';
+  const shape = usernameProblem(rawName);
+  if (shape) {
+    process.stderr.write(`${shape}\n`);
+    emit({
+      ok: 'false',
+      reason: name ? 'bad-username' : 'incomplete',
+      escalate: 'false',
+      op: found.op.id,
+      fingerprint: fp,
+      message: `${shape}。**署名要用它**，所以机器人不会在没有合法用户名的情况下动手。`,
+    });
+    return 1;
+  }
+  if (!offline) {
+    let exists;
+    try {
+      exists = await userExists(name, process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? '');
+    } catch (err) {
+      process.stderr.write(`无法核实 ${name}：${err.message}\n`);
+      emit({
+        ok: 'false',
+        reason: 'user-lookup-failed',
+        escalate: 'false',
+        op: found.op.id,
+        fingerprint: fp,
+        message: `无法核实 \`${name}\` 这个账号（${err.message}）。署名要靠它，为了不写下坏署名，机器人这次不动手——改一下表单内容就会自动重试。`,
+      });
+      return 1;
+    }
+    if (!exists) {
+      process.stderr.write(`GitHub 上找不到账号 ${name}\n`);
+      emit({
+        ok: 'false',
+        reason: 'unknown-user',
+        escalate: 'false',
+        op: found.op.id,
+        fingerprint: fp,
+        message: `GitHub 上**找不到** \`${name}\` 这个账号。署名要用它（提交作者写的就是这个名字），所以机器人不会动手：请确认拼写——填的是**用户名**，不是显示名、不是邮箱。`,
+      });
+      return 1;
+    }
+  } else {
+    process.stdout.write('（--offline：跳过账号存在性核实）\n');
+  }
+
   const result = found.op.apply({ target: found.target, form });
 
   if (!result.ok) {
@@ -134,4 +207,5 @@ function main(argv) {
   return 0;
 }
 
-process.exit(main(process.argv.slice(2)));
+// main 现在是 async（要查 GitHub 账号是否存在）
+process.exit(await main(process.argv.slice(2)));

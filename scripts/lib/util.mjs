@@ -246,6 +246,34 @@ export const ENTRY_KINDS = [
   'source',
 ];
 
+/* ------------------------------------------------------------------ */
+/* GitHub 用户名（贡献系统的署名契约，docs/14）                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * GitHub 官方规则：只允许字母数字与**单个**连字符，不能以连字符开头或结尾，最长 39 位。
+ * 正则里 `-(?=[A-Za-z0-9])` 同时挡掉了连续连字符与结尾连字符。
+ */
+export const GITHUB_USERNAME_RE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
+
+/** 去掉首尾空白与前面的 @（有人会顺手写 @name） */
+export function normalizeUsername(value) {
+  return String(value ?? '').trim().replace(/^@+/, '');
+}
+
+export function isValidUsername(value) {
+  return GITHUB_USERNAME_RE.test(normalizeUsername(value));
+}
+
+/** 只做形状检查；账号是否真的存在由 apply-issue.mjs 查 API 确认 */
+export function usernameProblem(value) {
+  const name = normalizeUsername(value);
+  if (!name) return '缺少 GitHub 用户名';
+  if (name.length > 39) return 'GitHub 用户名最长 39 位';
+  if (!GITHUB_USERNAME_RE.test(name)) return `\`${name}\` 不是合法的 GitHub 用户名（只允许字母数字与单个连字符，且不能以连字符开头/结尾）`;
+  return null;
+}
+
 export function isEntryKind(kind) {
   return ENTRY_KINDS.includes(kind);
 }

@@ -18,14 +18,13 @@ import fs from 'node:fs';
 
 import { loadRegistry, loadEntryFile } from './lib/data.mjs';
 import { parseEntryId } from './lib/registry.mjs';
-import { displayPath } from './lib/util.mjs';
+import { displayPath, normalizeUsername, usernameProblem } from './lib/util.mjs';
 
 const USAGE = `用法：node scripts/claim.mjs <kind>/<n> <github-username>
 
 例：node scripts/claim.mjs plugin/1 hxh230802`;
 
-/** GitHub 用户名规则：1–39 位，字母数字与连字符，不能以连字符开头/结尾 */
-const USERNAME_RE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
+/** GitHub 用户名规则见 lib/util.mjs（贡献系统的共享契约，docs/14） */
 
 /**
  * 把用户名加进 front-matter 的 maintainers。
@@ -79,16 +78,18 @@ function main(argv) {
     process.stdout.write(`${USAGE}\n`);
     return argv.length === 2 ? 0 : 2;
   }
-  const [id, username] = argv;
+  const [id, rawUsername] = argv;
   const parsed = parseEntryId(id);
   if (!parsed) {
     process.stderr.write(`词条 id 形状不对：\`${id}\`（要形如 plugin/1）\n`);
     return 2;
   }
-  if (!USERNAME_RE.test(username)) {
-    process.stderr.write(`GitHub 用户名不合法：\`${username}\`\n`);
+  const problem = usernameProblem(rawUsername);
+  if (problem) {
+    process.stderr.write(`${problem}\n`);
     return 2;
   }
+  const username = normalizeUsername(rawUsername);
 
   const registry = loadRegistry();
   const known = (registry.data.entries ?? []).some((e) => `${e.kind}/${e.n}` === parsed.id);

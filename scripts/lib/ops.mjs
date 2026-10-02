@@ -20,6 +20,7 @@ import path from 'node:path';
 import { addMaintainer } from '../claim.mjs';
 import { loadRegistry, loadEntryFile } from './data.mjs';
 import { parseEntryId } from './registry.mjs';
+import { normalizeUsername, usernameProblem } from './util.mjs';
 
 /* ------------------------------------------------------------------ */
 /* Issue Forms 解析                                                    */
@@ -84,7 +85,28 @@ const ARRAY_FIELDS = new Set([
   'provides', 'requires', 'targets', 'roots', 'files', 'permissions', 'launchers',
 ]);
 
-/** 把表单里输入的值格式化成 YAML 一侧的写法（只支持标量与行内数组） */
+/**
+ * 所有操作都必须带一个合法的 GitHub 用户名（docs/14）。
+ *
+ * 为什么是「必须」：署名靠它——提交作者写的就是这个名字。名字缺失或形状不合法时，
+ * 与其写一个指向不存在账号的 `Co-authored-by`，不如**直接拒绝**让人改表单。
+ * 形状之外的「账号是否真的存在」由 apply-issue.mjs 查 API 确认（ops 保持纯函数、不联网）。
+ */
+export function requireUsername(form) {
+  const raw = form['GitHub 用户名'];
+  const problem = usernameProblem(raw);
+  if (problem) {
+    return {
+      error: {
+        ok: false,
+        reason: normalizeUsername(raw) ? 'bad-username' : 'incomplete',
+        message: `${problem}。**署名要用它**，所以机器人不会在没有合法用户名的情况下动手。`,
+      },
+    };
+  }
+  return { username: normalizeUsername(raw) };
+}
+
 export function formatScalar(field, rawValue) {
   const value = String(rawValue ?? '').trim();
   if (ARRAY_FIELDS.has(field)) {
@@ -112,8 +134,10 @@ export const OPS = {
     summary: (v) => `把 ${v.user} 加进 maintainers`,
     apply({ target, form }) {
       const id = (form['词条 id'] || target || '').trim().replace(/^`|`$/g, '');
-      const user = (form['GitHub 用户名'] || '').split('\n')[0].trim();
-      if (!id || !user) return { ok: false, reason: 'incomplete', message: '表单缺「词条 id」或「GitHub 用户名」。' };
+      const who = requireUsername(form);
+      if (who.error) return who.error;
+      const user = who.username;
+      if (!id) return { ok: false, reason: 'incomplete', message: '表单缺「词条 id」。' };
       const found = readEntry(id);
       if (!found) return { ok: false, reason: 'unknown-entry', message: `词条 \`${id}\` 不在 registry 里。` };
       const result = addMaintainer(found.raw, user);
@@ -132,6 +156,8 @@ export const OPS = {
     title: '改一个字段',
     apply({ target, form }) {
       const id = (form['词条 id'] || target || '').trim().replace(/^`|`$/g, '');
+      const who = requireUsername(form);
+      if (who.error) return who.error;
       const field = (form['字段名'] || '').trim();
       const value = form['新的值'] || '';
       if (!id || !field || !value.trim()) return { ok: false, reason: 'incomplete', message: '表单缺「词条 id」「字段名」或「新的值」。' };
@@ -168,6 +194,7 @@ export const OPS = {
         changed: true,
         writes: [{ path: found.rel, text: lines.join('\n') }],
         id: found.parsed.id,
+        credited: who.username,
         summary: `${at < 0 ? '新增' : '更新'}字段 \`${field}\``,
       };
     },
@@ -179,6 +206,8 @@ export const OPS = {
     title: '改正文里的一句话',
     apply({ target, form }) {
       const id = (form['词条 id'] || target || '').trim().replace(/^`|`$/g, '');
+      const who = requireUsername(form);
+      if (who.error) return who.error;
       const from = form['原文片段'] || '';
       const to = form['改成'] || '';
       if (!id || !from.trim() || !to.trim()) return { ok: false, reason: 'incomplete', message: '表单缺「词条 id」「原文片段」或「改成」。' };
@@ -208,6 +237,7 @@ export const OPS = {
         changed: true,
         writes: [{ path: found.rel, text: `${head}\n${nextBody}` }],
         id: found.parsed.id,
+        credited: who.username,
         summary: '替换正文里的一处片段',
       };
     },
@@ -219,6 +249,8 @@ export const OPS = {
     title: '补充分区条目',
     apply({ target, form }) {
       const zoneId = (form['分区'] || target || '').trim().replace(/^`|`$/g, '').split(/[\s（(]/)[0];
+      const who = requireUsername(form);
+      if (who.error) return who.error;
       const section = (form['二级分区 id'] || '').trim();
       const name = (form['名称'] || '').trim();
       const blurb = (form['一句话介绍'] || '').trim();
@@ -265,6 +297,7 @@ export const OPS = {
         changed: true,
         writes: [{ path: `data/zones/${zoneId}.yml`, text }],
         id: zoneId,
+        credited: who.username,
         summary: `往 ${zoneId} 的「${section}」追加一条：${name}`,
       };
     },
