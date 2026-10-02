@@ -93,8 +93,11 @@ export function formatScalar(field, rawValue) {
   }
   if (value === 'null') return 'null';
   if (/^-?\d+$/.test(value)) return value;
-  // 其余一律加引号：中文标点、冒号、井号都不会破坏 YAML
-  return JSON.stringify(value);
+  // 只在**必要**时加引号：机器人的 diff 要跟手写的风格一致，否则审阅时全是无谓噪音。
+  // 安全集合：字母数字、下划线、点、连字符、斜杠、@、空格、ISO 日期（文件里本来就都不带引号）；
+  // 另外避开 YAML 会解释成别的类型的词（true/false/null/yes/no/on/off）。
+  const safe = /^[\w.\-/@ ]+$/u.test(value) && !/^(true|false|null|yes|no|on|off)$/i.test(value);
+  return safe ? value : JSON.stringify(value);
 }
 
 /* ------------------------------------------------------------------ */

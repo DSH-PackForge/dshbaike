@@ -5,20 +5,38 @@
 
 ---
 
-## 1. 一条通用通道
+## 1. 一条通用通道，两道闸
 
 ```
-Issue 表单 → 机器人执行「有界操作」→ 只改它声明的那一处 → 跑 validate → 开 PR（带 bot-pr/needs-review）
-        → CODEOWNERS 自动请求维护者审核 → **人点合并**
+Issue 表单
+   ↓
+【第一道闸】check job：立刻「干跑」——apply-issue.mjs --dry-run，**不写任何文件**，
+            把「机器人打算改什么、改哪个文件」回帖出来
+   ↓
+   维护者在这个 Issue 的 Actions 运行里点 Approve（环境保护规则：required_reviewers）
+   ↓
+【执行】apply job：needs check + environment: bot-apply → 才真的写文件 → 跑 validate → 开 PR
+   ↓
+【第二道闸】PR 带 bot-pr + needs-review，main 的分支保护要求 Code Owners 批准
+   ↓
+   维护者审 PR → 合并（机器人从不合并）
 ```
+
+**为什么是两道闸**：第一道审的是**意图**（这个请求该不该做），第二道审的是**结果**
+（它具体改成了什么样）。只有一道的话，要么维护者被迫先信任一个还没发生的改动，
+要么得在 PR 里替作者重做一遍判断。两道加起来，每条信息的判断成本都很低。
+
+**第一道闸怎么实现的**：workflow 里那个 job 声明 `environment: bot-apply`，而这个环境
+配了必需审核者（维护者）。GitHub 会把这次运行**停在「等待批准」**，维护者在 Actions 页面
+点 Approve/Reject，批准记录带审计。任务开始前就卡住——不是「跑完了等你删」。
 
 三类结果，三种回帖：
 
 | 结果 | 回帖说什么 |
 | --- | --- |
-| 改成功 | ✅ PR 链接（或组织禁止时给「一键开 PR」链接） |
+| 干跑通过 | 🕓 **已收到，等维护者审核后才动手** + 机器人打算改什么（还没写文件） |
 | **机器人不能安全地改** | 🙅 说明原因 + **请你自己 fork + PR** 的三步指引 |
-| 表单没填全 / 值不存在 | 😕 说明哪里不对 + 「改一下本 Issue 就会自动重试」 |
+| 表单没填全 / 值不存在 | 😕 说明哪里不对 + 「改一下本 Issue 就会自动重试」（不进审批队列） |
 
 ## 2. 什么算「有界操作」
 
@@ -70,8 +88,9 @@ Issue 表单 → 机器人执行「有界操作」→ 只改它声明的那一�
 | --- | --- |
 | `[认领维护] plugin/1` | 分支 diff 只有 `maintainers: [] → [用户名]`（+1/−1），运行 success |
 | `[补充分区条目] themes` | 往 `packs` 追加一条卡片，validate 0/0 |
-| `[改一个字段] concept/1` | `updatedAt` 更新为表单给的值 |
+| `[改一个字段] concept/1` | `updatedAt` 更新为表单给的值（**不带引号**，与文件既有风格一致——机器人的 diff 要干净到可以直接审） |
 | `[改正文里的一句话]`（真实句子） | 正文里那一处被替换 |
+| **两道闸**（`[改一个字段]` 全流程） | check job 干跑并回帖「等审核」→ apply job **waiting**（pending deployment，审核者=维护者）→ 批准后两个 job 都 success → 分支只差开 PR |
 | 片段在正文里出现多次 | `ambiguous` + `escalate=true` → 回帖教 fork + PR |
 | 改嵌套字段 `compat` | `unsupported` + `escalate=true` → 同上 |
 | 二级分区 id 写错 | `unknown-section` + `escalate=false` → 提示改表单重试 |
