@@ -46,10 +46,10 @@
   var ZONES = [
     { id: 'clients', label: '界面与客户端', desc: '你从哪、以什么界面使用 DSH：官方 Web UI、各类桌面端、终端界面（TUI）、无界面 CLI 与 headless 跑法。' },
     { id: 'plugins', label: '插件', desc: '给 DSH 加功能：宿主侧 / 客户端侧插件、bundle、兼容层。' },
-    { id: 'mcps', label: 'MCP 与工具接入', desc: '把外部 MCP 服务器的工具接成模型能直接调用的能力（mcp__<server>__<tool>）。' },
     { id: 'skills', label: '技能包', desc: 'SKILL.md 技能与技能合集。' },
     { id: 'launchers', label: '启动器', desc: '.dspack 的安装端：装包、选版本、一键启动。' },
     { id: 'packs', label: '整合包', desc: '.dspack（profile / dshhome 两形态）。' },
+    { id: 'mcps', label: 'MCP 与工具接入', desc: '把外部 MCP 服务器的工具接成模型能直接调用的能力（mcp__<server>__<tool>）。' },
     { id: 'themes', label: '主题与皮肤', desc: '主题引擎（皮肤加载器）、配色令牌、壁纸、图标包。' },
     { id: 'assets', label: '素材与本地化', desc: '图标、字体、翻译包（汉化 / i18n）。' },
     { id: 'presets', label: '预设与人设', desc: 'agent.cordis.yml 预设、persona 与角色设定。' },

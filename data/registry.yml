@@ -5,16 +5,16 @@ version: 1
 # 分区展示顺序（docs/06 §2）：**这里是顺序的唯一来源**。
 # 构建期产物 web/data/zones/index.json 与站点侧栏都按它排——不再按 id 字母序
 # （那正是之前「素材与本地化 → 界面与客户端 → 启动器…」看着毫无道理的原因）。
-# 顺序原则：先是每天要用的（从哪个界面进来 → 装什么 → 接什么 → 怎么教它 → 怎么启动 →
-# 一次装好一套），再是外观与素材、配置与人设、做包的工具链，**规范与协议永远垫底**
-# （它是查阅用的，不是入口）。validate 规则 26 会检查这里与 data/zones/*.yml 完全对应。
+# 顺序原则（评审定的）：界面与客户端 → 插件 → 技能包 → 启动器 → 整合包 → 其余 →
+# **规范与协议永远垫底**（它是查阅用的，不是入口）。
+# validate 规则 26 会检查这里与 data/zones/*.yml 完全对应。
 zoneOrder:
   - clients
   - plugins
-  - mcps
   - skills
   - launchers
   - packs
+  - mcps
   - themes
   - assets
   - presets
