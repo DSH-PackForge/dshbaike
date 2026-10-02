@@ -116,6 +116,19 @@ items:
     risk: [desktop-control, network]
     links:
       github: Miyazawai/DSH-Melody-Launcher-Overture
+  - name: DSH Tauri Launcher
+    section: launchers
+    blurb: 形态特别的一个：不是单独一个启动器应用，而是「Web 插件 + Tauri 桌面应用」一对——装进 DSH 的是插件（设置 → 桌面启动），负责唤起并盯住桌面应用，连带管快捷方式、退出确认与运行状态；它不装 DSH 版本、也不导整合包。Windows 已支持，Linux / macOS 规划中。2 star、候选版 v1.1.0-rc.1（快照 2026-10-02）。
+    launcherId: null
+    lineage: 独立实现（Tauri + 插件形态）
+    platforms: [windows]
+    selfVersioning: 未核实
+    source: curated
+    entry: launcher/8
+    tags: ["插件形态", "Tauri"]
+    risk: [desktop-control, network]
+    links:
+      github: cilis/dsh-tauri-launcher
   - name: 裸 dsh 命令行
     section: bare
     blurb: 不依赖任何启动器：dsh --version 自报版本，dsh --profile <name> 直接起 profile。注册表把它作为「无启动器」这一档登记，是排查启动器问题时的对照组。

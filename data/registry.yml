@@ -24,7 +24,7 @@ zoneOrder:
 
 counters:
   client: 1
-  launcher: 7
+  launcher: 8
   plugin: 2
   mcp: 1
   theme: 1
@@ -127,6 +127,11 @@ entries:
   - n: 7
     kind: launcher
     title: DSH 旋律启动器：序曲
+    createdAt: 2026-10-02
+    status: published
+  - n: 8
+    kind: launcher
+    title: DSH Tauri Launcher
     createdAt: 2026-10-02
     status: published
   - n: 1
