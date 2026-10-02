@@ -3037,3 +3037,57 @@ body {
   color: var(--text-muted);
 }
 
+/* ==========================================================================
+   正文的宽度利用（docs/08 §4）
+   --------------------------------------------------------------------------
+   实测（1440 视口）：内容区 1205px、正文列 901px，但 `.prose { max-width: 72ch }`
+   = 591px → 正文列里**浪费 310px**，表格与代码块也被卡在 591px。
+
+   不能简单放开限宽：591px 对 14px 中文 ≈ 每行 42 个全角字，已经是舒适行宽的上限，
+   再宽读着累。所以分成两类处理：
+
+     · **文字类**（p / ul / ol / blockquote / dl / 标题外的块）→ 仍然限 --max-prose，
+       保证行宽舒适、段落边缘整齐；
+     · **宽块**（table / pre / img / 数据框 / 卡片列表）→ 放开到正文列满宽，
+       它们受益于宽度而不受行宽约束。
+   ========================================================================== */
+
+.prose {
+  max-width: none;
+}
+
+.prose > p,
+.prose > ul,
+.prose > ol,
+.prose > blockquote,
+.prose > dl,
+.prose > h2,
+.prose > h3,
+.prose > h4 {
+  max-width: var(--max-prose);
+}
+
+/* 宽块：用满正文列（表格最明显——列多的时候 591px 会挤成一团） */
+.prose > table,
+.prose > pre,
+.prose > figure,
+.prose > img,
+.prose > .table-wrap,
+.prose > .codeblock,
+.prose > .lead,
+.prose > .subsec__intro,
+.prose > .prerender__indexlinks {
+  max-width: none;
+}
+
+.prose > table,
+.prose > .table-wrap {
+  width: 100%;
+}
+
+/* 数据框（信息表前的「要点」块一类）也用满 */
+.entry-grid__main > .lead,
+.entry-grid__main > .infotable,
+.entry-grid__main > .box {
+  max-width: none;
+}
