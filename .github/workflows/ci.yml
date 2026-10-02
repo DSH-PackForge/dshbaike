@@ -7,15 +7,11 @@ name: 校验与构建
 
 on:
   pull_request:
-    # 机器人分支**故意不跑**：机器人开的 PR 作者是 github-actions[bot]，被 GitHub 当成
-    # 「首次贡献者」（仓库策略 = first_time_contributors），于是这个运行会停在
-    # 「Approve and run」等人放行 —— 那就等于每次机器人代改都多一次人工点击
-    # （评审：「理论上两次就够，你现在 3 次，不合理」）。
-    # 少跑一次不丢把关：机器人在 apply.yml 里**开 PR 之前已经跑过 validate.mjs**，
-    # 结论也写进了 PR 正文；而 main 上**没有**必需状态检查（见下面那段注释），
-    # 所以这里不跑也不影响可合并性。
-    branches-ignore:
-      - 'bot/**'
+    # 备注：曾经想用 `branches-ignore: ['bot/**']` 让机器人 PR 不创建运行，
+    # 好省掉 GitHub 的「Approve and run」人工放行 —— **实测无效**：
+    # `pull_request` 的 branches/branches-ignore 过滤匹配的是**目标分支**（永远是 main），
+    # 不是头分支。探针 PR #29（头分支 bot/probe-ci-filter）上照样创建了「校验与构建」运行。
+    # 所以过滤器已撤掉；要免掉那次放行只能走「受信身份」（BOT_TOKEN）那条路，见 docs/14 §4。
     paths:
       - 'data/**'
       - 'scripts/**'
