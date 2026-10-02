@@ -20,16 +20,18 @@ sections:
     title: 插件市场
     desc: 市面上的插件源与目录：它们负责「发现」与全量收录，我们负责解释
     intro: |
-      插件这一层现在有四家在做**不同的事**，把它们混为一谈是新手最常见的误解：
+      插件这一层现在有六家在做**不同的事**，把它们混为一谈是新手最常见的误解：
 
-      | 去处 | 它负责什么 | 我们引用的数字（快照 2026-10-01） |
+      | 去处 | 它负责什么 | 我们引用的数字（快照 2026-10-02） |
       | --- | --- | --- |
       | [awesome-dsh-plugin.com](https://awesome-dsh-plugin.com/zh/) | 社区精选目录：中英双语、按分类浏览，机器可读入口是 `catalog.json` | 收录 **4400** 条（首页自述 24 个分类；我们实测 `cat` 去重是 **23**，口径不一致已注明） |
       | [dshbase.com](https://dshbase.com/) | 中文指南与排错：入门与常见故障 | 收录 **7797** 条插件条目 |
+      | [dsh.so](https://www.dsh.so/) | 英文插件注册表：自述对每个插件做 GitHub API 核验、自动安全扫描与沙箱安装测试 | 自述 **16989** 个插件（同一数字在其首页出现 11 处）。**它页面上指向 `github.com/ihuajiu/…` 的两个仓库链接我们实测 404**（该账号不存在），运营者与开源情况未核实 |
+      | [dshmk.com](https://dshmk.com/) | 中文插件市场目录：自动收录并分类 GitHub `dsh-plugin` Topic 项目，展示验证状态与安装参考 | 其首页内嵌数据里可数出去重后的 GitHub 仓库链接约 **2570** 个。运营者、许可、机读接口均未核实 |
       | [dsh-pack-market](https://github.com/DSH-PackForge/dsh-pack-market) | 整合包索引与启动器认领（不是插件目录） | **8** 个包 · **4** 个插件 · **5** 条启动器认领 |
       | [规范仓库](https://github.com/DSH-PackForge/DSH-PackForge) | 契约的定义者：`manifest`、`pack-structure`、`index`、`publishing` | manifest **v1–v5** · pack-structure **v1–v3** |
 
-      **本站刻意不做插件全量收录。** 全量目录交给上面两家——它们做得比我们好，而且一直在更新。
+      **本站刻意不做插件全量收录。** 全量目录交给上面那几家目录站——它们做得比我们好，而且一直在更新。
       我们收的是**被教程引用过、或被整合包用到**的插件，为它写一篇聚合页：定位、关系、兼容、
       以及踩过的坑（这些是目录里查不到的）。所以这里的条目数会一直远小于生态总量，
       这是设计目标，不是进度落后。
@@ -108,6 +110,24 @@ items:
     tags: ["中文指南"]
     links:
       dshbase: https://dshbase.com/
+  - name: dsh.so
+    section: markets
+    blurb: 英文插件注册表：自述对本生态的插件逐一做 GitHub API 核验、自动安全扫描与沙箱安装测试，回答「它是什么、安不安全、装不装得上」（其自述 16989 个插件，快照 2026-10-02）。注意：它页面上指向 github.com/ihuajiu/… 的两个仓库链接我们实测 404（该账号不存在），运营者与开源情况未核实，引用它的数字请自行复核。
+    role: compat
+    source: curated
+    entry: null
+    tags: ["插件目录"]
+    links:
+      dshso: https://www.dsh.so/
+  - name: dshmk.com
+    section: markets
+    blurb: 中文插件市场目录：自动收录并分类 GitHub dsh-plugin Topic 项目，展示验证状态与安装参考。首页内嵌数据里可数出去重后的仓库链接约 2570 个（快照 2026-10-02）；运营者、许可与机读接口均未核实。
+    role: compat
+    source: curated
+    entry: null
+    tags: ["插件目录"]
+    links:
+      dshmk: https://dshmk.com/
   - name: dsh-pack-market
     section: markets
     blurb: 整合包的索引与分发入口（不是插件目录）：一份可懒加载的公开索引，整合包分区与启动器分区都读它。索引 8 个包 / 4 个插件 / 5 条启动器认领（快照 2026-10-01）。
@@ -119,7 +139,7 @@ items:
       market: https://github.com/DSH-PackForge/dsh-pack-market
   - name: 看全量去源头
     section: markets
-    blurb: 本站刻意不做插件全量收录。要按分类、Star、下载量、最新收录浏览整个生态，请直接去源站；四个源的分工见本二级分区的综述，状态与快照在各自的资源源词条里。
+    blurb: 本站刻意不做插件全量收录。要按分类、Star、下载量、最新收录浏览整个生态，请直接去源站；各家的分工见本二级分区的综述，状态与快照在各自的资源源词条里。
     role: compat
     source: curated
     entry: null

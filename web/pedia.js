@@ -169,6 +169,8 @@
     npm: 'npm',
     awesome: 'awesome',
     dshbase: 'dshbase',
+    dshso: 'dsh.so',
+    dshmk: 'dshmk',
     market: '市场',
     detail: '详情页',
     docs: '文档',
