@@ -129,6 +129,20 @@ items:
     risk: [desktop-control, network]
     links:
       github: cilis/dsh-tauri-launcher
+  - name: DSHA · DeepSeek Harness 安卓启动器
+    section: launchers
+    blurb: 唯一的移动端形态（这一区里 star 最多的之一）：一个 APK 里塞了离线 Ubuntu 24.04 rootfs，免 ROOT 免 Termux，装完填个 API key 就能跑完整的 DSH；proroot 用 LD_PRELOAD + 二进制补丁免掉 proot 的 ptrace 开销。插件安装默认禁用生命周期脚本、第三方插件先审阅后启用。仅 arm64、包体 261/334 MiB。771 star（快照 2026-10-02）。
+    launcherId: null
+    lineage: 独立实现（Android / Java）
+    platforms: [android]
+    selfVersioning: 未核实
+    source: curated
+    entry: launcher/9
+    tags: ["安卓", "移动端", "免 root"]
+    risk: [desktop-control, network]
+    links:
+      github: DSH-APP/DSHA
+      official: https://dsha.cc
   - name: 裸 dsh 命令行
     section: bare
     blurb: 不依赖任何启动器：dsh --version 自报版本，dsh --profile <name> 直接起 profile。注册表把它作为「无启动器」这一档登记，是排查启动器问题时的对照组。

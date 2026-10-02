@@ -160,6 +160,10 @@ tree:
         label:
           zh: 命令行入口
         desc: 直接用命令行起来或切换 profile 的方式。
+      - id: launch.mobile
+        label:
+          zh: 移动端启动器
+        desc: 手机上把 DSH 跑起来的图形入口（Android / iOS App）。
   - id: appearance
     label:
       zh: 外观与素材

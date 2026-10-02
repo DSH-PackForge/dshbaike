@@ -24,7 +24,7 @@ zoneOrder:
 
 counters:
   client: 1
-  launcher: 8
+  launcher: 9
   plugin: 2
   mcp: 1
   theme: 1
@@ -132,6 +132,11 @@ entries:
   - n: 8
     kind: launcher
     title: DSH Tauri Launcher
+    createdAt: 2026-10-02
+    status: published
+  - n: 9
+    kind: launcher
+    title: DSHA · DeepSeek Harness 安卓启动器
     createdAt: 2026-10-02
     status: published
   - n: 1
