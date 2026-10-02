@@ -1490,6 +1490,15 @@ table.data .col-key {
    两行紧凑：名称 + 徽章 / 一句话 + 标签行；右上角「词条 →」或红链。
    -------------------------------------------------------------------------- */
 
+/* `hidden` 属性必须**真的**隐藏元素。
+   作者样式里的 display 会盖掉浏览器默认的 `[hidden] { display: none }`，
+   而分区页的标签筛选、空状态提示、页签都靠 hidden 来控制显隐——
+   少这一条就出现"属性在、眼睛还看得见"（线上踩过两次：`.card` 的 display:grid、
+   `.notice` 的 display:flex，后者导致「没有匹配的条目」一直挂在页面底部）。 */
+[hidden] {
+  display: none !important;
+}
+
 .cards {
   display: grid;
   grid-template-columns: 1fr;

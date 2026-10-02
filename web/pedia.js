@@ -2880,6 +2880,23 @@
         var visible = sec.querySelectorAll('[id^="zone-cards"] > li:not([hidden])').length;
         sec.hidden = visible === 0;
       });
+      // 二级分区的「N 条」要跟着筛选走：卡片被筛掉了、标题还写着原数，
+      // 看起来就像"内容没变化"（线上被这么报过）。筛选时显示「筛后 / 总数」。
+      var groups = new Map();
+      Array.prototype.forEach.call(cards, function (card) {
+        var holder = card.parentElement;
+        if (!holder) return;
+        if (!groups.has(holder)) groups.set(holder, { total: 0, shown: 0 });
+        var g = groups.get(holder);
+        g.total += 1;
+        if (!card.hidden) g.shown += 1;
+      });
+      groups.forEach(function (g, holder) {
+        var sec = holder.closest ? holder.closest('.subsection') : null;
+        var count = sec ? sec.querySelector('.subsec__count') : null;
+        if (!count) return;
+        count.textContent = (g.shown === g.total ? g.total : g.shown + ' / ' + g.total) + ' 条';
+      });
       if (empty) empty.hidden = shown !== 0;
     }
 
