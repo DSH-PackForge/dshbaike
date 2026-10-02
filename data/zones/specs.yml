@@ -33,7 +33,17 @@ items:
     tags: ["生态地基", "规范"]
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/tree/main/specs
-  - name: DSH 社区生态互操作规范（dsh-ecosystem-spec）,    section: current,    blurb: 社区版互操作协议：由 dsh-TUI 与 DSH-Desktop-EAC 团队联合发起，收录插件元协议 dsh-std（插件告诉别人自己的版本、适配的 DSH 版本、兼容性需求）与运行环境元协议 dsh-distribution（多个整合包/独立运行时如何共存、互相通讯并隔离）及相关子协议，另含 registry、governance 与工程规范。**非官方标准**，只约束自愿采纳者。70 star（快照 2026-10-02）。,    specVersion: null,    specStatus: current,    fileName: README.md,    source: specs,    entry: null,    tags: ["生态地基", "规范"],    links:,      spec: https://github.com/T-Auto/dsh-ecosystem-spec
+  - name: DSH 社区生态互操作规范（dsh-ecosystem-spec）
+    section: current
+    blurb: 社区版互操作协议：由 dsh-TUI 与 DSH-Desktop-EAC 团队联合发起，收录插件元协议 dsh-std（插件告诉别人自己的版本、适配的 DSH 版本、兼容性需求）与运行环境元协议 dsh-distribution（多个整合包/独立运行时如何共存、互相通讯并隔离）及相关子协议，另含 registry、governance 与工程规范。**非官方标准**，只约束自愿采纳者。70 star（快照 2026-10-02）。
+    specVersion: null
+    specStatus: current
+    fileName: README.md
+    source: specs
+    entry: null
+    tags: ["生态地基", "规范"]
+    links:
+      spec: https://github.com/T-Auto/dsh-ecosystem-spec
   - name: 历史版本（manifest v1–v4、pack-structure v1–v2）
     section: history
     blurb: 六份现行规范都有前身，保留在仓库里可读。读它们不是为了守着旧写法，而是为了两件事：读旧包（市场里实测仍有包声明 manifestVersion 4，甚至 .tgz 时代的包）与理解字段怎么长出来的（v5 的 type/dshhome、v3 的 home/ 都是前面几版长出问题的答案）。
