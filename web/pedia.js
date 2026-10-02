@@ -457,8 +457,9 @@
    */
   var BRAND_MARK_SVG =
     '<svg viewBox="0 0 16 16" width="18" height="18" shape-rendering="crispEdges" focusable="false">' +
-    '<rect x="1" y="1" width="14" height="14" fill="#8fe3d8"/>' +
-    '<rect x="2" y="2" width="12" height="12" fill="#12796f"/>' +
+    // 用令牌而不是写死色值：侧栏这枚标记会跟着主题色一起变（favicon 是静态图，见 logo.mjs）
+    '<rect x="1" y="1" width="14" height="14" fill="var(--brand-weak)"/>' +
+    '<rect x="2" y="2" width="12" height="12" fill="var(--brand)"/>' +
     '<rect x="4" y="4" width="8" height="8" fill="#ffffff"/>' +
     '<rect x="5" y="6" width="6" height="1" fill="#0b4f49"/>' +
     '<rect x="5" y="8" width="6" height="1" fill="#0b4f49"/>' +
@@ -945,7 +946,8 @@
           searchInput,
           el('div', { class: 'search__panel', id: 'site-search-panel', role: 'listbox', 'aria-label': '搜索结果', hidden: true })
         ]),
-        themeButton()
+        themeButton(),
+        accentPicker()
       ])
     ]);
 
@@ -1031,6 +1033,57 @@
     try { stored = localStorage.getItem(RAIL_STORE_KEY); } catch (e) { stored = null; }
     var collapsed = stored === 'collapsed' || stored === 'open' ? stored === 'collapsed' : railIsOverlay();
     document.documentElement.classList.toggle('rail-collapsed', collapsed);
+  }
+
+  /* ---------------------------------------------------------- 主题色 */
+
+  var ACCENT_STORE = 'dsh-pedia-accent';
+  var ACCENTS = [
+    { id: 'blue', label: '蓝色（默认）' },
+    { id: 'teal', label: '青绿' }
+  ];
+
+  function accentPicker() {
+    var row = el('div', { class: 'accent', role: 'group', 'aria-label': '主题色' });
+    var current = document.documentElement.getAttribute('data-accent') || 'blue';
+    ACCENTS.forEach(function (a) {
+      var dot = el('button', {
+        type: 'button',
+        class: 'accent__dot accent__dot--' + a.id,
+        title: a.label,
+        'aria-label': a.label + '主题色',
+        'aria-pressed': a.id === current ? 'true' : 'false',
+        dataset: { accent: a.id }
+      });
+      dot.addEventListener('click', function () { setAccent(a.id); });
+      row.appendChild(dot);
+    });
+    return row;
+  }
+
+  function setAccent(id) {
+    if (id === 'blue') document.documentElement.removeAttribute('data-accent');
+    else document.documentElement.setAttribute('data-accent', id);
+    try {
+      if (id === 'blue') localStorage.removeItem(ACCENT_STORE);
+      else localStorage.setItem(ACCENT_STORE, id);
+    } catch (e) { /* 无痕模式等：不持久化也能用 */ }
+    // 同步选择器的选中态
+    Array.prototype.forEach.call(document.querySelectorAll('.accent__dot'), function (d) {
+      d.setAttribute('aria-pressed', d.getAttribute('data-accent') === id ? 'true' : 'false');
+    });
+    syncThemeColorMeta();
+  }
+
+  /** <meta name="theme-color"> 跟着主题色与明暗走（手机地址栏颜色） */
+  function syncThemeColorMeta() {
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+      (!document.documentElement.getAttribute('data-theme') &&
+        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var teal = document.documentElement.getAttribute('data-accent') === 'teal';
+    meta.setAttribute('content', teal ? (dark ? '#3fd0bd' : '#0f7a70') : (dark ? '#60a5fa' : '#2563eb'));
   }
 
   function themeButton() {
@@ -3504,6 +3557,76 @@
 
   // 侧栏状态尽早落地：defer 脚本在解析后、首次绘制前执行，避免侧栏闪一下才收起
   applyInitialRailState();
+
+  /* ------------------------------------------------------------------
+     跟随光标的吉祥物（鲸鱼娘）：docs/08 §9
+     光标本身一律不动（系统指针照旧），吉祥物是跟在后面的宠物：
+       · pointer-events: none —— 绝不挡点击、选字与滚动；
+       · 触摸设备与「减少动态效果」不挂 —— 那些环境里跟随只会烦人；
+       · 换帧交给 CSS（background-position + steps），这里只算位置、镜像与浮动，
+         两边各管一件事，不互相覆盖 transform。
+     ------------------------------------------------------------------ */
+  function mountMascot() {
+    if (window.matchMedia('(hover: none)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var OFFSET_X = 16; // 落在光标右下方：别贴着指针尖，也别盖住正在点的东西
+    var OFFSET_Y = 18;
+    var el = document.createElement('div');
+    el.className = 'mascot';
+    el.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(el);
+
+    var x = 0;
+    var y = 0;
+    var tx = 0;
+    var ty = 0;
+    var dir = 1; // 1 朝右 / -1 朝左（水平镜像）
+    var phase = 0;
+    var seen = false; // 指针进过页面才显示
+
+    function place() {
+      var bob = Math.sin(phase) * 1.5; // 停着的时候也在呼吸
+      var tilt = Math.max(-7, Math.min(7, (tx - x) * 0.5)); // 追得急时轻微前倾
+      el.style.transform =
+        'translate3d(' + x.toFixed(1) + 'px,' + (y + bob).toFixed(1) + 'px,0) rotate(' +
+        tilt.toFixed(1) + 'deg)' + (dir < 0 ? ' scaleX(-1)' : '');
+    }
+
+    function frame() {
+      var dx = tx - x;
+      var dy = ty - y;
+      x += dx * 0.16; // 追得比光标慢半拍，才有「跟」的感觉
+      y += dy * 0.16;
+      phase += 0.15;
+      if (Math.abs(dx) > 6) dir = dx > 0 ? 1 : -1; // 死区：小幅抖动不翻面
+      place();
+      window.requestAnimationFrame(frame);
+    }
+
+    document.addEventListener('mousemove', function (e) {
+      tx = Math.min(window.innerWidth - 34, e.clientX + OFFSET_X);
+      ty = Math.min(window.innerHeight - 34, e.clientY + OFFSET_Y);
+      if (!seen) {
+        seen = true; // 首次移动直接落到位，别从左上角飞过来
+        x = tx;
+        y = ty;
+        el.classList.add('mascot--on');
+      }
+    }, { passive: true });
+
+    // 指针离开窗口就淡出：不然它会孤零零挂在页边
+    document.addEventListener('mouseleave', function () {
+      el.classList.remove('mascot--on');
+    });
+    document.addEventListener('mouseenter', function () {
+      if (seen) el.classList.add('mascot--on');
+    });
+
+    window.requestAnimationFrame(frame);
+  }
+
+  mountMascot();
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run);

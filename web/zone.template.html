@@ -21,6 +21,13 @@
 <!-- 分区页外壳（docs/10 §7）：构建期为每个分区生成一份，只替换上面两个占位符与下面两行。
      <base> 由构建期按部署根写入（自定义域写 "/"，项目子路径部署写 "/<repo>/"）；
      它与 PEDIA_BOOT 里的 base 必须一致。资源路径保持相对，靠 <base> 解析。 -->
+<script>
+/* 尽早应用主题与主题色，避免刷新时闪一下默认色（键名与 pedia.js 一致）。
+   这段在 <head> 里同步执行，所以必须短、且不依赖任何外部文件。 */
+(function(){try{var d=document.documentElement;
+var t=localStorage.getItem('dsh-pedia-theme');if(t&&t!=='auto')d.setAttribute('data-theme',t);
+var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent',a);}catch(e){}})();
+</script>
 <base href="/">
 <!--{{PEDIA_BOOT}}-->
 <link rel="stylesheet" href="pedia.css">

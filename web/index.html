@@ -20,6 +20,13 @@
 <meta property="og:title" content="DSH百科 | 一站式的 DeepSeek Harness 中文百科">
 <meta property="og:description" content="一站式的 DeepSeek Harness 中文百科：界面与客户端、插件、整合包、启动器、主题、技能、预设、指令与配方，一处找齐；每页标注来源与快照日期。">
 <!-- 首页在线根，资源路径是相对的，不会断；项目子路径部署时由构建期补一行 <base href="/<repo>/">。 -->
+<script>
+/* 尽早应用主题与主题色，避免刷新时闪一下默认色（键名与 pedia.js 一致）。
+   这段在 <head> 里同步执行，所以必须短、且不依赖任何外部文件。 */
+(function(){try{var d=document.documentElement;
+var t=localStorage.getItem('dsh-pedia-theme');if(t&&t!=='auto')d.setAttribute('data-theme',t);
+var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent',a);}catch(e){}})();
+</script>
 <link rel="stylesheet" href="pedia.css">
 <!-- 手写外壳自带 boot：直接双击打开或任何静态服务器下都可用。
      构建期若替换下面的 PEDIA_BOOT 占位符，注入值会覆盖这里的同名键。 -->

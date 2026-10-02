@@ -2926,3 +2926,146 @@ body {
 .infotable__group + .infotable__group {
   border-top: 1px solid var(--border);
 }
+
+/* ==========================================================================
+   跟随光标的吉祥物（鲸鱼娘）：docs/08 §9
+   光标本身**不动**（系统指针照旧），吉祥物是跟在光标后面的宠物：所以第一要务是
+   pointer-events: none —— 它绝不能挡点击、选字与滚动；第二是不跟主题走，
+   暗色页面上同一套色也站得住（像素画本来就带深蓝描边）。
+   两帧横排在一张图里，用 background-position + steps 换帧；位置、镜像、浮动由 JS 算，
+   两边各管一件事，不互相覆盖 transform。生成器：scripts/mascot.mjs
+   ========================================================================== */
+
+.mascot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  z-index: 20; /* 内容之上、左侧导航（30/40）之下：不许盖住导航 */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+  will-change: transform;
+  image-rendering: pixelated;
+  background-image: url("mascot-whale-girl.png");
+  background-repeat: no-repeat;
+  background-size: 64px 32px; /* 两帧横排 */
+  animation: mascot-wag 620ms steps(2) infinite;
+}
+
+.mascot--on {
+  opacity: 1;
+}
+
+/* 换帧 = 摆尾。steps(2) 让它老实停在两帧上，不做插值（像素画插值会糊） */
+@keyframes mascot-wag {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -64px 0;
+  }
+}
+
+/* 触摸设备没有「光标」，跟随只会变成一块乱飘的图；减少动态效果则是不该动的东西别动 */
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  .mascot {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   主题色（可切换）：默认蓝，青绿保留为选项
+   --------------------------------------------------------------------------
+   选蓝做默认的三条依据（docs/08 §3）：
+     ① 语义色 --ok 是绿 #1a7f37，原来品牌青绿 #12796f 与它同色域，
+        「✓ 已发布」这类绿色徽章与品牌色挤在一起；
+     ② 原来其实是两套强调色——品牌青绿 + 链接蓝 #1a56db，蓝做品牌色正好合一；
+     ③ 蓝是百科/文档的既有约定，青绿的辨识度优势已由像素瓷砖 logo 提供。
+   切换方式与明暗主题一致：<html data-accent="teal"> + localStorage，模板 <head> 里尽早应用。
+   ========================================================================== */
+
+:root {
+  --brand: #2563eb;
+  --brand-weak: #e8effd;
+  --brand-tint: rgba(37, 99, 235, 0.08);
+  --brand-tint-strong: rgba(37, 99, 235, 0.16);
+  --link: #1d4ed8;
+}
+
+/* 青绿（原品牌色） */
+:root[data-accent="teal"] {
+  --brand: #0f7a70;
+  --brand-weak: #e2f2f0;
+  --brand-tint: rgba(15, 122, 112, 0.08);
+  --brand-tint-strong: rgba(15, 122, 112, 0.16);
+  --link: #0e7490;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #60a5fa;
+    --brand-weak: #12233d;
+    --brand-tint: rgba(96, 165, 250, 0.12);
+    --brand-tint-strong: rgba(96, 165, 250, 0.22);
+    --link: #93c5fd;
+  }
+
+  :root:not([data-theme="light"])[data-accent="teal"] {
+    --brand: #3fd0bd;
+    --brand-weak: #10312c;
+    --brand-tint: rgba(63, 208, 189, 0.1);
+    --brand-tint-strong: rgba(63, 208, 189, 0.2);
+    --link: #67c9dd;
+  }
+}
+
+:root[data-theme="dark"] {
+  --brand: #60a5fa;
+  --brand-weak: #12233d;
+  --brand-tint: rgba(96, 165, 250, 0.12);
+  --brand-tint-strong: rgba(96, 165, 250, 0.22);
+  --link: #93c5fd;
+}
+
+:root[data-theme="dark"][data-accent="teal"] {
+  --brand: #3fd0bd;
+  --brand-weak: #10312c;
+  --brand-tint: rgba(63, 208, 189, 0.1);
+  --brand-tint-strong: rgba(63, 208, 189, 0.2);
+  --link: #67c9dd;
+}
+
+/* 主题色选择器：两枚色点（在侧栏工具区里） */
+.accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.accent__dot {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: box-shadow 0.14s var(--ease), transform 0.14s var(--ease);
+}
+
+.accent__dot:hover {
+  transform: scale(1.08);
+}
+
+.accent__dot[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
+}
+
+.accent__dot--blue {
+  background: #2563eb;
+}
+
+.accent__dot--teal {
+  background: #0f7a70;
+}
