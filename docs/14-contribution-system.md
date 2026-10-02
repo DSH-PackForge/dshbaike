@@ -24,9 +24,13 @@ Issue 表单
    维护者审 PR → 合并（机器人从不合并）
 ```
 
-**署名**：提交信息带 `Co-authored-by: <贡献者> <id+用户名@users.noreply.github.com>`，
-所以贡献者的头像会出现在这条提交上、也算进他们的贡献。署名取两个来源、去重：
-**提 Issue 的人**（GitHub 认过的身份）与**表单里写的 GitHub 用户名**（目前只有「认领维护」那张表有）。
+**署名（归因要准）**：**提交作者 = 贡献者**（内容是人家定的），
+**共同作者 = 机器人**（`github-actions[bot]`，它只是代笔把它写进文件）。
+作者邮箱用 `<id>+<用户名>@users.noreply.github.com`（noreply 才是账号认得的身份，
+先查 `users/<u>` 拿 id 与显示名）；committer 仍是机器人——这正是准确的归因：
+谁提的、谁代的笔。署名取两个来源、去重：**提 Issue 的人**（GitHub 认过的身份）
+与**表单里写的 GitHub 用户名**（目前只有「认领维护」那张表有）。
+
 PR 作者仍是 `github-actions`——**这一点很重要**：如果 PR 作者是维护者自己，
 他就不能批准自己的 PR，第二道闸就形同虚设。
 
@@ -122,7 +126,8 @@ PR 作者仍是 `github-actions`——**这一点很重要**：如果 PR 作者�
 | `[改一个字段] concept/1` | `updatedAt` 更新为表单给的值（**不带引号**，与文件既有风格一致——机器人的 diff 要干净到可以直接审） |
 | `[改正文里的一句话]`（真实句子） | 正文里那一处被替换 |
 | **两道闸**（`[改一个字段]` 全流程） | check job 干跑并回帖「等审核 + 指纹」→ `/approve` → apply job 改文件、跑校验、**自己开 PR**（PR #10）：作者 `github-actions`、标签 `bot-pr`/`needs-review`、自动请求 Code Owners 审核、状态 `BLOCKED` 等第二道闸 |
-| **署名** | 提交里 `Co-authored-by: hxh230802 <106608151+hxh230802@users.noreply.github.com>`（noreply 邮箱才认得到账号）；PR 描述写明提出者与批准人 |
+| **署名** | 提交**作者** = 贡献者（`贡献者姓名 <106608151+某人@users.noreply.github.com>`）、**committer** = 机器人、**Co-authored-by** = `github-actions[bot]`；PR 描述写明「提出者（提交作者）」与「代笔（共同作者）」 |
+| **本地彩排这段 shell** | `bash dsh-pedia-preview/apply-step-test.sh`：从 apply.yml 抽出「开 PR」那一步，用 stub `gh` + 本地裸仓库真跑一遍，断言作者/共同作者/幂等（10 项全过）。**别再推到线上试错**——这段 shell 是全仓库最容易静默坏掉的地方 |
 | 片段在正文里出现多次 | `ambiguous` + `escalate=true` → 回帖教 fork + PR |
 | 改嵌套字段 `compat` | `unsupported` + `escalate=true` → 同上 |
 | 二级分区 id 写错 | `unknown-section` + `escalate=false` → 提示改表单重试 |

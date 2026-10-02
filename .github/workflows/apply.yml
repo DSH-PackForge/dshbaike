@@ -232,8 +232,9 @@ jobs:
             exit 0
           fi
 
-          # ---- 署名：把贡献者写成提交的共同作者（GitHub 会在提交与 PR 上显示他们） ----
-          # 提 Issue 的人（GitHub 认过的身份）+ 表单里写的用户名（认领维护那张表有），去重。
+          # ---- 署名（归因要准）：**提改动的人是提交作者，机器人只是 Co-author** ----
+          # 内容是人家定的，机器人只是代笔把它写进文件——所以作者是贡献者，共同作者是机器人。
+          # 取两个来源去重：提 Issue 的人（GitHub 认过的身份）+ 表单里写的用户名（认领那张表有）。
           credits=()
           for u in "$AUTHOR" "$CREDITED"; do
             [ -z "$u" ] && continue
@@ -241,19 +242,33 @@ jobs:
             case " ${credits[*]-} " in *" $u "*) continue ;; esac
             credits+=("$u")
           done
+
+          # noreply 邮箱才是账号认得的身份：现代格式是 <id>+<username>@users.noreply.github.com
+          noreply() {
+            local u="$1" id name
+            id=$(gh api "users/${u}" --jq '.id' 2>/dev/null || echo "")
+            name=$(gh api "users/${u}" --jq '.name // .login' 2>/dev/null || echo "$u")
+            # 用显式 if：`[ ... ] || [ ... ] && name=...` 在条件为假时整条返回非零，
+            # 配合 set -e 会把整个步骤干掉。
+            if [ -z "$name" ] || [ "$name" = "null" ]; then name="$u"; fi
+            if [ -n "$id" ]; then printf '%s <%s+%s@users.noreply.github.com>' "$name" "$id" "$u"
+            else printf '%s <%s@users.noreply.github.com>' "$name" "$u"; fi
+          }
+
+          author_id="${credits[0]:-}"
           trailers=""
           credit_line=""
-          for u in "${credits[@]+"${credits[@]}"}"; do
-            # noreply 邮箱才是账号认得的身份：现代格式是 <id>+<username>@users.noreply.github.com
-            uid=$(gh api "users/${u}" --jq '.id' 2>/dev/null || echo "")
-            email="${u}@users.noreply.github.com"
-            [ -n "$uid" ] && email="${uid}+${u}@users.noreply.github.com"
-            # 换行用 $'\n' 显式写出来：多行双引号字符串的收尾引号一旦顶到第 0 列，
-            # 就会终止 run: | 的块标量，整个 workflow 静默失效（GitHub 不报错）。
-            trailers="${trailers}Co-authored-by: ${u} <${email}>"$'\n'
-            credit_line="${credit_line}@${u} "
-          done
-          echo "署名：${credit_line:-（无）}"
+          # 机器人自己的身份：github-actions[bot] 的真实 noreply 邮箱
+          bot_id=$(gh api "users/github-actions%5Bbot%5D" --jq '.id' 2>/dev/null || echo "41898282")
+          trailers="Co-authored-by: github-actions[bot] <${bot_id}+github-actions[bot]@users.noreply.github.com>"$'\n'
+          if [ -n "$author_id" ]; then
+            credit_line="@${author_id}"
+            for u in "${credits[@]:1}"; do
+              credit_line="${credit_line}、@${u}"
+              trailers="${trailers}Co-authored-by: $(noreply "$u")"$'\n'
+            done
+          fi
+          echo "作者：${author_id:-（未知，退回机器人）}；共同作者：github-actions[bot]"
 
           git config user.name "dshbaike-bot"
           git config user.email "bot@users.noreply.github.com"
@@ -262,14 +277,19 @@ jobs:
           if git diff --cached --quiet; then
             echo "没有实际改动"; echo "mode=none" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          # 提交信息带上 Co-authored-by：贡献者的头像会出现在这条提交上，也算进他们的贡献
           printf 'chore(%s): %s（来自 Issue #%s）\n\n%s' "$OP" "$SUMMARY" "$ISSUE" "$trailers" > /tmp/msg.txt
-          git commit -F /tmp/msg.txt
+          if [ -n "$author_id" ]; then
+            # --author 只改「作者」，committer 仍是机器人——这正是我们要的归因
+            git commit -F /tmp/msg.txt --author="$(noreply "$author_id")"
+          else
+            git commit -F /tmp/msg.txt
+          fi
           git push --force-with-lease -u origin "$branch"
           body=$(printf '%s\n' \
             "由 Issue #${ISSUE} 的**表单**触发的自动改动。" \
             "" \
-            "- 提出者：${credit_line:-（未知）}（提交里已署名为 Co-authored-by）" \
+            "- 提出者（**提交作者**）：${credit_line:-（未知）}" \
+            "- 代笔（共同作者）：github-actions[bot]" \
             "- 批准人：@${APPROVER}" \
             "- 操作：\`${OP}\`" \
             "- 改了：${SUMMARY}" \
