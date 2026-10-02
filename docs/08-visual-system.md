@@ -196,7 +196,7 @@ $DSH_HOME (~/.dsh)
 
 | 方案 | 成本 | 地址 | 状态 |
 | --- | --- | --- | --- |
-| **GitHub Pages**（现行） | 免费 | `dsh-packforge.github.io/dshbaike/` | ✅ 已接入 |
+| **GitHub Pages**（现行） | 免费 | `https://dshbaike.com`（自定义域；原 `dsh-packforge.github.io/dshbaike/` 会 301 过来） | ✅ 已接入 |
 | Cloudflare Pages | 免费额度足够 | `dshbaike.pages.dev` | 备选：要挂 `dshbaike.com` 根域时更省事 |
 | Vercel / Netlify | 免费额度足够 | `dshbaike.vercel.app` / `.netlify.app` | 备选 |
 

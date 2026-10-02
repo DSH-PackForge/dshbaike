@@ -248,6 +248,9 @@ node scripts/new.mjs tutorial "为什么升级后插件会失效"
 
 采集与部署合在同一个 workflow，沿用市场的理由：默认 `GITHUB_TOKEN` 推回 `main` 的 push 不会再次触发其它 workflow，拆成两个 workflow 会导致「采集完了但没部署」。
 
+**域名**：2026-10-02 起绑自定义域 `dshbaike.com`（在阿里云解析，指向 GitHub Pages 的 A / AAAA 记录）。
+绑域后站点从**项目子路径**变成**根路径**，构建期的 `--base` 也随之从 `/dshbaike/` 改为无（见 `pages.yml` 顶部注释）。
+
 **为什么现在用 GitHub Pages**：仓库已转为**公开**（2026-10-02），组织 free 计划下 Pages 对公开仓免费开放，于是**零外部账号、零 secrets** 就能发布——`.github/workflows/pages.yml` 校验通过后构建 `web/` 并发布到 `https://dsh-packforge.github.io/dshbaike/`。注意项目站是**子路径**部署，构建期必须传 `--base=/dshbaike/`（见 §5.1）。
 
 **什么时候换 Cloudflare Pages**：想挂自定义域 `dshbaike.com` 到**根路径**时（省掉 `/dshbaike/` 前缀），或者需要 Cloudflare Access 那种「非公开预览」。两者都支持从同一份产物构建，所以切换不需要改数据与链接结构。
