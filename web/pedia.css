@@ -323,7 +323,7 @@ hr {
   width: var(--w-rail);
   height: 100vh;
   height: 100dvh;
-  background: var(--bg);
+  background: var(--bg-rail);
   border-right: 1px solid var(--border);
   transform: translateX(0);
   transition: transform var(--rail-dur) var(--rail-ease);
@@ -2737,6 +2737,10 @@ body {
 
 :root {
   --bg-page: #e3e9f2;
+  /* 左侧导航栏的「面」。原先是直接借 --bg（与卡片同色），暗色下就分不开了：
+     卡片要回到主题色，而侧栏要留在中性黑灰 #14171a，所以它必须有自己的令牌。
+     亮色下就是 --bg（白），行为与改动前一致。 */
+  --bg-rail: var(--bg);
   --card-border: transparent;
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.08), 0 10px 26px rgba(16, 24, 40, 0.13);
   --shadow-card-hover: 0 4px 10px rgba(16, 24, 40, 0.16), 0 20px 44px rgba(16, 24, 40, 0.20);
