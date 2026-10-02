@@ -9,7 +9,7 @@ name: 机器人代改（两道闸：Issue 里 /approve，PR 再 review）
 #   ② 执行完开 PR，**merge 之前再批一次**：main 的分支保护要求 Code Owners 批准（docs/14 §4）。
 #
 # 覆盖的操作（scripts/lib/ops.mjs 声明，Issue 标题前缀决定用哪个）：
-#   [认领维护] [改一个字段] [改正文里的一句话] [补充分区条目] [新增词条]
+#   [担任维护者] [改一个字段] [改正文里的一句话] [补充分区条目] [新增词条]
 # 机器人改不了的情形（嵌套结构、定位不唯一、找不到原文）会明确拒绝并请作者 fork + PR。
 
 on:
@@ -38,7 +38,7 @@ jobs:
   check:
     if: >
       github.event_name == 'issues' &&
-      (startsWith(github.event.issue.title, '[认领维护]') ||
+      (startsWith(github.event.issue.title, '[担任维护者]') ||
        startsWith(github.event.issue.title, '[改一个字段]') ||
        startsWith(github.event.issue.title, '[改正文里的一句话]') ||
        startsWith(github.event.issue.title, '[补充分区条目]') ||
@@ -131,7 +131,7 @@ jobs:
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request == null &&
       startsWith(github.event.comment.body, '/approve') &&
-      (startsWith(github.event.issue.title, '[认领维护]') ||
+      (startsWith(github.event.issue.title, '[担任维护者]') ||
        startsWith(github.event.issue.title, '[改一个字段]') ||
        startsWith(github.event.issue.title, '[改正文里的一句话]') ||
        startsWith(github.event.issue.title, '[补充分区条目]') ||
