@@ -47,6 +47,8 @@ function main(argv) {
   let body = process.env.ISSUE_BODY ?? '';
   const bodyFile = argValue(argv, '--body-file');
   if (bodyFile) body = fs.readFileSync(bodyFile, 'utf8');
+  // 干跑：算出会发生什么，但**不写文件**——用在「先审再做」的第一道闸上
+  const dryRun = argv.includes('--dry-run') || process.env.DRY_RUN === 'true';
 
   if (!title.trim()) {
     process.stderr.write('没有拿到 Issue 标题（--title 或 ISSUE_TITLE）\n');
@@ -80,11 +82,16 @@ function main(argv) {
     return 1;
   }
 
-  for (const write of result.writes) fs.writeFileSync(write.path, write.text);
-  process.stdout.write(`已改动 ${result.writes.length} 个文件：${result.writes.map((w) => w.path).join(', ')}\n`);
+  for (const write of result.writes) {
+    if (!dryRun) fs.writeFileSync(write.path, write.text);
+  }
+  process.stdout.write(
+    `${dryRun ? '（干跑，未写文件）' : '已改动'} ${result.writes.length} 个文件：${result.writes.map((w) => w.path).join(', ')}\n`,
+  );
   emit({
     ok: 'true',
     changed: 'true',
+    dry: dryRun ? 'true' : 'false',
     op: found.op.id,
     id: result.id ?? '',
     files: result.writes.map((w) => w.path).join(','),

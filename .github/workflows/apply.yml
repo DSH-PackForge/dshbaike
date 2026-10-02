@@ -1,16 +1,14 @@
-name: 机器人代改（表单 → PR）
+name: 机器人代改（两道闸：先审请求，再审 PR）
 
-# 通用通道（docs/14）：**任何可以「有界」表达的内容改动**都走这里——
-# Issue 表单 → 机器人只改它声明的那一处 → 开 PR → **维护者审核后合并**。
+# 两道闸（评审定调）：
+#   ① **机器人动手之前**先审一遍：Issue 提交后立刻干跑（不写文件），把「它打算改什么」
+#      回帖出来，然后整个 job 停在需要审批的环境 `bot-apply` 上，等维护者点 Approve；
+#   ② 批准后机器人才真的改文件、跑校验、开 PR——那个 PR **还需要再审一次**才能合并
+#      （main 的分支保护要求 Code Owners 批准，见 docs/14 §4）。
 #
-# 覆盖的操作（scripts/lib/ops.mjs 里声明，标题前缀决定用哪个）：
-#   [认领维护]           maintainers 加一个用户名
-#   [改一个字段]         front-matter 里的单值/列表字段
-#   [改正文里的一句话]   正文里精确、唯一的一处片段替换
-#   [补充分区条目]       往某个分区的某个二级分区追加一条卡片
-#
-# 机器人改不了的情形（嵌套结构、定位不唯一、找不到原文）会**明确拒绝**并请作者 fork + PR，
-# 而不是猜着改。合并永远由人点。
+# 覆盖的操作（scripts/lib/ops.mjs 声明，Issue 标题前缀决定用哪个）：
+#   [认领维护] [改一个字段] [改正文里的一句话] [补充分区条目]
+# 机器人改不了的情形（嵌套结构、定位不唯一、找不到原文）会明确拒绝并请作者 fork + PR。
 
 on:
   issues:
@@ -26,42 +24,109 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  apply:
+  # ---- 第一道闸的前半段：只算不改，并立刻回帖 ----------------------------------
+  check:
     if: startsWith(github.event.issue.title, '[')
     runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.dry.outputs.ok }}
+      summary: ${{ steps.dry.outputs.summary }}
+      files: ${{ steps.dry.outputs.files }}
+      op: ${{ steps.dry.outputs.op }}
+      reason: ${{ steps.dry.outputs.reason }}
+      escalate: ${{ steps.dry.outputs.escalate }}
+      message: ${{ steps.dry.outputs.message }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
 
-      - name: 解析表单并按有界操作改文件
-        id: apply
+      - name: 干跑（不写任何文件）
+        id: dry
         continue-on-error: true
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node scripts/apply-issue.mjs --dry-run
+
+      - name: 回帖（待审核 / 不能改 / 表单不全）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          OK: ${{ steps.dry.outputs.ok }}
+          REASON: ${{ steps.dry.outputs.reason }}
+          ESCALATE: ${{ steps.dry.outputs.escalate }}
+          SUMMARY: ${{ steps.dry.outputs.summary }}
+          FILES: ${{ steps.dry.outputs.files }}
+          MESSAGE: ${{ steps.dry.outputs.message }}
+        run: |
+          set -euo pipefail
+          if [ "$OK" = "true" ]; then
+            gh issue comment "$ISSUE" --body "🕓 **已收到，等维护者审核后才动手。**
+
+          机器人打算这么改（**还没有写任何文件**）：
+
+          > ${SUMMARY}
+          > 文件：\`${FILES}\`
+
+          维护者在 Actions 页面点 **Approve** 之后，它才会真的写入并开 PR；
+          那个 PR 还要再审一次才能合并。若被拒绝，本 Issue 会保持打开，可以继续讨论。"
+          elif [ "$ESCALATE" = "true" ]; then
+            gh issue comment "$ISSUE" --body "🙅 这个改动机器人**不能安全地做**：
+
+          > ${MESSAGE}
+
+          **请自己来**（这样最稳，也就几步）：
+
+          1. 打开 https://github.com/${REPO}/edit/main/data/ 找到对应的文件（或直接点词条页的「编辑此条」）；
+          2. 改完在提交对话框里选 **Create a new branch … and start a pull request**；
+          3. 在 PR 里说清改了什么、凭什么改。
+
+          详细流程与内容纪律见 [CONTRIBUTING.md](https://github.com/${REPO}/blob/main/CONTRIBUTING.md)。"
+          else
+            gh issue comment "$ISSUE" --body "😕 这个请求还不能自动处理：
+
+          > ${MESSAGE}
+
+          改一下本 Issue 里的表单内容就会自动重试（不必新开一个 Issue）。"
+          fi
+
+  # ---- 第一道闸的后半段：维护者批准后，才真的写文件、开 PR ---------------------
+  apply:
+    needs: check
+    if: needs.check.outputs.ok == 'true'
+    environment: bot-apply          # ← 卡在这里等维护者 Approve（环境保护规则）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: 真正改文件
+        id: apply
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: node scripts/apply-issue.mjs
 
       - name: 校验（机器人改的东西不能把站点弄坏）
-        if: steps.apply.outputs.ok == 'true'
         run: node scripts/validate.mjs
 
       - name: 开 PR（组织策略禁止时退回「一键开 PR」链接）
-        if: steps.apply.outputs.ok == 'true'
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE: ${{ github.event.issue.number }}
           OP: ${{ steps.apply.outputs.op }}
-          ID: ${{ steps.apply.outputs.id }}
           SUMMARY: ${{ steps.apply.outputs.summary }}
           FILES: ${{ steps.apply.outputs.files }}
           ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
-          branch="bot/${OP}-$(echo "$ID" | tr '/' '-')-${ISSUE}"
+          branch="bot/${OP}-$(echo "$ISSUE" | tr '/' '-')"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
           git config user.name "dshbaike-bot"
           git config user.email "bot@users.noreply.github.com"
@@ -73,13 +138,14 @@ jobs:
           git commit -m "chore(${OP}): ${SUMMARY}（来自 Issue #${ISSUE}）"
           git push --force-with-lease -u origin "$branch"
           body=$(printf '%s\n' \
-            "由 Issue #${ISSUE}（@${ACTOR}）触发的自动改动，**请维护者审核后再合并**。" \
+            "由 Issue #${ISSUE} 触发的自动改动。**维护者已在第一道闸批准过这个请求**，" \
+            "这里是第二道闸：请再审一遍具体改了什么，然后再合并。" \
             "" \
             "- 操作：\`${OP}\`" \
             "- 改了：${SUMMARY}" \
             "- 文件：\`${FILES}\`（**只动这些**）" \
             "" \
-            "校验器（validate.mjs）已通过。合并不由机器人执行。")
+            "校验器（validate.mjs）已通过。机器人不会自己合并。")
           if url=$(gh pr create --base main --head "$branch" \
               --title "chore(${OP}): ${SUMMARY}（#${ISSUE}）" \
               --label "bot-pr,needs-review" \
@@ -91,51 +157,29 @@ jobs:
             echo "原因：$(tail -n 1 pr-error.txt)"
           fi
 
-      - name: 回帖
-        if: always() && github.event_name == 'issues'
+      - name: 回帖（PR 链接）
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE: ${{ github.event.issue.number }}
-          OK: ${{ steps.apply.outputs.ok }}
-          REASON: ${{ steps.apply.outputs.reason }}
-          ESCALATE: ${{ steps.apply.outputs.escalate }}
-          MESSAGE: ${{ steps.apply.outputs.message }}
+          REPO: ${{ github.repository }}
           MODE: ${{ steps.pr.outputs.mode }}
           BRANCH: ${{ steps.pr.outputs.branch }}
           PR_URL: ${{ steps.pr.outputs.url }}
-          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if [ "$OK" = "true" ] && [ "$MODE" = "auto" ]; then
+          if [ "$MODE" = "auto" ]; then
             gh issue comment "$ISSUE" --body "✅ 已开好 PR：${PR_URL}
 
-          等维护者审核合并。"
+          **还有第二道闸**：维护者审一遍 PR 并批准后才会合并（main 的分支保护要求 Code Owners 批准）。"
             gh issue close "$ISSUE" --reason completed || true
-          elif [ "$OK" = "true" ] && [ "$MODE" = "manual" ]; then
+          elif [ "$MODE" = "manual" ]; then
             gh issue comment "$ISSUE" --body "✅ 改动已经做好并推到分支 \`${BRANCH}\`，**只差最后一下**：
 
           👉 点这里开 PR：https://github.com/${REPO}/pull/new/${BRANCH}
 
-          （本组织的策略不允许 Actions 创建 PR，所以这一步留给人点。请在 PR 里请维护者审核。）"
-          elif [ "$OK" = "true" ]; then
+          （本组织的策略不允许 Actions 创建 PR，所以这一步留给人点。开好后仍需审 PR 再合并。）"
+          else
             gh issue comment "$ISSUE" --body "ℹ️ 没有产生实际改动（可能已经是这个值了）。"
             gh issue close "$ISSUE" --reason completed || true
-          elif [ "$ESCALATE" = "true" ]; then
-            gh issue comment "$ISSUE" --body "🙅 这个改动机器人**不能安全地做**：
-
-          > ${MESSAGE}
-
-          **请自己来**（这样最稳，也就几步）：
-
-          1. 打开 https://github.com/${REPO}/edit/main/data/ 找到对应的词条文件（或直接点词条页的「编辑此条」）；
-          2. 改完在提交对话框里选 **Create a new branch … and start a pull request**；
-          3. 在 PR 里说清改了什么、凭什么改。
-
-          详细流程与内容纪律见 [CONTRIBUTING.md](https://github.com/${REPO}/blob/main/CONTRIBUTING.md)。"
-          else
-            gh issue comment "$ISSUE" --body "😕 这次没能自动处理：
-
-          > ${MESSAGE}
-
-          改一下本 Issue 里的表单内容就会自动重试（不必新开一个 Issue）。"
           fi
