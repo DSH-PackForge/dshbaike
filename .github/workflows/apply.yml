@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$OK" = "true" ]; then
-            gh issue comment "$ISSUE" --body "🕓 **已收到，等维护者批准后才动手。**
+            gh issue comment "$ISSUE" -R "$REPO" --body "🕓 **已收到，等维护者批准后才动手。**
 
           机器人打算这么改（**还没有写任何文件**）：
 
@@ -73,7 +73,7 @@ jobs:
 
           审核指纹：\`${FP}\`（只看这一版；正文在这之后被改过的话，机器人会拒绝执行并要求重新批准）"
           elif [ "$ESCALATE" = "true" ]; then
-            gh issue comment "$ISSUE" --body "🙅 这个改动机器人**不能安全地做**：
+            gh issue comment "$ISSUE" -R "$REPO" --body "🙅 这个改动机器人**不能安全地做**：
 
           > ${MESSAGE}
 
@@ -85,7 +85,7 @@ jobs:
 
           详细流程与内容纪律见 [CONTRIBUTING.md](https://github.com/${REPO}/blob/main/CONTRIBUTING.md)。"
           else
-            gh issue comment "$ISSUE" --body "😕 这个请求还不能自动处理：
+            gh issue comment "$ISSUE" -R "$REPO" --body "😕 这个请求还不能自动处理：
 
           > ${MESSAGE}
 
@@ -104,6 +104,11 @@ jobs:
       fingerprint: ${{ steps.gate.outputs.fingerprint }}
       actor: ${{ steps.gate.outputs.actor }}
     steps:
+      # 这个 job 也要 checkout：`gh` 的多数子命令（issue comment 等）要能确定「当前仓库」，
+      # 在没有 git 仓库的目录里跑会失败于 `fatal: not a git repository`。
+      # 同时每个 gh 调用都显式带 -R "$REPO"——不依赖 git 状态才不会静默失效。
+      - uses: actions/checkout@v4
+
       - name: 校验批准人权限 + 取出被审那一版的指纹
         id: gate
         env:
@@ -126,7 +131,7 @@ jobs:
           case "$perm" in
             admin|write) ;;
             *)
-              gh issue comment "$ISSUE" --body "ℹ️ \`/approve\` 只有对本仓库有**写权限**的人可以下（@${COMMENT_USER} 目前是 \`${perm}\`）。"
+              gh issue comment "$ISSUE" -R "$REPO" --body "ℹ️ \`/approve\` 只有对本仓库有**写权限**的人可以下（@${COMMENT_USER} 目前是 \`${perm}\`）。"
               exit 0 ;;
           esac
 
@@ -136,7 +141,7 @@ jobs:
                 --jq ".[] | select(.created_at < \"${COMMENT_AT}\") | .body" \
               | grep -oE '审核指纹：`[0-9a-f]{12}`' | tail -n 1 | grep -oE '[0-9a-f]{12}' || true)
           if [ -z "${fp:-}" ]; then
-            gh issue comment "$ISSUE" --body "😕 找不到这次请求的审核指纹（可能提交时干跑没成功）。请维护者先看一眼机器人的回帖，或让作者重新提交一次。"
+            gh issue comment "$ISSUE" -R "$REPO" --body "😕 找不到这次请求的审核指纹——说明这个 Issue 提交时**干跑那一步没有成功跑过**（可能当时 workflow 文件有问题）。请让作者改一下表单内容触发重跑，或新开一张表单。"
             exit 0
           fi
 
@@ -170,17 +175,18 @@ jobs:
         if: steps.apply.outputs.ok != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
           MESSAGE: ${{ steps.apply.outputs.message }}
           REASON: ${{ steps.apply.outputs.reason }}
         run: |
           set -euo pipefail
           if [ "$REASON" = "stale-approval" ]; then
-            gh issue comment "$ISSUE" --body "⚠️ 没有执行：
+            gh issue comment "$ISSUE" -R "$REPO" --body "⚠️ 没有执行：
 
           > ${MESSAGE}"
           else
-            gh issue comment "$ISSUE" --body "😕 执行失败（\`${REASON}\`）：
+            gh issue comment "$ISSUE" -R "$REPO" --body "😕 执行失败（\`${REASON}\`）：
 
           > ${MESSAGE}"
           fi
@@ -198,6 +204,7 @@ jobs:
           # 优先用 BOT_TOKEN（若仓库配了这个 secret）：组织策略禁止 Actions 创建 PR 时，
           # 用一个人/机器账号的令牌就能绕过这条限制。没配就退回 GITHUB_TOKEN（受策略限制）。
           GH_TOKEN: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
           OP: ${{ steps.apply.outputs.op }}
           SUMMARY: ${{ steps.apply.outputs.summary }}
@@ -218,7 +225,7 @@ jobs:
           #     不会创建 origin/<branch> 引用。
           IFS=',' read -ra touched <<< "$FILES"
           if git fetch --quiet origin "$branch" && git diff --quiet FETCH_HEAD -- "${touched[@]}"; then
-            existing=$(gh pr list --head "$branch" --state all --json url --jq '.[0].url // empty' 2>/dev/null || true)
+            existing=$(gh pr list -R "$REPO" --head "$branch" --state all --json url --jq '.[0].url // empty' 2>/dev/null || true)
             echo "与 $branch 上已执行的内容一致（${FILES}），不重复执行"
             echo "mode=duplicate" >> "$GITHUB_OUTPUT"
             echo "url=$existing" >> "$GITHUB_OUTPUT"
@@ -270,7 +277,7 @@ jobs:
             "" \
             "第一道闸（\`/approve\`）已过；**这是第二道闸：请再审一遍具体改了什么**，然后再合并。" \
             "校验器（validate.mjs）已通过。机器人不会自己合并。")
-          if url=$(gh pr create --base main --head "$branch" \
+          if url=$(gh pr create -R "$REPO" --base main --head "$branch" \
               --title "chore(${OP}): ${SUMMARY}（#${ISSUE}）" \
               --label "bot-pr,needs-review" \
               --body "$body" 2>pr-error.txt); then
@@ -293,25 +300,25 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$MODE" = "auto" ]; then
-            gh issue comment "$ISSUE" --body "✅ 已开好 PR：${PR_URL}
+            gh issue comment "$ISSUE" -R "$REPO" --body "✅ 已开好 PR：${PR_URL}
 
           **还有第二道闸**：维护者审一遍 PR 并批准后才会合并（main 的分支保护要求 Code Owners 批准）。"
             gh issue close "$ISSUE" --reason completed || true
           elif [ "$MODE" = "duplicate" ]; then
             if [ -n "${PR_URL:-}" ]; then
-              gh issue comment "$ISSUE" --body "ℹ️ 这个请求已经执行过了：${PR_URL}"
+              gh issue comment "$ISSUE" -R "$REPO" --body "ℹ️ 这个请求已经执行过了：${PR_URL}"
             else
-              gh issue comment "$ISSUE" --body "ℹ️ 这个请求已经执行过了，内容与分支 \`${BRANCH}\` 完全一致，没有重复推送。
+              gh issue comment "$ISSUE" -R "$REPO" --body "ℹ️ 这个请求已经执行过了，内容与分支 \`${BRANCH}\` 完全一致，没有重复推送。
 
           开 PR：https://github.com/${REPO}/pull/new/${BRANCH}"
             fi
           elif [ "$MODE" = "manual" ]; then
-            gh issue comment "$ISSUE" --body "✅ 改动已经做好并推到分支 \`${BRANCH}\`，**只差最后一下**：
+            gh issue comment "$ISSUE" -R "$REPO" --body "✅ 改动已经做好并推到分支 \`${BRANCH}\`，**只差最后一下**：
 
           👉 点这里开 PR：https://github.com/${REPO}/pull/new/${BRANCH}
 
           （本组织的策略不允许 Actions 创建 PR，所以这一步留给人点。开好后仍需审 PR 再合并。）"
           else
-            gh issue comment "$ISSUE" --body "ℹ️ 没有产生实际改动（可能已经是这个值了）。"
+            gh issue comment "$ISSUE" -R "$REPO" --body "ℹ️ 没有产生实际改动（可能已经是这个值了）。"
             gh issue close "$ISSUE" --reason completed || true
           fi
