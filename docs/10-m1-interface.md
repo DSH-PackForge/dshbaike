@@ -183,7 +183,7 @@ node scripts/build.mjs        # 产出 web/data/**、web/<kind>/*.html、web/*.h
 npx serve web                 # 人工点通
 ```
 
-- [ ] 十一个分区页**均非空**（[08](08-visual-system.md) §8.6 的硬要求）
+- [ ] 十二个分区页**均非空**（[08](08-visual-system.md) §8.6 的硬要求）
 - [ ] `/plugin/12.html` 一类的词条页可直接打开，标题与 OG 正确
 - [ ] 搜索能命中词条与分区条目；红链可点且指向贡献入口
 - [ ] 反链与 `reverse/plugins.json` 正确（教程引用了插件 → 插件页能反查到）

@@ -223,15 +223,18 @@ export function parseEntryId(value) {
 
 /**
  * 词条类型（docs/12 §1）：**一个分区一种类型** + 三个跨分区类型。
- * 顺序即 UI 展示顺序（分区按装配位置从界面到规范，跨分区的排最后）。
- * 新增类型必须同时改：本表、data/registry.yml 的 counters、data/taxonomy.yml、
- * scripts/lib/fields.mjs 的字段契约、web/pedia.js 的 KIND_ZH / KIND_ORDER、docs/02 §3。
+ * 顺序即编号契约里的计数器顺序；**分区的展示顺序不在这里**——那是
+ * data/registry.yml 的 `zoneOrder`（唯一来源，docs/06 §2）。
+ * 新增类型必须同时改：本表、data/registry.yml 的 counters 与 zoneOrder、
+ * data/taxonomy.yml、scripts/lib/fields.mjs 的字段契约、data/zones/<新分区>.yml、
+ * web/pedia.js 的 KIND_ZH / KIND_ZONE / KIND_ORDER、docs/12 §1。
  */
 export const ENTRY_KINDS = [
   // 分区类型（与 data/zones/*.yml 的 kinds 一一对应）
   'client',
   'launcher',
   'plugin',
+  'mcp',
   'theme',
   'asset',
   'skill',

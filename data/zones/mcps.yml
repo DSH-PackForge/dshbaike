@@ -1,0 +1,70 @@
+# 分区层数据（docs/06 §2）。能力层：把 DSH 之外的服务器接进来，变成模型能直接用的工具。
+# curated-list——宁缺毋滥；不做全量收录，找服务器直接去外部目录。
+zone: mcps
+title: MCP 与工具接入
+desc: 把外部 MCP（Model Context Protocol）服务器的工具接成模型能直接调用的能力，工具名形如 mcp__<server>__<tool>。凭据给到什么程度，模型就能用那些工具做到什么程度——所以这一页的每个条目都要看清它要什么。
+kinds: [mcp]
+sections:
+  - id: bridge
+    title: 桥接机制
+    desc: DSH 侧怎么把一台服务器接进来——一个插件实例 = 一台服务器
+    intro: |
+      DSH 自带一个 MCP 客户端桥接：`@deepseek-ai/dsh-mcp-client`。它连上外部服务器后，把对方的工具注册进
+      `ctx.tools`，模型看到的名字是 `mcp__<serverName>__<rawName>`——与 Claude Code、Codex 用的是同一套
+      「服务器限定名」形状，所以同一个服务器的配置换个 harness 也大致通用。
+
+      **一个插件实例接一台服务器**，写在 profile 的 `cordis.yml` 里；传输只有两种：
+
+      | 传输 | 要填 | 典型用途 |
+      | --- | --- | --- |
+      | `stdio` | `command`（+ `args` / `env` / `cwd`） | 本机进程，例如 `npx -y @modelcontextprotocol/server-github` |
+      | `streamable-http` | `url`（+ `headers`） | 远端或本机已经在跑的 HTTP 服务 |
+
+      工具名是 `(serverName, rawName)` 的**纯函数**：连接顺序、重新同步、别的服务器都不会改名；
+      名字超长或需要替换时追加 12 位十六进制 hash，所以两台服务器各有一个 `search` 也不会撞车。
+      `serverName` 只允许 `[A-Za-z0-9_-]{1,32}`，且在存活实例中必须唯一（重复会让**后加载**的那个实例失败）。
+
+      重连默认开着：首次失败等 500ms，之后翻倍，上限 30s，连续失败 10 次就放弃；单次工具调用超时默认 60s。
+      初始连接失败默认**不**阻止插件激活（`failOnStartupError: false`）——想让配置写错时立刻炸出来，就设成 `true`。
+
+      想自己核实这些数字与字段名：本机 `~/.dsh/profiles/node_modules/@deepseek-ai/dsh-mcp-client/README.zh.md`
+      （快照 2026-10-02，`0.1.0-rc.6`）。**凭据是这里最大的风险点**：`env` / `headers` 里给的 token
+      决定了服务器（进而决定模型）能碰到什么，按最小必要给。
+  - id: servers
+    title: 现成的服务器
+    desc: 直接能用的服务器，以及「去哪找更多」
+  - id: spec
+    title: 协议本身
+    desc: 有争议时以规范为准；本站只解释「在 DSH 里怎么接」
+itemFields: [transport, provides]
+howto: 在 profile 的 cordis.yml 里加一个 @deepseek-ai/dsh-mcp-client 实例，填 serverName 与传输方式；改完 HMR 会自己断开重连，不用重启进程。凭据按最小必要给，不确定就先只给读权限的 token。
+items:
+  - name: dsh-mcp-client
+    section: bridge
+    blurb: 官方 MCP 客户端桥接：一个插件实例接一台服务器，把对方的工具注册成 mcp__<server>__<tool>，模型当原生工具调用。stdio 与 streamable-http 都支持，断线默认自动重连。
+    transport: both
+    provides: 那台服务器的全部工具，按 serverName 隔离命名空间
+    source: curated
+    entry: mcp/1
+    tags: [MCP, 工具接入]
+    links:
+      github: deepseek-ai/deepseek-harness
+  - name: 官方 MCP 服务器合集
+    section: servers
+    blurb: 参考实现与现成服务器（GitHub、文件系统、数据库、浏览器等）都在这个仓库里。**我们不做全量收录**——要按类别找服务器就去这里；接进 DSH 的方式与上面那一条相同，一段配置就够。
+    transport: both
+    provides: 一批可独立运行的 MCP 服务器（各自暴露不同工具）
+    source: curated
+    entry: null
+    tags: [MCP, 外部源]
+    links:
+      github: modelcontextprotocol/servers
+  - name: Model Context Protocol 官方站
+    section: spec
+    blurb: 协议本身的说明：概念、传输、工具与资源的定义。配置有争议时以它为准；本站只写「在 DSH 里怎么接、哪里会踩坑」。
+    source: curated
+    entry: null
+    tags: [MCP, 规范]
+    links:
+      docs: https://modelcontextprotocol.io/
+updatedAt: 2026-10-02

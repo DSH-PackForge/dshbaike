@@ -196,6 +196,10 @@ tree:
         label:
           zh: 指令与配方
         desc: 一小段可粘贴的配置或指令模板，改一个明确的行为。
+      - id: capability.mcp
+        label:
+          zh: MCP 接入
+        desc: 把外部 MCP 服务器的工具接成模型能直接调用的能力（mcp__<server>__<tool>）。
   - id: tooling
     label:
       zh: 工具与实践

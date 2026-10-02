@@ -14,7 +14,7 @@
 
 | 优先级 | 类型 | 为什么先做 |
 | --- | --- | --- |
-| **P0** | **分区层（十一个一级分区骨架）** | 主站的一半功能，也是全部流量的入口。界面与客户端 / 插件 / 整合包 / 启动器 / 规范 五个分区可走外部索引或官方形态，其余先各放 1–3 条人工条目；**红链入口是词条增长的主要来源**（见 [06](06-zones-and-entries.md)） |
+| **P0** | **分区层（十二个一级分区骨架）** | 主站的一半功能，也是全部流量的入口。界面与客户端 / 插件 / 整合包 / 启动器 / 规范 五个分区可走外部索引或官方形态，其余先各放 1–3 条人工条目；**红链入口是词条增长的主要来源**（见 [06](06-zones-and-entries.md)） |
 | **P0** | 教程 | 本版的侧重。自写「别处没有的」，并给外部教程做索引卡（`origin: external`） |
 | **P0** | 插件词条 | MC百科 `/class/<n>.html` 的对应物；按门槛收录（被教程引用 / 被整合包使用 / 有人认领），起步十几条 |
 | **P1** | 概念 | 百科骨架，也是插件与教程互相链接的落点；走**机制级 + 能指到权威出处**，不写成入门科普 |
@@ -27,13 +27,14 @@
 
 ## 1.1 分区层的首版内容
 
-十一个一级分区与数据源策略见 [06](06-zones-and-entries.md) §2。首版各分区的最小内容：
+十二个一级分区与数据源策略见 [06](06-zones-and-entries.md) §2。首版各分区的最小内容：
 
 | 分区 | 数据源 | 首版放什么 |
 | --- | --- | --- |
 | **界面与客户端** | `curated-list` + 官方形态 | 4 条官方形态：官方 Web UI（`dsh web`，等价 `--profile web`）、官方桌面端、`dsh-cli`（无启动器直用命令行）、headless 跑法；第三方桌面端与 TUI 各留 1–2 条占位并标「欢迎补充」。**不拿插件冒充客户端**（边界见 [06](06-zones-and-entries.md) §2.3） |
 | 插件 | `external-index`（awesome `catalog.json`） | 顶部**来源区块列四个源**（awesome 4400 / dshbase 7800+ / npm / GitHub topic，见 [07](07-multi-source-zones.md) §1）；条目**默认只展示「有本站词条 + 被整合包使用过」的子集**，并显式外链「看全量去源头」 |
 | 整合包 | `external-index`（市场 `index.json`） | 8 条全收，全部指向对应词条 |
+| MCP 与工具接入 | `curated-list` | 3 条：`dsh-mcp-client`（→ `mcp/1`）、官方服务器合集（外链）、协议官方站（外链）。**不做全量收录**——找服务器去官方合集 |
 | 启动器 | `external-index`（`launchers.json`） | 5 条全收，全部指向对应词条 |
 | 主题与皮肤 | `curated-list` | `dsh-myskin`（主题引擎）、`dsh-wallpaper-engine`（壁纸）、图标包 1 条 |
 | 技能包 | `curated-list` | `cad-ppt-skills`（含 `autocad-draw` / `pptx-editor`）、`dsh-bcut-edit`、`dsh-simple-drawing`、`publish-to-github` |

@@ -41,20 +41,21 @@
     { label: '规范仓库', url: 'https://github.com/DSH-PackForge/DSH-PackForge' }
   ];
 
-  /* 十一个一级分区（docs/06 §2）。仅作为数据缺失时的导航兜底：
+  /* 十二个一级分区（docs/06 §2；顺序的唯一来源是 data/registry.yml 的 zoneOrder）。仅作为数据缺失时的导航兜底：
      title/desc 以构建期产物 web/data/zones/*.json 为准。 */
   var ZONES = [
     { id: 'clients', label: '界面与客户端', desc: '你从哪、以什么界面使用 DSH：官方 Web UI、各类桌面端、终端界面（TUI）、无界面 CLI 与 headless 跑法。' },
-    { id: 'launchers', label: '启动器', desc: '.dspack 的安装端：装包、选版本、一键启动。' },
     { id: 'plugins', label: '插件', desc: '给 DSH 加功能：宿主侧 / 客户端侧插件、bundle、兼容层。' },
-    { id: 'recipes', label: '指令与配方', desc: '全局指令模板（AGENTS.md）、cordis.patch.yml 片段、层栈配方。' },
-    { id: 'presets', label: '预设与人设', desc: 'agent.cordis.yml 预设、persona 与角色设定。' },
+    { id: 'mcps', label: 'MCP 与工具接入', desc: '把外部 MCP 服务器的工具接成模型能直接调用的能力（mcp__<server>__<tool>）。' },
     { id: 'skills', label: '技能包', desc: 'SKILL.md 技能与技能合集。' },
+    { id: 'launchers', label: '启动器', desc: '.dspack 的安装端：装包、选版本、一键启动。' },
+    { id: 'packs', label: '整合包', desc: '.dspack（profile / dshhome 两形态）。' },
     { id: 'themes', label: '主题与皮肤', desc: '主题引擎（皮肤加载器）、配色令牌、壁纸、图标包。' },
     { id: 'assets', label: '素材与本地化', desc: '图标、字体、翻译包（汉化 / i18n）。' },
-    { id: 'packs', label: '整合包', desc: '.dspack（profile / dshhome 两形态）。' },
-    { id: 'specs', label: '规范与协议', desc: 'manifest / pack-structure / index / publishing / launcher-registry。' },
-    { id: 'toolchain', label: '工具链', desc: '打包 / 安装 / 市场 / 索引 / 调试工具。' }
+    { id: 'presets', label: '预设与人设', desc: 'agent.cordis.yml 预设、persona 与角色设定。' },
+    { id: 'recipes', label: '指令与配方', desc: '全局指令模板（AGENTS.md）、cordis.patch.yml 片段、层栈配方。' },
+    { id: 'toolchain', label: '工具链', desc: '打包 / 安装 / 市场 / 索引 / 调试工具。' },
+    { id: 'specs', label: '规范与协议', desc: 'manifest / pack-structure / index / publishing / launcher-registry。' }
   ];
 
   /* 词条 kind → 中文名（面包屑、最近更新、词条页归属）。顺序与 docs/12 §1 一致 */
@@ -62,6 +63,7 @@
     client: '客户端',
     launcher: '启动器',
     plugin: '插件',
+    mcp: 'MCP 接入',
     theme: '主题与皮肤',
     asset: '素材与本地化',
     skill: '技能包',
@@ -81,6 +83,7 @@
     client: 'clients',
     launcher: 'launchers',
     plugin: 'plugins',
+    mcp: 'mcps',
     theme: 'themes',
     asset: 'assets',
     skill: 'skills',
@@ -152,6 +155,8 @@
     shippedBy: '提供方',
     profile: 'profile',
     platforms: '平台',
+    transport: '传输方式',
+    auth: '所需凭据',
     lineage: '血缘',
     selfVersioning: '版本格式',
     importSupport: '支持 .dspack 导入',
@@ -178,7 +183,7 @@
     launcherId: 'canonical ID',
     supportedManifest: '支持的 manifest',
     sourceKind: '源类型',
-    provides: '提供字段',
+    provides: '提供内容',
     coverage: '收录量',
     relation: '与我们的关系',
     howto: '怎么用',
@@ -2942,7 +2947,7 @@
 
   /* ----------------------------------------------- 按类型浏览（#/browse/<kind>） */
 
-  var KIND_ORDER = ['client', 'launcher', 'plugin', 'theme', 'asset', 'skill', 'preset', 'recipe', 'pack', 'tool', 'spec', 'concept', 'tutorial', 'source'];
+  var KIND_ORDER = ['client', 'launcher', 'plugin', 'mcp', 'theme', 'asset', 'skill', 'preset', 'recipe', 'pack', 'tool', 'spec', 'concept', 'tutorial', 'source'];
 
   /** kind/n 的确定性排序：先按 KIND_ORDER 的固定次序，再按 n 的数字大小 */
   function compareEntryIds(a, b) {
@@ -3058,6 +3063,7 @@
       client: '界面与客户端：用什么界面使用 DSH',
       launcher: '启动器：canonical ID 与血缘',
       plugin: '插件聚合页：定位、关系、兼容与坑',
+      mcp: 'MCP 接入：把外部工具接成模型能调的能力',
       theme: '主题与皮肤：换掉界面的样子',
       asset: '素材与本地化：图标、字体、界面文案',
       skill: '技能包：以 SKILL.md 为单位的可加载能力',
@@ -3116,10 +3122,10 @@
       ])
     ]));
 
-    // 分区导航（十一个，全部可达）
-    main.appendChild(el('section', { class: 'section', 'aria-label': '十一个一级分区' }, [
+    // 分区导航（十二个，全部可达）
+    main.appendChild(el('section', { class: 'section', 'aria-label': '十二个一级分区' }, [
       el('div', { class: 'section__head' }, [
-        el('h2', { text: '十一个一级分区' }),
+        el('h2', { text: '十二个一级分区' }),
         el('span', { class: 'section__note', text: '按「装配位置」分层：从界面到规范' })
       ]),
       el('ul', { class: 'zonegrid' }, zones.map(function (z) {

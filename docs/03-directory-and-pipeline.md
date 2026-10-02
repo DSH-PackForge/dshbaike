@@ -38,7 +38,7 @@ dshbaike/                       # 仓库名；本地工作副本可能仍是 dsh
 │   ├── tool/<n>.md             # 工具（工具链分区）
 │   ├── spec/<n>.md             # 规范文件词条
 │   ├── source/<n>.md           # 资源源词条（外部插件源/渠道：awesome、dshbase、npm…）
-│   ├── zones/<zone>.yml        # ★ 分区层数据（十一个一级分区：界面与客户端/插件/整合包/启动器/主题/…，不编号）
+│   ├── zones/<zone>.yml        # ★ 分区层数据（十二个一级分区：界面与客户端/插件/整合包/启动器/主题/…，不编号）
 │   ├── entities.yml            # ★ 多源实体归并：keys（repo:/npm:）→ 词条 id，refs 由采集写
 │   ├── sources/<slug>.yml      # 尚未文档化的源（纯抓取配置；与源词条不能并存）
 │   ├── taxonomy.yml            # 分类树（人工 curation，每节点带 desc）
@@ -64,7 +64,7 @@ dshbaike/                       # 仓库名；本地工作副本可能仍是 dsh
 │   ├── pedia.css / pedia.js    # 样式与渲染逻辑
 │   ├── assets/
 │   ├── data/                   # ★ 构建产物，.gitignore
-│   ├── <zone>.html             # ★ 构建产物：十一个分区页（/clients、/plugins、/themes…）
+│   ├── <zone>.html             # ★ 构建产物：十二个分区页（/clients、/plugins、/themes…）
 │   └── <kind>/<n>.html         # ★ 构建产物：每条词条一个真实路径（见 §5.1）
 ├── docs/                       # 本设计文档
 ├── .github/workflows/
@@ -149,7 +149,7 @@ node scripts/new.mjs tutorial "为什么升级后插件会失效"
 | `web/data/search.json` | 轻量检索索引：id / kind / 标题 / 别名 / 标签 / 摘要 | 首页与搜索结果页（分栏） |
 | `web/data/taxonomy.json` | 分类树 + 每类计数 | 导航与筛选 |
 | `web/data/plugins/index.json` | 插件词条的轻量索引（规模 = 本站词条数，不是生态全量） | `#/plugins` 索引页 |
-| `web/data/zones/<zone>.json` | 分区页数据：标题 / 定义 / `howto` / `kinds`（收哪种词条）/ **`sections` 二级分区（含编辑综述 `introHtml`）** / `itemFields` 白名单 / 条目卡片（按二级分区分组、`entry` 链接与红链标记 / 标签 / 风险徽章 / 专属字段 / 完整度小标）。~~来源区块~~已废弃（[07](07-multi-source-zones.md)） | 十一个分区页 |
+| `web/data/zones/<zone>.json` | 分区页数据：标题 / 定义 / `howto` / `kinds`（收哪种词条）/ **`sections` 二级分区（含编辑综述 `introHtml`）** / `itemFields` 白名单 / 条目卡片（按二级分区分组、`entry` 链接与红链标记 / 标签 / 风险徽章 / 专属字段 / 完整度小标）。~~来源区块~~已废弃（[07](07-multi-source-zones.md)） | 十二个分区页 |
 | `web/data/entities.json` | 归并后的实体表：`id` / `keys` / `refs`（各源字段并列，带快照时间） | 分区页卡片、插件词条的外部源区 |
 | `web/data/links.json` | 外链与图片的可达性检查结果 | 页面上的「链接待核」标注 |
 

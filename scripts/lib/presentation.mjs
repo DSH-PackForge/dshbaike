@@ -89,6 +89,11 @@ export const KIND_EXTENSIONS = {
     lead: { type: 'facts', fields: ['form', 'language', 'requires'] },
     groups: ['basic', 'origin', 'license'],
   },
+  mcp: {
+    // 接一个 MCP 服务器，读者最先要知道的是「怎么接」和「接进来给模型什么」
+    lead: { type: 'facts', fields: ['transport', 'provides', 'auth'] },
+    groups: ['basic', 'compat', 'origin', 'license'],
+  },
   spec: {
     lead: { type: 'facts', fields: ['specVersion', 'specStatus', 'fileName', 'supersedes'] },
     groups: ['basic', 'origin', 'license'],

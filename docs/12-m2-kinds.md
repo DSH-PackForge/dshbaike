@@ -1,6 +1,6 @@
 # 12 · M2 词条类型扩展：让每个分区都有百科详情
 
-**问题**：十一个分区里只有 `plugins` / `packs`（以及零星几条）能链到词条。
+**问题**：十二个分区里只有 `plugins` / `packs`（以及零星几条）能链到词条。
 其余八个分区**在词条体系里根本没有对应的类型**——不是「还没写」，而是
 「写了也没地方发号」：`ENTRY_KINDS` 只有 `concept / plugin / tutorial / pack / launcher / source`，
 所以主题、技能、预设、配方、客户端、素材、工具链、规范这八类东西永远不可能有详情页。
@@ -9,13 +9,14 @@
 
 ---
 
-## 1. 十四种词条类型
+## 1. 十五种词条类型
 
 | kind | 中文 | 归属分区 | 编号前缀 |
 | --- | --- | --- | --- |
 | `client` | 客户端 | `clients` 界面与客户端 | `client/1` |
 | `launcher` | 启动器 | `launchers` 启动器 | `launcher/1` |
 | `plugin` | 插件 | `plugins` 插件 | `plugin/1` |
+| `mcp` | MCP 接入 | `mcps` MCP 与工具接入 | `mcp/1` |
 | `theme` | 主题与皮肤 | `themes` 主题与皮肤 | `theme/1` |
 | `asset` | 素材与本地化 | `assets` 素材与本地化 | `asset/1` |
 | `skill` | 技能包 | `skills` 技能包 | `skill/1` |
@@ -66,6 +67,7 @@ kinds: [client, plugin]
 | `preset` | `presetKind` 必 · `files` 必 · `install` 期 · `repo` · `permissions` · `provides` | `presetKind`: `agent` / `client`；`files`: 例如 `agent.cordis.yml` |
 | `recipe` | `recipeKind` 必 · `targetLayer` 必 · `dshRef` 期 · `snippet` · `why` | `recipeKind`: `config` / `snippet` / `instructions`；`targetLayer`: `project` / `userspace` / `machine` |
 | `pack` | （已有）`marketId` / `packType` / `dshVersions` / `launchers` / `composition` / `downloads` / `fitFor` | 不变 |
+| `mcp` | `transport` 必 · `provides` 期 · `auth` · `install` · `repo` · `docs` · `risk` | `transport`: `stdio` / `streamable-http` / `both`；接一台 MCP 服务器（桥接或具体服务器），重点是「怎么接」与「接进来给模型什么」 |
 | `tool` | `form` 必 · `language` 期 · `repo` 期 · `npm` · `install` · `provides` · `requires` | `form`: `cli` / `app` / `library` / `service`。共同点是「在 DSH 之外运行」 |
 | `spec` | `specVersion` 必 · `specStatus` 必 · `fileName` 必 · `url` 期 · `supersedes` | `specStatus`: `current` / `draft` / `deprecated`；`fileName`: 仓库内路径。**有争议时以它为准** |
 | `launcher` | （已有）`launcherId` / `url` / `support` / `platforms` / `supportedManifest` | 不变 |
@@ -81,7 +83,7 @@ kinds: [client, plugin]
 | `interface` 界面与入口 | `interface.desktop` / `interface.tui` / `interface.web` | `client` |
 | `launch` 启动与装载 | `launch.wrapper` / `launch.desktop` / `launch.cli` | `launcher` |
 | `appearance` 外观与素材 | `appearance.theme` / `appearance.asset` / `appearance.locale` | `theme` / `asset` |
-| `capability` 能力与配置 | `capability.skill` / `capability.preset` / `capability.recipe` | `skill` / `preset` / `recipe` |
+| `capability` 能力与配置 | `capability.skill` / `capability.preset` / `capability.recipe` / `capability.mcp` | `skill` / `preset` / `recipe` / `mcp` |
 | `tooling` 工具与实践 | `tooling.pack` / `tooling.install` / `tooling.index` | `tool` |
 
 `spec` 复用已有的 `ecosystem.spec` 叶子，不新增。
@@ -95,7 +97,7 @@ kinds: [client, plugin]
 ## 6. 验收（本轮）
 
 1. `node scripts/validate.mjs` 0 errors / 0 warnings；
-2. 十一个分区**每个至少有一条可点的百科详情**（红链不算）；
+2. 十二个分区**每个至少有一条可点的百科详情**（红链不算）；
 3. `zone.kinds` 声明生效：`build` 不再用正则猜 kind→分区；
 4. 按类型浏览页出现十四类，且空类型如实显示 0 条；
 5. 同一输入两次构建逐字节一致。

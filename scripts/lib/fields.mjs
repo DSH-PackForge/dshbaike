@@ -77,6 +77,8 @@ export const OPTIONAL_FIELDS = {
   preset: ['presetKind', 'files', 'install', 'repo', 'permissions', 'provides', 'licenseRefs', 'providedBy'],
   recipe: ['recipeKind', 'targetLayer', 'dshRef', 'snippet', 'why', 'providedBy'],
   tool: ['form', 'language', 'repo', 'npm', 'install', 'provides', 'requires', 'licenseRefs', 'providedBy'],
+  // MCP 接入（docs/12 §1）：一个 MCP 服务器/桥接，重点是「怎么接进来」与「接进来给模型什么」
+  mcp: ['transport', 'provides', 'auth', 'install', 'repo', 'npm', 'docs', 'risk', 'licenseRefs', 'providedBy'],
   spec: ['specVersion', 'specStatus', 'fileName', 'url', 'supersedes', 'repo', 'providedBy'],
 };
 
@@ -167,6 +169,7 @@ export const EXPECTED_FIELDS = {
   preset: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'presetKind', 'files', 'install', 'repo', 'tags', 'maintainers', 'updatedAt'],
   recipe: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'recipeKind', 'targetLayer', 'dshRef', 'why', 'tags', 'maintainers', 'updatedAt'],
   tool: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'form', 'language', 'repo', 'install', 'tags', 'maintainers', 'updatedAt'],
+  mcp: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'transport', 'provides', 'install', 'repo', 'tags', 'maintainers', 'updatedAt'],
   spec: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'specVersion', 'specStatus', 'fileName', 'url', 'tags', 'maintainers', 'updatedAt'],
 };
 
@@ -197,6 +200,8 @@ const FIELD_WEIGHT = {
   layer: 2,
   difficulty: 2,
   origin: 2,
+  transport: 2,
+  provides: 2,
   marketId: 2,
   packType: 2,
   launcherId: 2,
@@ -291,6 +296,10 @@ const FIELD_META = {
   why: ['为什么这样配未说', '补 why（一句话说明它改变什么行为）'],
   language: ['实现语言未标', '补 language'],
   requires: ['依赖未列', '可选：补 requires（它需要什么才能跑）'],
+  // ---- MCP 接入（docs/12 §1）----
+  transport: ['传输方式未标', '补 transport（stdio 还是 streamable-http）'],
+  auth: ['需要什么凭据未写', '可选：补 auth（要哪些 token / 环境变量——它决定风险等级）'],
+  docs: ['文档入口未给', '可选：补 docs（官方文档或协议说明的链接）'],
   specVersion: ['规格版本未给', '补 specVersion'],
   specStatus: ['规格状态未标', '补 specStatus（current / draft / deprecated）'],
   fileName: ['仓库内路径未给', '补 fileName（如 specs/manifest/v5.md）'],

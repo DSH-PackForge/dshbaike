@@ -132,6 +132,8 @@ const ENUMS = {
   recipeKind: ['config', 'snippet', 'instructions'],
   /** 形态：client 用 desktop/tui/web/cli/ide，tool 用 cli/app/library/service */
   form: ['desktop', 'tui', 'web', 'cli', 'ide', 'app', 'library', 'service'],
+  /** MCP 接入的传输方式（docs/12 §1）：与 dsh-mcp-client 的配置项一致 */
+  transport: ['stdio', 'streamable-http', 'both'],
 };
 
 /** 只有形如「实测 / 未核实」的口径词才算声明过适用性（规则 11 / 16） */
@@ -204,6 +206,7 @@ function main(argv) {
     checkZones(ctx, reporter, null);
     checkZoneKinds(ctx, reporter);
     checkZoneSections(ctx, reporter);
+    checkZoneOrder(ctx, reporter);
     checkSourcesConfig(ctx, reporter);
   } else {
     // 只校验给定文件：跨文件检查仍用全量数据
@@ -222,6 +225,7 @@ function main(argv) {
     checkZones(ctx, reporter, zoneTargets.length ? zoneTargets : null);
     checkZoneKinds(ctx, reporter);
     checkZoneSections(ctx, reporter);
+    checkZoneOrder(ctx, reporter);
     checkSourcesConfig(ctx, reporter);
   }
 
@@ -1160,6 +1164,55 @@ function checkZoneKinds(ctx, reporter) {
       24,
       `词条类型 \`${kind}\` 没有被任何分区声明`,
       `在 data/zones/<分区>.yml 里加 kinds: [${kind}]，否则它的词条没有所属分区`,
+    );
+  }
+}
+
+/**
+ * 规则 26：`data/registry.yml` 的 `zoneOrder` 必须与实际分区**完全对应**（docs/06 §2）。
+ *
+ * 顺序是编辑决定（docs/06 §2：先每天要用的，规范垫底），不是字母序——而它是**唯一来源**：
+ * 构建期的 zones/index.json 与站点侧栏都按它排。漏写一个分区 → 那个分区被排到最后；
+ * 多写一个不存在的 → 顺序表里有幽灵。两种都得在本地报出来，不能等上线才发现。
+ */
+function checkZoneOrder(ctx, reporter) {
+  const declared = Array.isArray(ctx.registry?.data?.zoneOrder) ? ctx.registry.data.zoneOrder.map(String) : [];
+  const actual = ctx.zones.map((z) => z.zone);
+  if (!declared.length) {
+    reporter.error(
+      displayPath(ctx.registry.path),
+      lineOf(ctx.registry.lines, 'zoneOrder'),
+      26,
+      'registry 里没有 zoneOrder——分区顺序会退化成按 id 字母序',
+      `补上完整顺序，例如：\n${actual.map((z) => `  - ${z}`).join('\n')}`,
+    );
+    return;
+  }
+  const seen = new Set();
+  for (const id of declared) {
+    if (seen.has(id)) {
+      reporter.error(displayPath(ctx.registry.path), lineOf(ctx.registry.lines, 'zoneOrder'), 26, `zoneOrder 里 \`${id}\` 出现了两次`);
+    }
+    seen.add(id);
+  }
+  const missing = actual.filter((id) => !seen.has(id));
+  const extra = declared.filter((id) => !actual.includes(id));
+  if (missing.length) {
+    reporter.error(
+      displayPath(ctx.registry.path),
+      lineOf(ctx.registry.lines, 'zoneOrder'),
+      26,
+      `zoneOrder 漏了这些分区：${missing.join(', ')}`,
+      '漏掉的分区会被排到最末（构建按 zoneOrder 排名，不在表里的排最后）',
+    );
+  }
+  if (extra.length) {
+    reporter.error(
+      displayPath(ctx.registry.path),
+      lineOf(ctx.registry.lines, 'zoneOrder'),
+      26,
+      `zoneOrder 里有不存在的分区：${extra.join(', ')}`,
+      '分区文件在 data/zones/<id>.yml；改过名字就同步这里',
     );
   }
 }

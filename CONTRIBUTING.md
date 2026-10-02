@@ -107,7 +107,7 @@ node scripts/build.mjs --base=/dshbaike/ && node scripts/dev-server.mjs 8812 --p
 
 ## 改分区层（资源整合）
 
-分区数据在 `data/zones/<zone>.yml`，十一个分区按「装配位置」分层（见 [06 §2](docs/06-zones-and-entries.md)）。
+分区数据在 `data/zones/<zone>.yml`，十二个分区按「装配位置」分层（见 [06 §2](docs/06-zones-and-entries.md)）。
 
 - 条目必填 `name` / `blurb` / `links`（至少一个链接）；`blurb` 是**你自己写的一句话**，不抄上游 description。
 - 想让一个条目指向词条，填 `entry: plugin/12`；留空即渲染成红链「写这一条」——**红链是允许的状态**，不是错误。

@@ -690,18 +690,25 @@ function buildGraph(model, entryOutputs, generatedAt) {
 }
 
 function buildZoneIndex(model, generatedAt) {
+  // 分区顺序的唯一来源是 data/registry.yml 的 `zoneOrder`（docs/06 §2）。
+  // 之前这里按 id 字母序排，于是侧栏读起来是「素材与本地化 → 界面与客户端 → 启动器…」——
+  // 顺序是编辑决定，不该由字母决定。未列进 zoneOrder 的排在最后（validate 规则 26 会报错）。
+  const order = Array.isArray(model.registry?.data?.zoneOrder) ? model.registry.data.zoneOrder.map(String) : [];
+  const rank = (id) => {
+    const i = order.indexOf(id);
+    return i < 0 ? order.length + 1 : i;
+  };
   return {
     generatedAt,
     // 字段名用 `count` 与 web/pedia.js 对齐（docs/10 §6 没冻结这个文件的字段名）
-    zones: sortBy(
-      model.zones.map((zone) => ({
+    zones: model.zones
+      .map((zone) => ({
         id: zone.zone,
         title: zone.data?.title ?? null,
         desc: zone.data?.desc ?? null,
         count: Array.isArray(zone.data?.items) ? zone.data.items.length : 0,
-      })),
-      (z) => z.id,
-    ),
+      }))
+      .sort((a, b) => rank(a.id) - rank(b.id) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)),
   };
 }
 
