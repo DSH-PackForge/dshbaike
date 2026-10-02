@@ -104,6 +104,15 @@
     deleted: { cls: 'danger', icon: '✖', label: '已撤下' }
   };
 
+  /**
+   * 风险徽章（⚠ 桌面操控 / ⚠ 网络访问 / …）当前**不渲染**。
+   *
+   * 2026-10-02 评审决定隐藏：它们先在标题行挤得标题换行，挪到卡片右栏后仍觉得不需要。
+   * 只关渲染、不删数据——`risk:` 字段、RISK_NOTE 的解释、docs/02 §3.2 的定义表都留着，
+   * 以后想恢复把这里改成 true 即可（卡片与词条页两处的渲染都走 riskBadges）。
+   */
+  var SHOW_RISK_BADGES = false;
+
   var RISK_ZH = {
     'desktop-control': '桌面操控',
     network: '网络访问',
@@ -1400,6 +1409,7 @@
   }
 
   function riskBadges(list) {
+    if (!SHOW_RISK_BADGES) return [];
     return asArray(list).map(function (r) {
       var key = String(r);
       var zh = RISK_ZH[key] || key;
