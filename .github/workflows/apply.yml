@@ -183,12 +183,15 @@ jobs:
 
           > ${MESSAGE}"
           fi
-          exit 1
+          # 有意**不**让这一步失败：拒绝是一个正确的结果（机器人按规矩挡住了），
+          # 不是一次故障。标成 failure 只会给维护者发无意义的失败通知。
 
       - name: 校验（机器人改的东西不能把站点弄坏）
+        if: steps.apply.outputs.ok == 'true'
         run: node scripts/validate.mjs
 
       - name: 开 PR（已执行过就跳过；组织禁止建 PR 时退回「一键开 PR」链接）
+        if: steps.apply.outputs.ok == 'true'
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
