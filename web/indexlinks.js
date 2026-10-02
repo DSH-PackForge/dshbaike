@@ -105,14 +105,9 @@
       var names2 = names.length ? names : tagsOnPage();
       if (mount(indexes, names2, true) || ++tries > 50) clearInterval(timer);
     }, 150);
-    if (window.MutationObserver) {
-      var obs = new MutationObserver(function () {
-        var names2 = names.length ? names : tagsOnPage();
-        if (mount(indexes, names2, true)) obs.disconnect();
-      });
-      obs.observe(document.body, { childList: true, subtree: true });
-      setTimeout(function () { obs.disconnect(); }, 9000);
-    }
+    // 只用轮询，不用 MutationObserver：后者挂在 document.body 的 subtree 上，
+    // 渲染分区页时会被触发成百上千次（每次都要重跑一次全文档查询），
+    // 而这里每 150ms 轮询一次足够（最多 50 次、命中即停，开销可以忽略）。
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

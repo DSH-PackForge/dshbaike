@@ -3482,10 +3482,23 @@
 
     // 构建期预渲染的内容（P0，docs/10 §7）：现在由 JS 接管，先移除它，
     // 否则正文会在页面上出现两份。无 JS 时它就留在那里当正文（这正是 P0 的目的）。
-    // 维度索引页（tag/*.html、platform/*.html）的正文全部是构建期写好的，
-    // 前端不渲染它，所以**不要移除**——只渲染站点导航与页脚。
-    var prerendered = page === 'static' ? null : document.querySelector('[data-prerender]');
-    if (prerendered && prerendered.parentNode) prerendered.parentNode.removeChild(prerendered);
+    // 构建期预渲染的内容（P0，docs/10 §7）：**不要在这里删**。
+    // 各渲染器自己会 clear(main)，那一刻预渲染块才被真正的界面替换掉——在那之前它是
+    // 可见的正文/卡片，于是"点击分区 → 立刻有内容"。此前一上来就删，用户看到的是空白，
+    // 真实网络还要等一个完整往返，所以感觉卡。维度索引页（page === 'static'）永远不删。
+    // 注意：预渲染块不在任何渲染器的选择器范围内（没有 zone-cards 之类的 id），
+    // 所以它不会干扰筛选、计数这些逻辑。
+
+    // 这一页自己的数据：与外壳数据**并行**取（此前是等外壳渲染完再取，白等一个往返）。
+    // 只处理确定性的两种页型；hash 浏览（#/browse/…）走原来的路径。
+    var pageData = null;
+    var browseKind0 = browseKindFromHash();
+    if (!browseKind0 && page === 'entry') {
+      pageData = DATA.get('entries/' + (P.kind || '') + '-' + P.n + '.json');
+    } else if (!browseKind0 && page === 'zone') {
+      var zoneId0 = P.kind || P.zone || (document.body && document.body.getAttribute('data-zone'));
+      if (isPresent(zoneId0)) pageData = DATA.get('zones/' + zoneId0 + '.json');
+    }
 
     // 顶栏与页脚都要用 registry / zones/index，所以先取数据再渲染外壳。
     var pre = Promise.all([
@@ -3506,12 +3519,12 @@
           var kind = P.kind || (document.body && document.body.getAttribute('data-kind'));
           var n = P.n;
           if (!isPresent(kind) || !isPresent(n)) throw new Error('window.__PEDIA__ 缺少 kind/n');
-          return DATA.get('entries/' + kind + '-' + n + '.json').then(renderEntry);
+          return (pageData || DATA.get('entries/' + kind + '-' + n + '.json')).then(renderEntry);
         }
         if (page === 'zone') {
           var zoneId = P.kind || P.zone || (document.body && document.body.getAttribute('data-zone'));
           if (!isPresent(zoneId)) throw new Error('window.__PEDIA__ 缺少 kind（分区 id）');
-          return DATA.get('zones/' + zoneId + '.json').then(function (zone) {
+          return (pageData || DATA.get('zones/' + zoneId + '.json')).then(function (zone) {
             if (!isPresent(zone.id)) zone.id = zoneId;
             if (!GLOBAL.zoneIndex) GLOBAL.zoneIndex = {};
             if (!GLOBAL.zoneIndex[zoneId]) {
