@@ -3183,12 +3183,23 @@ body {
    索引页又是另一种。修订版只认**正文区 `main`**（不再逐个列举容器类名——那一定会漏，
    这一版先漏的就是分区页），规则本身仍是按角色分：
 
-     · **文字类**（p / ul / ol / blockquote / dl / h2–h4）→ 限 --max-prose，保证行宽舒适；
+     · **文字类**（p / blockquote / dl / h2–h4）→ 限 --max-prose，保证行宽舒适；
+     · **列表**（ul / ol）→ **分情况**：正文容器里的列表是文字（限宽），页面级的列表是布局
+       （首页「十二个一级分区」的网格、类型 chip 行……）→ 必须满宽；
      · **宽块**（table / pre / figure / img / 卡片列表 / 数据框 / 通知）→ 用满正文列；
      · **宽块内部的文字**（表格单元格、卡片说明）→ 跟着块走，不受行宽限制。
 
    本节放在文件末尾，靠同特异性下「后者胜」覆盖上面那套。 */
-main :is(p, ul, ol, blockquote, dl, h2, h3, h4) {
+main :is(p, blockquote, dl, h2, h3, h4) {
+  max-width: var(--max-prose);
+}
+
+/* 列表只在**正文容器**里限宽。上一版把 `ul` 与段落一起限了，于是首页那个网格
+   （`ul.zonegrid`，12 个分区卡片）被压到 903px，而它所在的 section 是 1700px ——
+   评审就是这么发现「十二个一级分区怎么变窄了」。 */
+.prose :is(ul, ol),
+.subsec__intro :is(ul, ol),
+.prerender :is(ul, ol) {
   max-width: var(--max-prose);
 }
 
