@@ -3047,8 +3047,13 @@
     }
 
     return el('li', { class: 'card' }, [
-      el('div', { class: 'card__head' }, [nameNode].concat(sourceBadges).concat(risk)),
-      el('div', { class: 'card__actions' }, entryNode),
+      // 标题行只放名字与来源徽章；风险徽章在右栏（那里第 1–2 行本来就空着，
+      // 挤在标题里会把标题挤换行——评审提过）
+      el('div', { class: 'card__head' }, [nameNode].concat(sourceBadges)),
+      el('div', { class: 'card__actions' }, [
+        entryNode,
+        risk.length ? el('div', { class: 'card__risk' }, risk) : null
+      ]),
       el('p', { class: 'card__body', text: isPresent(it.blurb) ? String(it.blurb) : '（一句话介绍待补）' }),
       fieldBits.length ? el('div', { class: 'card__fields' }, fieldBits) : null,
       el('div', { class: 'card__meta' }, [
