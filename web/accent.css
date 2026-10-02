@@ -16,6 +16,14 @@
      · 青绿（#0f7a70 / 暗 #3fd0bd）—— 本站原品牌色
    换主题色时**底色/边框/文字/语义色一起切**，不会出现"蓝品牌配青灰底"。
    对比度已算过（docs/08）：正文 16.79:1、品牌链接 5.14:1、成功 4.79:1，均达标。
+
+   **暗色下「壳」与「面」分家（2026-10-02）**：暗色时只把**两处背景**压成中性黑灰
+   #14171a —— 右侧主窗口的画布（--bg-page）与左侧导航栏（--bg-rail）；
+   **卡片与其余的面保持各主题色原来的深蓝 / 深青**（--bg / --bg-subtle / --bg-inset /
+   --border 全部回到改前那套值），于是暗色下是「黑灰底 + 主题色卡片」的黑板感，
+   而不是整屏黑灰。
+   注意：侧栏原来与卡片共用 --bg，为了让「黑灰侧栏」与「主题色卡片」能同时成立，
+   侧栏改用 --bg-rail（声明在 pedia.css，亮色下等于 --bg，即白色）。
    ========================================================================== */
 
 /* ① 海洋（默认） */
@@ -52,7 +60,8 @@
     --brand-tint-strong: rgba(124, 196, 255, 0.18);
     --link: #8fd0ff;
     --link-visited: #b9a3f0;
-    --bg-page: #060f1d;
+    --bg-page: #14171a;
+    --bg-rail: #14171a;
     --bg: #0c1c2f;
     --bg-subtle: #112741;
     --bg-inset: #16314f;
@@ -75,7 +84,8 @@
   --brand-tint-strong: rgba(124, 196, 255, 0.18);
   --link: #8fd0ff;
   --link-visited: #b9a3f0;
-  --bg-page: #060f1d;
+  --bg-page: #14171a;
+  --bg-rail: #14171a;
   --bg: #0c1c2f;
   --bg-subtle: #112741;
   --bg-inset: #16314f;
@@ -115,7 +125,8 @@
     --brand-tint: rgba(139, 157, 255, 0.12);
     --brand-tint-strong: rgba(139, 157, 255, 0.22);
     --link: #a5b4ff;
-    --bg-page: #0b0e17;
+    --bg-page: #14171a;
+    --bg-rail: #14171a;
     --bg: #121624;
     --bg-subtle: #171c2c;
     --bg-inset: #1d2334;
@@ -133,7 +144,8 @@
   --brand-tint: rgba(139, 157, 255, 0.12);
   --brand-tint-strong: rgba(139, 157, 255, 0.22);
   --link: #a5b4ff;
-  --bg-page: #0b0e17;
+  --bg-page: #14171a;
+  --bg-rail: #14171a;
   --bg: #121624;
   --bg-subtle: #171c2c;
   --bg-inset: #1d2334;
@@ -169,7 +181,8 @@
     --brand-tint: rgba(63, 208, 189, 0.1);
     --brand-tint-strong: rgba(63, 208, 189, 0.2);
     --link: #67c9dd;
-    --bg-page: #0a1413;
+    --bg-page: #14171a;
+    --bg-rail: #14171a;
     --bg: #111c1b;
     --bg-subtle: #16211f;
     --bg-inset: #1c2927;
@@ -187,7 +200,8 @@
   --brand-tint: rgba(63, 208, 189, 0.1);
   --brand-tint-strong: rgba(63, 208, 189, 0.2);
   --link: #67c9dd;
-  --bg-page: #0a1413;
+  --bg-page: #14171a;
+  --bg-rail: #14171a;
   --bg: #111c1b;
   --bg-subtle: #16211f;
   --bg-inset: #1c2927;
