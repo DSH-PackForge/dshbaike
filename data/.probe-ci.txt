@@ -1,0 +1,1 @@
+﻿probe: 验证 bot/** 分支不创建 pull_request 运行（随后删除）
