@@ -83,7 +83,7 @@ if (sameSet) {
   process.stdout.write(`       只在 apply.yml 有：${routed.filter((r) => !declared.includes(r)).join(' ') || '（无）'}\n`);
 }
 
-const templates = collect(EXTRA[0]);
+const templates = collect(EXTRA[0]).filter((p) => path.basename(p) !== 'config.yml');
 const noLabel = templates
   .map((p) => ({ p, src: fs.readFileSync(p, 'utf8') }))
   .filter(({ src }) => !/^labels:/m.test(src))
