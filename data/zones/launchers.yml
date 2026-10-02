@@ -1,5 +1,6 @@
-# 分区层数据（docs/06 §2、docs/07 §6）。启动器不是「收录问题」而是「身份认领问题」：
-# canonical ID 才让整合包能声明支持谁（manifest v5 §13 的 launchers 字段）。
+# 分区层数据（docs/06 §2、docs/07 §6）。这一区按「启动器项目」列（有仓库就算），
+# 不限于认领过 canonical ID 的那几个；卡片上的 launcherId 标出认领状态——
+# 认领了才能被整合包在 manifest v5 §13 的 launchers 字段里声明。
 zone: launchers
 title: 启动器
 desc: 怎么把 DSH 装上、怎么起得来——图形启动器、包装器与命令行入口都在这一层。装包、切 profile、多版本并存这些事，各家做法不同，所以这里按「启动器项目」列，而不是只列认领过 ID 的那几个。
