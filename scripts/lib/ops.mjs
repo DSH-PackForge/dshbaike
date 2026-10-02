@@ -248,9 +248,10 @@ export const OPS = {
   /** 认领维护：把用户名加进 maintainers（唯一一处改动） */
   claim: {
     id: 'claim',
-    title: '接手维护',
-    // 兼容旧标题：这个操作以前叫「认领维护」，历史 Issue 仍然要能解析
-    alts: ['认领维护'],
+    title: '担任维护者',
+    // 兼容旧标题：这个操作先后叫过「认领维护」「接手维护」，历史 Issue 都要能解析
+    // （「认领」像失物招领、「接手」像二手——都不准确，所以最终用「担任维护者」）
+    alts: ['接手维护', '认领维护'],
     summary: (v) => `把 ${v.user} 加进 maintainers`,
     apply({ target, form }) {
       const id = (form['词条 id'] || target || '').trim().replace(/^`|`$/g, '');

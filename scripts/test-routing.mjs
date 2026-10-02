@@ -25,16 +25,17 @@ const check = (name, got, want) => {
 console.log('== ① 路由：标题 → 操作 + 编号 ==');
 // 一张表单 = 一个意图：站点深链把编号写进标题（GitHub 不能预填表单字段，只能预填标题）
 const routes = [
-  ['[接手维护] plugin/1', {}, 'claim', 'plugin/1'],
-  ['[认领维护] plugin/1', {}, 'claim', 'plugin/1'], // 旧标题仍要能解析
-  ['[接手维护] plugin/1', { 'GitHub 用户名': 'someone' }, 'claim', 'plugin/1'],
+  ['[担任维护者] plugin/1', {}, 'claim', 'plugin/1'],
+  ['[接手维护] plugin/1', {}, 'claim', 'plugin/1'], // 旧标题仍要能解析
+  ['[认领维护] plugin/1', {}, 'claim', 'plugin/1'], // 更早的旧标题也要能解析
+  ['[担任维护者] plugin/1', { 'GitHub 用户名': 'someone' }, 'claim', 'plugin/1'],
   ['[改一个字段] concept/1', {}, 'field', 'concept/1'],
   ['[改正文里的一句话] plugin/1', {}, 'replace', 'plugin/1'],
   ['[补充分区条目] themes', {}, 'zone-item', 'themes'],
   // 兼容历史 Issue：早期用了「内容变更 + 操作名」的合并形式，仍然认得
   ['[内容变更] 改一个字段 concept/1', {}, 'field', 'concept/1'],
   ['[内容变更] 随便什么', { 操作类型: '改一个字段' }, 'field', '随便什么'],
-  // 不由机器人处理的两类（人来接手），以及无前缀的
+  // 不由机器人处理的两类（由人来处理），以及无前缀的
   ['[站点改进] 导航太绕', {}, null, null],
   ['[纠错] 某个词条', {}, null, null],
   ['不是方括号标题', {}, null, null],
@@ -69,7 +70,7 @@ check('改一个字段：拿到新内容而不是写文件', [okCase.ok, Array.i
 check('新内容里确实改了那一行', /updatedAt: 2026-12-31/.test(okCase.writes[0].text), true);
 check('带回署名（供 PR 归因）', okCase.credited, 'some-contributor');
 const auto = OPS.claim.apply({ target: 'plugin/1', form: { 'GitHub 用户名': 'someone' } });
-check('认领维护：署名信息一并返回', [auto.ok, auto.credited], [true, 'someone']);
+check('担任维护者：署名信息一并返回', [auto.ok, auto.credited], [true, 'someone']);
 const zoneOk = OPS['zone-item'].apply({ target: '', form: { ...U, 分区: 'themes', '二级分区 id': 'packs', 名称: 'n', 一句话介绍: 'b', 外部链接: 'https://x.com' } });
 check('补充分区条目：也带回署名', [zoneOk.ok, zoneOk.credited], [true, 'some-contributor']);
 check('每个操作都声明了「要用户名」——源码里能看出来',

@@ -1365,7 +1365,7 @@ function renderTagsHub(template, indexes) {
 /* 维护者名册（maintainers.html）                                       */
 /*                                                                     */
 /* 数据源就是词条自己的 `maintainers`（词条级维护者，docs/14）——不另立名单， */
-/* 所以谁接手了哪一条，永远和词条页面说的是同一份事实。                    */
+/* 所以谁维护了哪一条，永远和词条页面说的是同一份事实。                    */
 /* ------------------------------------------------------------------ */
 
 /** maintainers 可能是 `"login"`（单元素被 YAML 解析成标量）、`[a, b]`、空数组或 null */
@@ -1375,7 +1375,7 @@ function normalizeMaintainers(value) {
   return list.map((v) => String(v).trim()).filter(Boolean);
 }
 
-/** 登录名 → 他接手的词条 */
+/** 登录名 → 他维护的词条 */
 function collectMaintainers(entryOutputs) {
   const by = new Map();
   for (const output of entryOutputs.values()) {
@@ -1395,12 +1395,12 @@ function renderMaintainersPage(template, entryOutputs) {
   const L = [];
   L.push('<div class="prerender" data-prerender="maintainers">');
   L.push('<h1>维护者名册</h1>');
-  L.push('<p>本站的词条可以由人<strong>接手维护</strong>：接手之后，改这一条的请求会先请你过目，' +
-    '上游变了、内容过时了也能 @ 到你。这一页把所有接手过词条的人挂在一起——' +
+  L.push('<p>本站的词条可以由人<strong>担任维护者</strong>：担任之后，改这一条的请求会先请你过目，' +
+    '上游变了、内容过时了也能 @ 到你。这一页把所有愿意维护词条的人挂在一起——' +
     '名单不是我们指定的，而是每条词条自己的 <code>maintainers</code> 汇总出来的。</p>');
 
   if (!people.length) {
-    L.push('<p class="faint">现在还没有人接手任何词条。第一条会出现在这里——' +
+    L.push('<p class="faint">现在还没有人担任维护者。第一位会出现在这里——' +
       '在任意词条页点「我来维护」，或者直接在 Issue 里说一声就行。</p>');
   } else {
     L.push('<ul class="roster">');
@@ -1414,7 +1414,7 @@ function renderMaintainersPage(template, entryOutputs) {
       L.push('<span class="roster__body">');
       L.push(`<a class="roster__name" href="https://github.com/${encodeURIComponent(person.login)}" ` +
         `rel="noopener noreferrer external" target="_blank">${login}</a>`);
-      L.push(`<span class="roster__count">接手 ${person.entries.length} 条</span>`);
+      L.push(`<span class="roster__count">维护 ${person.entries.length} 条</span>`);
       L.push('<span class="roster__entries">');
       L.push(sortBy(person.entries, (e) => e.kind === 'launcher' ? 0 : 1)
         .map((e) => `<a href="${e.kind}/${e.n}.html">${escapeHtml(e.title)}</a>`)
@@ -1428,7 +1428,7 @@ function renderMaintainersPage(template, entryOutputs) {
       '想让你的名字也出现在这里：在词条页点「我来维护」。</p>');
   }
 
-  L.push('<h2>接手之后你会负责什么</h2>');
+  L.push('<h2>担任维护者之后你会负责什么</h2>');
   L.push('<ul>');
   L.push('<li>这一条被改动前，会先请你过目（你就是它的第一道关）；</li>');
   L.push('<li>上游变了、链接挂了、数字过时了，我们可以 @ 到你；</li>');
@@ -1440,7 +1440,7 @@ function renderMaintainersPage(template, entryOutputs) {
   L.push('</div>');
   return applyTemplate(template, {
     title: '维护者名册 | DSH百科',
-    desc: `接手维护 DSH百科词条的人：共 ${people.length} 位，覆盖 ${people.reduce((a, p) => a + p.entries.length, 0)} 条词条。`,
+    desc: `担任 DSH百科词条维护者的人：共 ${people.length} 位，覆盖 ${people.reduce((a, p) => a + p.entries.length, 0)} 条词条。`,
     prerender: L.join('\n'),
     canonical: `${SITE_URL}/maintainers.html`,
     payload: { base: BASE, page: 'static', kind: null, n: null, title: '维护者名册' },
