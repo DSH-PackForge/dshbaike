@@ -1,10 +1,12 @@
-name: 机器人代改（两道闸：先审请求，再审 PR）
+name: 机器人代改（两道闸：Issue 里 /approve，PR 再 review）
 
 # 两道闸（评审定调）：
-#   ① **机器人动手之前**先审一遍：Issue 提交后立刻干跑（不写文件），把「它打算改什么」
-#      回帖出来，然后整个 job 停在需要审批的环境 `bot-apply` 上，等维护者点 Approve；
-#   ② 批准后机器人才真的改文件、跑校验、开 PR——那个 PR **还需要再审一次**才能合并
-#      （main 的分支保护要求 Code Owners 批准，见 docs/14 §4）。
+#   ① **机器人动手之前**先审一遍——维护者在 **Issue 里回复 `/approve`**：
+#      · 提交时先「干跑」（不写文件），把机器人打算改什么回帖出来（带**审核指纹**）；
+#      · 维护者看完回复 `/approve`，机器人才开始执行；
+#      · 三道保险：只有有写权限的人能批准、指纹锁定「批准时看到的那一版」、
+#        同一个请求不会被执行两次。
+#   ② 执行完开 PR，**merge 之前再批一次**：main 的分支保护要求 Code Owners 批准（docs/14 §4）。
 #
 # 覆盖的操作（scripts/lib/ops.mjs 声明，Issue 标题前缀决定用哪个）：
 #   [认领维护] [改一个字段] [改正文里的一句话] [补充分区条目]
@@ -13,6 +15,8 @@ name: 机器人代改（两道闸：先审请求，再审 PR）
 on:
   issues:
     types: [opened, edited]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
@@ -21,21 +25,13 @@ permissions:
 
 concurrency:
   group: apply-${{ github.event.issue.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  # ---- 第一道闸的前半段：只算不改，并立刻回帖 ----------------------------------
+  # ---- 第一道闸（a）：提交后立刻干跑并回帖，等维护者 /approve -------------------
   check:
-    if: startsWith(github.event.issue.title, '[')
+    if: github.event_name == 'issues' && startsWith(github.event.issue.title, '[')
     runs-on: ubuntu-latest
-    outputs:
-      ok: ${{ steps.dry.outputs.ok }}
-      summary: ${{ steps.dry.outputs.summary }}
-      files: ${{ steps.dry.outputs.files }}
-      op: ${{ steps.dry.outputs.op }}
-      reason: ${{ steps.dry.outputs.reason }}
-      escalate: ${{ steps.dry.outputs.escalate }}
-      message: ${{ steps.dry.outputs.message }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -61,18 +57,21 @@ jobs:
           SUMMARY: ${{ steps.dry.outputs.summary }}
           FILES: ${{ steps.dry.outputs.files }}
           MESSAGE: ${{ steps.dry.outputs.message }}
+          FP: ${{ steps.dry.outputs.fingerprint }}
         run: |
           set -euo pipefail
           if [ "$OK" = "true" ]; then
-            gh issue comment "$ISSUE" --body "🕓 **已收到，等维护者审核后才动手。**
+            gh issue comment "$ISSUE" --body "🕓 **已收到，等维护者批准后才动手。**
 
           机器人打算这么改（**还没有写任何文件**）：
 
           > ${SUMMARY}
           > 文件：\`${FILES}\`
 
-          维护者在 Actions 页面点 **Approve** 之后，它才会真的写入并开 PR；
-          那个 PR 还要再审一次才能合并。若被拒绝，本 Issue 会保持打开，可以继续讨论。"
+          维护者看完在**本 Issue 里回复 \`/approve\`** 即可执行；执行完会开 PR，
+          那个 PR 还要再审一次才能合并。
+
+          审核指纹：\`${FP}\`（只看这一版；正文在这之后被改过的话，机器人会拒绝执行并要求重新批准）"
           elif [ "$ESCALATE" = "true" ]; then
             gh issue comment "$ISSUE" --body "🙅 这个改动机器人**不能安全地做**：
 
@@ -93,11 +92,63 @@ jobs:
           改一下本 Issue 里的表单内容就会自动重试（不必新开一个 Issue）。"
           fi
 
-  # ---- 第一道闸的后半段：维护者批准后，才真的写文件、开 PR ---------------------
+  # ---- 第一道闸（b）：维护者回复 /approve 之后才放行 ---------------------------
+  gate:
+    if: >
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      startsWith(github.event.comment.body, '/approve')
+    runs-on: ubuntu-latest
+    outputs:
+      allowed: ${{ steps.gate.outputs.allowed }}
+      fingerprint: ${{ steps.gate.outputs.fingerprint }}
+      actor: ${{ steps.gate.outputs.actor }}
+    steps:
+      - name: 校验批准人权限 + 取出被审那一版的指纹
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          COMMENT_USER: ${{ github.event.comment.user.login }}
+          COMMENT_AT: ${{ github.event.comment.created_at }}
+        run: |
+          set -euo pipefail
+          echo "allowed=false" >> "$GITHUB_OUTPUT"
+
+          if [ "$COMMENT_USER" = "github-actions[bot]" ]; then
+            echo "机器人的评论不算批准"; exit 0
+          fi
+
+          # 保险一：只有对这个仓库有写权限的人能批准（组织成员但只读也不行）
+          perm=$(gh api "repos/${REPO}/collaborators/${COMMENT_USER}/permission" --jq '.permission' 2>/dev/null || echo none)
+          echo "批准人 ${COMMENT_USER} 的权限：${perm}"
+          case "$perm" in
+            admin|write) ;;
+            *)
+              gh issue comment "$ISSUE" --body "ℹ️ \`/approve\` 只有对本仓库有**写权限**的人可以下（@${COMMENT_USER} 目前是 \`${perm}\`）。"
+              exit 0 ;;
+          esac
+
+          # 保险二：取「批准这条评论**之前**」机器人回帖里的审核指纹——
+          # 也就是维护者当时看到的那一版；正文若在那之后被改过，apply 阶段会拒绝执行。
+          fp=$(gh api "repos/${REPO}/issues/${ISSUE}/comments?per_page=100" \
+                --jq ".[] | select(.created_at < \"${COMMENT_AT}\") | .body" \
+              | grep -oE '审核指纹：`[0-9a-f]{12}`' | tail -n 1 | grep -oE '[0-9a-f]{12}' || true)
+          if [ -z "${fp:-}" ]; then
+            gh issue comment "$ISSUE" --body "😕 找不到这次请求的审核指纹（可能提交时干跑没成功）。请维护者先看一眼机器人的回帖，或让作者重新提交一次。"
+            exit 0
+          fi
+
+          echo "fingerprint=$fp" >> "$GITHUB_OUTPUT"
+          echo "actor=$COMMENT_USER" >> "$GITHUB_OUTPUT"
+          echo "allowed=true" >> "$GITHUB_OUTPUT"
+          echo "已放行：指纹 $fp"
+
+  # ---- 执行：批准之后才真的写文件、跑校验、开 PR -------------------------------
   apply:
-    needs: check
-    if: needs.check.outputs.ok == 'true'
-    environment: bot-apply          # ← 卡在这里等维护者 Approve（环境保护规则）
+    needs: gate
+    if: needs.gate.outputs.allowed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -105,17 +156,39 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: 真正改文件
+      - name: 真正改文件（指纹不符则拒绝）
         id: apply
+        continue-on-error: true
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          EXPECT_FINGERPRINT: ${{ needs.gate.outputs.fingerprint }}
         run: node scripts/apply-issue.mjs
+
+      - name: 指纹不符 / 操作失败时的回帖
+        if: steps.apply.outputs.ok != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          MESSAGE: ${{ steps.apply.outputs.message }}
+          REASON: ${{ steps.apply.outputs.reason }}
+        run: |
+          set -euo pipefail
+          if [ "$REASON" = "stale-approval" ]; then
+            gh issue comment "$ISSUE" --body "⚠️ 没有执行：
+
+          > ${MESSAGE}"
+          else
+            gh issue comment "$ISSUE" --body "😕 执行失败（\`${REASON}\`）：
+
+          > ${MESSAGE}"
+          fi
+          exit 1
 
       - name: 校验（机器人改的东西不能把站点弄坏）
         run: node scripts/validate.mjs
 
-      - name: 开 PR（组织策略禁止时退回「一键开 PR」链接）
+      - name: 开 PR（已执行过就跳过；组织禁止建 PR 时退回「一键开 PR」链接）
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -123,11 +196,21 @@ jobs:
           OP: ${{ steps.apply.outputs.op }}
           SUMMARY: ${{ steps.apply.outputs.summary }}
           FILES: ${{ steps.apply.outputs.files }}
-          ACTOR: ${{ github.actor }}
+          ACTOR: ${{ needs.gate.outputs.actor }}
         run: |
           set -euo pipefail
-          branch="bot/${OP}-$(echo "$ISSUE" | tr '/' '-')"
+          branch="bot/${OP}-${ISSUE}"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+          # 保险三：同一个请求不重复执行
+          existing=$(gh pr list --head "$branch" --state all --json url --jq '.[0].url // empty' 2>/dev/null || true)
+          if [ -n "$existing" ]; then
+            echo "这个请求已经执行过：$existing"
+            echo "mode=duplicate" >> "$GITHUB_OUTPUT"
+            echo "url=$existing" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           git config user.name "dshbaike-bot"
           git config user.email "bot@users.noreply.github.com"
           git checkout -B "$branch"
@@ -138,13 +221,13 @@ jobs:
           git commit -m "chore(${OP}): ${SUMMARY}（来自 Issue #${ISSUE}）"
           git push --force-with-lease -u origin "$branch"
           body=$(printf '%s\n' \
-            "由 Issue #${ISSUE} 触发的自动改动。**维护者已在第一道闸批准过这个请求**，" \
-            "这里是第二道闸：请再审一遍具体改了什么，然后再合并。" \
+            "由 Issue #${ISSUE} 触发的自动改动，批准人：@${ACTOR}。" \
             "" \
             "- 操作：\`${OP}\`" \
             "- 改了：${SUMMARY}" \
             "- 文件：\`${FILES}\`（**只动这些**）" \
             "" \
+            "第一道闸（请求审批）已过；**这是第二道闸：请再审一遍具体改了什么**，然后再合并。" \
             "校验器（validate.mjs）已通过。机器人不会自己合并。")
           if url=$(gh pr create --base main --head "$branch" \
               --title "chore(${OP}): ${SUMMARY}（#${ISSUE}）" \
@@ -158,7 +241,7 @@ jobs:
           fi
 
       - name: 回帖（PR 链接）
-        if: always()
+        if: always() && steps.apply.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE: ${{ github.event.issue.number }}
@@ -173,6 +256,8 @@ jobs:
 
           **还有第二道闸**：维护者审一遍 PR 并批准后才会合并（main 的分支保护要求 Code Owners 批准）。"
             gh issue close "$ISSUE" --reason completed || true
+          elif [ "$MODE" = "duplicate" ]; then
+            gh issue comment "$ISSUE" --body "ℹ️ 这个请求已经执行过了：${PR_URL}"
           elif [ "$MODE" = "manual" ]; then
             gh issue comment "$ISSUE" --body "✅ 改动已经做好并推到分支 \`${BRANCH}\`，**只差最后一下**：
 
