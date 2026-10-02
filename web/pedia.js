@@ -1468,12 +1468,16 @@
     var kind = entry.kind || (window.__PEDIA__ || {}).kind || '';
     var n = isPresent(entry.n) ? entry.n : (window.__PEDIA__ || {}).n;
     var id = isPresent(entry.id) ? entry.id : kind + '/' + n;
-    var zone = entry.zone && isPresent(entry.zone.id) ? entry.zone : { id: KIND_ZONE[kind] || 'plugins', title: zoneMeta(KIND_ZONE[kind] || 'plugins').label };
+    // 跨分区类型（source / concept / tutorial）不属于任何分区：KIND_ZONE 里它们显式是 null。
+    // 以前这里用 `|| 'plugins'` 兜底，于是这类词条被当成「插件区」——侧栏高亮、面包屑、
+    // 「属于：」与「相关」框全都指向插件区。看 source/3 的截图才发现。
+    var zoneId = entry.zone && isPresent(entry.zone.id) ? entry.zone.id : KIND_ZONE[kind];
+    var zone = zoneId ? { id: zoneId, title: zoneMeta(zoneId).label } : null;
     var main = $('#main');
     clear(main);
 
     if (entry.status === 'deleted') {
-      renderMasthead({ currentZone: zone.id });
+      renderMasthead({ currentZone: zone ? zone.id : null });
       main.appendChild(tombstone(entry, id, kind, zone));
       bindCopyButtons(main);
       return;
@@ -1500,7 +1504,9 @@
       dataFootnote(entry, id)
     ]));
 
-    renderMasthead({ currentZone: zone.id });
+    // 跨分区类型（source / concept / tutorial）没有所属分区 → 侧栏不高亮任何一格。
+    // 这一行以前是 `zone.id`，null 时会抛异常，整页后半段（面包屑、页签绑定）都渲染不出来。
+    renderMasthead({ currentZone: zone ? zone.id : null });
 
     if (entry.title) document.title = String(entry.title) + ' | DSH百科';
 
@@ -1595,9 +1601,12 @@
 
   function crumbs(entry, kind, zone) {
     var items = [
-      el('li', {}, el('a', { href: BASE, text: '首页' })),
-      el('li', {}, el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label }))
+      el('li', {}, el('a', { href: BASE, text: '首页' }))
     ];
+    // 跨分区类型没有所属分区，这一格就不出现——不编一个假的分区出来
+    if (zone && zone.id) {
+      items.push(el('li', {}, el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label })));
+    }
     var cats = asArray(entry.meta && entry.meta.category);
     if (cats.length) {
       items.push(el('li', {}, el('span', { text: catLabel(cats[0]) })));
@@ -1626,7 +1635,11 @@
     if (isPresent(entry.aliases)) {
       subBits.push(frag([document.createTextNode('别名：'), document.createTextNode(asArray(entry.aliases).join(' · '))]));
     }
-    subBits.push(frag([document.createTextNode('属于：'), el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label })]));
+    // 跨分区类型（source / concept / tutorial）不属于任何分区，`zone.id` 是空的——
+    // 之前无条件渲染，页面上就留下一个空的「属于：」和一个空「相关」框（看截图才发现）。
+    if (zone && zone.id) {
+      subBits.push(frag([document.createTextNode('属于：'), el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label })]));
+    }
 
     var tags = asArray(meta.tags);
     if (tags.length) {
@@ -1710,7 +1723,8 @@
     return el('article', { class: 'tombstone' }, [
       el('nav', { class: 'crumbs', 'aria-label': '面包屑' }, el('ol', {}, [
         el('li', {}, el('a', { href: BASE, text: '首页' })),
-        el('li', {}, el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label })),
+        // 同上：撤下的词条若没有所属分区，不编一个
+        zone && zone.id ? el('li', {}, el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label })) : null,
         el('li', {}, el('span', { text: entry.title || id, 'aria-current': 'page' }))
       ])),
       el('h1', { text: '本词条已撤下' }),
@@ -1915,7 +1929,7 @@
     out.push(completenessBlock(entry, id));
     // 「相关」放在完整度之后：它是短的跳转列表，应该不滚动就能看到；
     // 它此前是正文左边独立的一列（240px），评审判定「太占空间」，已并入信息栏
-    if (zone) out.push(relatedBlock(entry, zone));
+    if (zone && zone.id) out.push(relatedBlock(entry, zone));
     out.push(infoTable(entry, id, kind));
     out.push(tocBlock(toc));
     if (kind === 'plugin') out.push(dropZone({ hit: 'profiles' }));
