@@ -264,7 +264,9 @@
     var name = String(tag);
     var style = TAG_STYLE[name] || {};
     var attrs = { class: o.className || 'tag' };
-    if (style.tone) attrs.dataset = { tone: style.tone };
+    // data-tag 是**筛选的键**（筛选逻辑读 chip.getAttribute('data-tag')），一定要带上：
+    // 只有 data-tone 的话，点标签等于传了空值 → 页面显示「没有匹配的条目」（线上踩过）。
+    attrs.dataset = style.tone ? { tag: name, tone: style.tone } : { tag: name };
     var children = [];
     if (style.icon && TAG_ICONS[style.icon]) {
       children.push(el('span', { class: 'tag__icon', 'aria-hidden': 'true', html: TAG_ICONS[style.icon] }));
