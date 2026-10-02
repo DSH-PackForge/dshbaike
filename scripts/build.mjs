@@ -62,6 +62,13 @@ const MANIFEST_NAME = '.pedia-manifest.json';
  */
 let BASE = '/';
 
+/**
+ * 站点对外地址（写进 canonical / og:url / sitemap）。默认我们的自定义域；
+ * 可用 --site= 或 DSHBAIKE_SITE 覆盖——**fork 部署应当覆盖它**，
+ * 否则会声明 canonical 指向我们这边（等于把权重都送过来）。
+ */
+let SITE_URL = 'https://dshbaike.com';
+
 function normalizeBase(input) {
   const raw = String(input ?? '').trim();
   if (raw === '' || raw === '/') return '/';
@@ -72,10 +79,11 @@ const USAGE = `用法：node scripts/build.mjs [--stamp=YYYY-MM-DD] [--base=/子
 
   --stamp=<日期>  覆盖产物里的 generatedAt（默认取数据里最新的日期，保证确定性）
   --base=<路径>   部署根，默认 /（自定义域 / 根域）；GitHub Pages 项目子路径部署写 --base=/<repo>/
+  --site=<地址>   站点对外地址，写进 canonical / og:url / sitemap（默认 https://dshbaike.com）
   --dry-run       只算不写，打印将要产出的文件清单
   --quiet         只在结尾打印一行摘要
 
-环境变量：DSHBAIKE_BASE 等价于 --base（CLI 优先）。
+环境变量：DSHBAIKE_BASE 等价于 --base、DSHBAIKE_SITE 等价于 --site（CLI 优先）。
 
 退出码：0 成功 / 1 数据有问题 / 2 用法错误。`;
 
@@ -84,6 +92,7 @@ const USAGE = `用法：node scripts/build.mjs [--stamp=YYYY-MM-DD] [--base=/子
 function main(argv) {
   const flags = { stamp: null, dryRun: false, quiet: false };
   if (process.env.DSHBAIKE_BASE) BASE = normalizeBase(process.env.DSHBAIKE_BASE);
+  if (process.env.DSHBAIKE_SITE) SITE_URL = String(process.env.DSHBAIKE_SITE).replace(/\/+$/, '');
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') {
       process.stdout.write(`${USAGE}\n`);
@@ -92,6 +101,11 @@ function main(argv) {
     const base = /^--base=(.*)$/.exec(arg);
     if (base) {
       BASE = normalizeBase(base[1]);
+      continue;
+    }
+    const site = /^--site=(.+)$/.exec(arg);
+    if (site) {
+      SITE_URL = site[1].trim().replace(/\/+$/, '');
       continue;
     }
     const stamp = /^--stamp=(.+)$/.exec(arg);
@@ -220,6 +234,10 @@ function main(argv) {
     push(writes, nextManifest, `${zone.zone}.html`, html);
   }
 
+  /* ---- SEO：sitemap.xml 与 robots.txt（P1） ---- */
+  push(writes, nextManifest, 'sitemap.xml', sitemapXml(sitemapUrls(model, entryOutputs)));
+  push(writes, nextManifest, 'robots.txt', robotsTxt());
+
   /* ---- 写盘 ---- */
   const changed = [];
   for (const item of writes) {
@@ -281,6 +299,7 @@ function push(writes, manifest, rel, content) {
 function isOwnedArtifact(rel) {
   const p = rel.split(path.sep).join('/');
   if (p.startsWith('data/')) return true;
+  if (p === 'sitemap.xml' || p === 'robots.txt') return true;
   if (/^[a-z]+\/\d+\.html$/.test(p)) return true;
   if (/^[a-z]+\.html$/.test(p) && p !== 'index.html') return true;
   return false;
@@ -833,9 +852,12 @@ function fallbackShell({ title, desc, payload }) {
   return meta.join('\n');
 }
 
-function applyTemplate(template, { title, desc, payload, prerender }) {
+function applyTemplate(template, { title, desc, payload, prerender, canonical, noindex }) {
   if (!template) return fallbackShell({ title, desc, payload });
   let html = template;
+  if (html.includes('{{CANONICAL}}')) html = html.split('{{CANONICAL}}').join(canonical ?? `${SITE_URL}/`);
+  // 墓碑页（status: deleted）保留链接可达，但不该被搜到
+  if (noindex) html = html.replace('</head>', '<meta name="robots" content="noindex">\n</head>');
   // 预渲染块（P0，docs/10 §7）：没有就替换成空串，模板里的占位注释不会留在产物里
   if (html.includes(PRERENDER_COMMENT)) {
     html = html.replace(PRERENDER_COMMENT, String(prerender ?? '').trim());
@@ -963,6 +985,53 @@ function prerenderZone(output, entryOutputs) {
   return L.join('\n');
 }
 
+/* ------------------------------------------------------------------ */
+/* SEO 基础设施（P1）：sitemap.xml / robots.txt                        */
+/* ------------------------------------------------------------------ */
+
+function sitemapXml(urls) {
+  const L = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+  ];
+  for (const u of urls) {
+    L.push('  <url>');
+    L.push(`    <loc>${escapeHtml(u.loc)}</loc>`);
+    if (u.lastmod) L.push(`    <lastmod>${escapeHtml(u.lastmod)}</lastmod>`);
+    L.push('  </url>');
+  }
+  L.push('</urlset>', '');
+  return L.join('\n');
+}
+
+function robotsTxt() {
+  return [
+    '# DSH 百科：内容页都欢迎抓取；只挡推广页与构建产物。',
+    '# 分区页与词条页都是构建期渲染好的静态 HTML，不需要执行 JavaScript。',
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /promo.html',
+    '',
+    `Sitemap: ${SITE_URL}/sitemap.xml`,
+    '',
+  ].join('\n');
+}
+
+/** 所有该被收录的页面：首页 + 分区页 + 词条页（墓碑不进 sitemap） */
+function sitemapUrls(model, entryOutputs) {
+  const list = [{ loc: `${SITE_URL}/`, lastmod: null }];
+  for (const zone of model.zones) list.push({ loc: `${SITE_URL}/${zone.zone}.html`, lastmod: null });
+  for (const output of entryOutputs.values()) {
+    if (output.status === 'deleted') continue;
+    list.push({
+      loc: `${SITE_URL}/${output.kind}/${output.n}.html`,
+      lastmod: output.updatedAt ?? null,
+    });
+  }
+  // 按 loc 排序保证逐字节确定性（两次构建必须一致）
+  return list.sort((a, b) => (a.loc < b.loc ? -1 : a.loc > b.loc ? 1 : 0));
+}
+
 function renderEntryPage(template, output, entryOutputs) {
   const title = `${output.title ?? output.id} | DSH百科`;
   const desc = output.summary ?? '';
@@ -970,6 +1039,8 @@ function renderEntryPage(template, output, entryOutputs) {
     title,
     desc,
     prerender: prerenderEntry(output, entryOutputs),
+    canonical: `${SITE_URL}/${output.kind}/${output.n}.html`,
+    noindex: output.status === 'deleted',
     payload: { base: BASE, page: 'entry', kind: output.kind, n: output.n, title: output.title },
   });
 }
@@ -981,6 +1052,7 @@ function renderZonePage(template, output, entryOutputs) {
     title,
     desc,
     prerender: prerenderZone(output, entryOutputs),
+    canonical: `${SITE_URL}/${output.id}.html`,
     payload: { base: BASE, page: 'zone', zone: output.id, title: output.title },
   });
 }

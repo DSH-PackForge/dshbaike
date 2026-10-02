@@ -22,5 +22,9 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
+# SEO 产物（构建期生成，见 docs/10 §1）
+web/sitemap.xml
+web/robots.txt
+
 # 构建清单（机器状态，不入库；见 docs/10 §1）
 web/.pedia-manifest.json
