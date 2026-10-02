@@ -292,7 +292,8 @@ jobs:
             echo "url=$existing" >> "$GITHUB_OUTPUT"
             # 这条路是「同样的改动又提交了一次」：不重推分支，但如果那个 PR 还开着，
             # 顺手把 auto-merge 补挂上（比如 PR 是挂上这个功能之前开的，或者上次挂失败了）。
-            if [ -n "$existing" ] && ! gh pr merge -R "$REPO" "$existing" --auto --squash 2>/dev/null; then
+            # 用 --merge 的理由同上：squash 会吃掉贡献者的署名。
+            if [ -n "$existing" ] && ! gh pr merge -R "$REPO" "$existing" --auto --merge 2>/dev/null; then
               echo "（那个 PR 的 auto-merge 没补挂上，不影响）"
             fi
             exit 0
@@ -374,7 +375,7 @@ jobs:
             "- 文件：\`${FILES}\`（**只动这些**）" \
             "" \
             "第一道闸（\`/approve\`）已过；**这是第二道闸：请再审一遍具体改了什么**。" \
-            "审完**点一次 Approve 就行**——本 PR 已挂 auto-merge（squash），批准后会自动合并，" \
+            "审完**点一次 Approve 就行**——本 PR 已挂 auto-merge，批准后会自动合并，" \
             "不需要再点一次「合并」。（万一批准之后本分支又推了新提交，分支保护会作废这次批准、" \
             "自动合并停在原地等你重批——那是设计如此，不是故障。）" \
             "校验器（validate.mjs）已通过。")
@@ -386,8 +387,14 @@ jobs:
             echo "url=$url" >> "$GITHUB_OUTPUT"
             # 挂上 auto-merge：第二道闸一过就自动合并，评审只点一次 Approve。
             # 本仓库没有必需状态检查，所以「批准」就是最后一个条件。
+            #
+            # **必须用 --merge，不能用 --squash**：署名契约（docs/14）要求
+            # 「提交作者 = 贡献者、机器人只是共同作者」，而 squash 会新建一个提交、
+            # 作者变成 PR 作者（机器人），把贡献者的署名吃掉——实测踩过：
+            # 分支上的提交 author=贡献者、到 main 上变成 author=github-actions[bot]。
+            # merge 则原样保留分支上的提交，署名与 Co-authored-by 都不会丢。
             # 挂不上也不影响正事——PR 照样在，人工合并即可，所以只提示、不失败。
-            if ! gh pr merge -R "$REPO" "$url" --auto --squash 2>merge-error.txt; then
+            if ! gh pr merge -R "$REPO" "$url" --auto --merge 2>merge-error.txt; then
               echo "auto-merge 没挂上（不影响：人工合并即可）：$(tail -n 1 merge-error.txt)"
             fi
           else

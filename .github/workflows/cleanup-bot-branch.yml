@@ -1,0 +1,36 @@
+name: 清理机器人分支
+
+# 为什么需要它：机器人代改的 PR 合并后，分支本该由仓库设置 `delete_branch_on_merge`
+# 自动删掉，但实测**第一次没删**（`bot/claim-27` 在 PR #28 合并后仍然存在）——
+# 那个 PR 是在打开该设置之前创建的，GitHub 似乎按创建时的设置判定。
+# 与其依赖那个开关的时序，不如自己兜住：PR 一合并，就把 bot/ 开头的头分支删掉。
+#
+# 只动 `bot/` 前缀的分支，别的分支一律不碰（并行会话的 feat/... 分支在这里是安全的）。
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    # 只有「已合并」才删；被关掉但没合并的 PR 留着分支，方便重开
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'bot/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: 删除机器人分支
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          # 已经不存在也算成功（比如开关这次生效了）
+          if gh api "repos/${REPO}/branches/${BRANCH}" >/dev/null 2>&1; then
+            gh api -X DELETE "repos/${REPO}/git/refs/heads/${BRANCH}"
+            echo "已删除 ${BRANCH}"
+          else
+            echo "${BRANCH} 已经不在（可能被 delete_branch_on_merge 删掉了）"
+          fi
