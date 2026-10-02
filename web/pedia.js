@@ -1894,6 +1894,63 @@
     return el('div', {}, [list, panels]);
   }
 
+  /**
+   * 生态全景图（graph.html）的渐进增强。
+   *
+   * 图本身是**构建期画好的 SVG**：无 JS 也能看、也能点进词条（节点是 <a>）、
+   * 悬停提示也有（每个节点带 <title>）。这里只补两件无 JS 做不到的事：
+   *   1. 切换派生边「正文提到」（默认不画——读者要的是骨架，不是每根毛细血管）；
+   *   2. 悬停/聚焦时高亮这一条与它的邻居，其余压暗（**压暗而不是移除**，位置不变）。
+   */
+  function bindGraph() {
+    var root = document.querySelector('.graph');
+    if (!root) return;
+    var svg = root.querySelector('.graph__svg');
+    if (!svg) return;
+
+    Array.prototype.forEach.call(root.querySelectorAll('[data-graph-toggle]'), function (btn) {
+      var group = btn.getAttribute('data-graph-toggle');
+      btn.addEventListener('click', function () {
+        var on = !root.classList.contains('show-' + group);
+        root.classList.toggle('show-' + group, on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.textContent = (on ? '隐藏' : '显示') + '「正文提到」' + (on ? '（' + btn.getAttribute('data-count') + ' 条）' : '');
+      });
+    });
+
+    var nodes = svg.querySelectorAll('.graph__node');
+    var edges = svg.querySelectorAll('.graph__edge');
+
+    function clear() {
+      svg.classList.remove('has-focus');
+      Array.prototype.forEach.call(svg.querySelectorAll('.is-active'), function (n) {
+        n.classList.remove('is-active');
+      });
+    }
+
+    function focus(id) {
+      svg.classList.add('has-focus');
+      Array.prototype.forEach.call(nodes, function (n) {
+        n.classList.toggle('is-active', n.getAttribute('data-id') === id);
+      });
+      Array.prototype.forEach.call(edges, function (e) {
+        e.classList.toggle('is-active', e.getAttribute('data-from') === id || e.getAttribute('data-to') === id);
+      });
+    }
+
+    Array.prototype.forEach.call(nodes, function (n) {
+      var id = n.getAttribute('data-id');
+      n.addEventListener('mouseenter', function () { focus(id); });
+      n.addEventListener('focus', function () { focus(id); });
+      n.addEventListener('mouseleave', clear);
+      n.addEventListener('blur', clear);
+    });
+
+    Array.prototype.forEach.call(root.querySelectorAll('[data-graph-reset]'), function (btn) {
+      btn.addEventListener('click', clear);
+    });
+  }
+
   function bindTabs(root) {
     var tabs = root.querySelectorAll('[role="tab"]');
     if (!tabs.length) return;
@@ -2805,6 +2862,18 @@
       ])
     ]));
 
+    // 分区页顶部的入口卡（`links`，docs/06 §4）：插件分区指向生态全景图（graph.html）。
+    // 与构建期预渲染的那份保持同一套类名，无 JS 与有 JS 长得一样。
+    asArray(zone.links).forEach(function (link) {
+      if (!link || !isPresent(link.href)) return;
+      main.appendChild(el('aside', { class: 'zone-cta' }, [
+        el('a', { class: 'zone-cta__link', href: String(link.href) }, [
+          el('span', { class: 'zone-cta__label', text: link.label || String(link.href) }),
+          isPresent(link.note) ? el('span', { class: 'zone-cta__note', text: link.note }) : null
+        ])
+      ]));
+    });
+
     if (id === 'plugins' || id === 'packs') {
       main.appendChild(el('details', { class: 'collapse', open: false }, [
         el('summary', { text: '「装在哪」落点图' }),
@@ -3439,9 +3508,9 @@
 
     // 构建期预渲染的内容（P0，docs/10 §7）：现在由 JS 接管，先移除它，
     // 否则正文会在页面上出现两份。无 JS 时它就留在那里当正文（这正是 P0 的目的）。
-    // 维度索引页（tag/*.html、platform/*.html）的正文全部是构建期写好的，
-    // 前端不渲染它，所以**不要移除**——只渲染站点导航与页脚。
-    var prerendered = page === 'static' ? null : document.querySelector('[data-prerender]');
+    // 维度索引页（tag/*.html、platform/*.html）与生态全景图（graph.html）的正文
+    // 全部是构建期写好的，前端不渲染它，所以**不要移除**——只渲染站点导航与页脚。
+    var prerendered = page === 'static' || page === 'graph' ? null : document.querySelector('[data-prerender]');
     if (prerendered && prerendered.parentNode) prerendered.parentNode.removeChild(prerendered);
 
     // 顶栏与页脚都要用 registry / zones/index，所以先取数据再渲染外壳。
@@ -3480,6 +3549,13 @@
             }
             return renderZone(zone);
           });
+        }
+        // 生态全景图（graph.html）：正文是构建期画好的 SVG，这里只补站点外壳与交互。
+        // 与上面的 static 分支同理——不这样写就会掉进兜底分支被当成首页渲染。
+        if (page === 'graph') {
+          renderMasthead({ currentZone: null });
+          bindGraph();
+          return undefined;
         }
         // 维度索引页（tag/*.html、platform/*.html）：正文由构建期写好、boot() 也不移除，
         // 这里必须**显式什么都不做**——否则会掉进下面的兜底分支被当成首页渲染 ✗
@@ -3534,7 +3610,12 @@
     var HEIGHT = 96;
     var OFFSET_X = 34; // 落在光标右下方：别贴着指针尖，也别盖住正在点的东西
     var OFFSET_Y = 44;
-    var WALK_SPEED = 2.2; // 每帧位移超过它就算「在走」，切行走循环
+    // 「在走还是站着」只看指针：窗口内累计位移够大才算走，且走起来至少持续一段。
+    // 早先拿「我离目标还剩多远」当速度，结果是追上了算停、一动又算走，
+    // 在阈值附近来回切，两套精灵互相闪——见 docs/08 §9.3。
+    var MOVE_WINDOW = 140; // 多久没动就算「没在走」
+    var MOVE_MIN = 3; // 窗口内累计位移超过它才算在走（防手抖）
+    var WALK_MIN_MS = 320; // 最短行走时长：短暂停顿不切换
 
     var el = document.createElement('div');
     el.className = 'mascot';
@@ -3551,6 +3632,15 @@
     var dir = 1; // 1 朝右 / -1 朝左（水平镜像）
     var seen = false; // 指针进过页面才显示
     var walking = false;
+    var prevAX = 0; // 上一次的锚点：用来量「指针自己」走了多远
+    var prevAY = 0;
+    var moveAcc = 0; // 判定窗口内累计的指针位移
+    var lastMoveAt = 0;
+    var walkUntil = 0;
+
+    function stamp() {
+      return window.performance && performance.now ? performance.now() : Date.now();
+    }
 
     function frame() {
       var dx = tx - x;
@@ -3561,9 +3651,13 @@
       el.style.transform =
         'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0) rotate(' +
         tilt.toFixed(1) + 'deg)' + (dir < 0 ? ' scaleX(-1)' : '');
-      var moving = Math.abs(dx) > WALK_SPEED || Math.abs(dy) > WALK_SPEED;
-      if (moving !== walking) {
-        walking = moving;
+
+      var t = stamp();
+      if (t - lastMoveAt > MOVE_WINDOW) moveAcc = 0; // 窗口过期＝没在动
+      if (moveAcc >= MOVE_MIN) walkUntil = t + WALK_MIN_MS; // 还在动就续期
+      var want = t < walkUntil;
+      if (want !== walking) {
+        walking = want;
         el.classList.toggle('mascot--walk', walking);
       }
       if (Math.abs(dx) > 6) dir = dx > 0 ? 1 : -1; // 死区：小幅抖动不翻面
@@ -3572,8 +3666,14 @@
 
     document.addEventListener('mousemove', function (e) {
       // 夹在视口里：锚点是底边中点，所以左右各留半个身位、上面留一个身高
-      tx = Math.max(HALF_W, Math.min(window.innerWidth - HALF_W, e.clientX + OFFSET_X));
-      ty = Math.max(HEIGHT, Math.min(window.innerHeight - 8, e.clientY + OFFSET_Y));
+      var nx = Math.max(HALF_W, Math.min(window.innerWidth - HALF_W, e.clientX + OFFSET_X));
+      var ny = Math.max(HEIGHT, Math.min(window.innerHeight - 8, e.clientY + OFFSET_Y));
+      if (seen) moveAcc += Math.abs(nx - prevAX) + Math.abs(ny - prevAY);
+      prevAX = nx;
+      prevAY = ny;
+      tx = nx;
+      ty = ny;
+      lastMoveAt = stamp();
       if (!seen) {
         seen = true; // 首次移动直接落到位，别从左上角飞过来
         x = tx;

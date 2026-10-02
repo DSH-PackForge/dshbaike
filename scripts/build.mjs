@@ -33,8 +33,8 @@ import { presentationFor } from './lib/presentation.mjs';
 import { createHash } from 'node:crypto';
 import { renderMarkdown, escapeHtml } from './lib/markdown.mjs';
 import { ENTRY_KINDS } from './lib/registry.mjs';
-// 注意别名：build.mjs 里已有一个同名的 buildGraph（分区条目的图结构），别撞。
-import { buildGraph as buildEcosystemGraph, renderGraphSvg } from './lib/graph.mjs';
+// 生态全景图：数据（graph.json）与页面（graph.html）同源，都在 lib/graph.mjs 里。
+import { buildEcosystemGraph, EDGE_GROUPS, renderGraphSvg } from './lib/graph.mjs';
 import {
   compareIds,
   displayPath,
@@ -180,9 +180,10 @@ function main(argv) {
   /* ---- registry / search / taxonomy / entities / reverse / plugins ---- */
   push(writes, nextManifest, path.posix.join('data', 'registry.json'), toJson(registryJson));
 
-  /* ---- 生态全景图（docs/02 §产物 graph.json；页面 graph.html 在下面一起写）---- */
-  const graph = buildEcosystemGraph({ model, entryOutputs, reverse });
-  push(writes, nextManifest, path.posix.join('data', 'graph.json'), toJson(graph));
+  /* ---- 生态全景图（docs/02 §产物 graph.json；页面 graph.html 在下面一起写）----
+     图的算法在 scripts/lib/graph.mjs：那份数据同时喂给 graph.json（可机读）与
+     全景页的 SVG（构建期画好）。这里只算一次，避免两个产物各算各的、慢慢漂移。 */
+  const graph = buildEcosystemGraph({ model, entryOutputs, reverse, generatedAt });
   counts.graphNodes = graph.counts.nodes;
   counts.graphEdges = graph.counts.edges;
 
@@ -206,7 +207,7 @@ function main(argv) {
   push(writes, nextManifest, path.posix.join('data', 'entities.json'), toJson(buildEntitiesOutput(model, generatedAt)));
   push(writes, nextManifest, path.posix.join('data', 'reverse', 'plugins.json'), toJson(reverse.output));
   push(writes, nextManifest, path.posix.join('data', 'plugins', 'index.json'), toJson(buildPluginsIndex(model, entryOutputs, generatedAt)));
-  push(writes, nextManifest, path.posix.join('data', 'graph.json'), toJson(buildGraph(model, entryOutputs, generatedAt)));
+  push(writes, nextManifest, path.posix.join('data', 'graph.json'), toJson(graph));
   push(writes, nextManifest, path.posix.join('data', 'zones', 'index.json'), toJson(buildZoneIndex(model, generatedAt)));
 
   /* ---- 分区产物 ---- */
@@ -225,6 +226,7 @@ function main(argv) {
   const entryTemplate = loadTemplate('entry.template.html');
   const zoneTemplate = loadTemplate('zone.template.html');
   const indexTemplate = loadTemplate('index-page.template.html');
+  const graphTemplate = loadTemplate('graph.template.html');
   const rss = { entry: [], zone: [] };
   if (!entryTemplate) {
     rss.entry.push('web/entry.template.html 不存在，词条页改用内置最小外壳（等站点外壳工作流补齐后会自愈）');
@@ -243,6 +245,9 @@ function main(argv) {
     const html = renderZonePage(zoneTemplate?.text ?? null, output, entryOutputs);
     push(writes, nextManifest, `${zone.zone}.html`, html);
   }
+
+  /* ---- 生态全景图页（整张 SVG 构建期画好；入口在插件分区页上）---- */
+  push(writes, nextManifest, 'graph.html', renderGraphPage(graphTemplate?.text ?? null, graph));
 
   /* ---- 维度索引页（P1 长尾组合页，docs/10 §7） ---- */
   const indexes = buildDimensionIndexes(model, entryOutputs);
@@ -739,21 +744,6 @@ function buildPluginsIndex(model, entryOutputs, generatedAt) {
   return { generatedAt, items };
 }
 
-function buildGraph(model, entryOutputs, generatedAt) {
-  const edges = [];
-  for (const entry of entryOutputs.values()) {
-    for (const rel of entry.relations ?? []) {
-      edges.push({ from: entry.id, to: rel.target, type: rel.type ?? 'related' });
-    }
-    for (const target of entry.backlinks ?? []) {
-      if (!target?.id) continue;
-      if ((entry.relations ?? []).some((r) => r.target === target.id)) continue;
-      edges.push({ from: entry.id, to: target.id, type: 'references' });
-    }
-  }
-  return { generatedAt, edges: sortBy(edges, (e) => `${e.from}|${e.type}|${e.to}`) };
-}
-
 function buildZoneIndex(model, generatedAt) {
   // 分区顺序的唯一来源是 data/registry.yml 的 `zoneOrder`（docs/06 §2）。
   // 之前这里按 id 字母序排，于是侧栏读起来是「素材与本地化 → 界面与客户端 → 启动器…」——
@@ -818,6 +808,15 @@ function buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt) {
     title: data.title ?? null,
     desc: data.desc ?? null,
     howto: data.howto ?? null,
+    // 分区页顶部的入口卡（`links`，docs/06 §4）：例如插件分区指向 `graph.html` 生态全景图。
+    // 只允许站内相对路径或 https，别让数据侧塞进 javascript: 之类。
+    links: (Array.isArray(data.links) ? data.links : [])
+      .filter((l) => l && !isMissing(l.href) && /^(?:[a-z0-9-]+\/)*[a-z0-9-]+\.html$|^https:\/\//i.test(String(l.href)))
+      .map((l) => ({
+        label: String(l.label ?? '').trim() || String(l.href),
+        href: String(l.href),
+        note: isMissing(l.note) ? null : String(l.note),
+      })),
     // 这个分区收哪些词条类型（docs/12 §2）：前端据此把「本分区能长出哪些详情」讲清楚
     kinds: sortStrings(data.kinds ?? []),
     // 二级分区（docs/06 §2.0.1）：intro 是编辑综述，构建期就渲染成 HTML，
@@ -964,6 +963,14 @@ function prerenderZone(output, entryOutputs) {
   L.push('<article class="prose">');
   L.push(`<h1>${escapeHtml(output.title ?? output.id)}</h1>`);
   if (output.desc) L.push(`<p>${escapeHtml(output.desc)}</p>`);
+  for (const link of output.links ?? []) {
+    L.push(
+      `<aside class="zone-cta"><a class="zone-cta__link" href="${escapeHtml(link.href)}">` +
+        `<span class="zone-cta__label">${escapeHtml(link.label)}</span>` +
+        (link.note ? `<span class="zone-cta__note">${escapeHtml(link.note)}</span>` : '') +
+        '</a></aside>',
+    );
+  }
 
   const items = output.items ?? [];
   const sections = (output.sections ?? []).filter((s) => s?.id);
@@ -1038,7 +1045,7 @@ function robotsTxt() {
 
 /** 所有该被收录的页面：首页 + 分区页 + 词条页（墓碑不进 sitemap） */
 function sitemapUrls(model, entryOutputs, indexes = []) {
-  const list = [{ loc: `${SITE_URL}/`, lastmod: null }];
+  const list = [{ loc: `${SITE_URL}/`, lastmod: null }, { loc: `${SITE_URL}/graph.html`, lastmod: null }];
   for (const index of indexes) list.push({ loc: `${SITE_URL}/${index.kind}/${index.slug}.html`, lastmod: null });
   for (const zone of model.zones) list.push({ loc: `${SITE_URL}/${zone.zone}.html`, lastmod: null });
   for (const output of entryOutputs.values()) {
@@ -1231,6 +1238,57 @@ function renderZonePage(template, output, entryOutputs) {
     prerender: prerenderZone(output, entryOutputs),
     canonical: `${SITE_URL}/${output.id}.html`,
     payload: { base: BASE, page: 'zone', zone: output.id, title: output.title },
+  });
+}
+
+/**
+ * 生态全景图页（graph.html）。
+ *
+ * 整张 SVG 在构建期画好写进正文：无 JS 也能看图、也能点进词条；
+ * pedia.js 只做渐进增强（切换派生边、悬停高亮邻居）。
+ * 数据与 SVG 同源（都由 scripts/lib/graph.mjs 产出），不会各算各的。
+ */
+function renderGraphPage(template, graph) {
+  const counts = graph.counts;
+  const typeLines = Object.entries(counts.byType)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, n]) => `${type} ${n}`)
+    .join(' · ');
+  const legend = Object.entries(EDGE_GROUPS)
+    .filter(([, def]) => def.defaultOn)
+    .map(
+      ([key, def]) =>
+        `<li class="graph__legenditem" data-group="${key}">` +
+        `<span class="graph__swatch" style="background:${def.color}"></span>${escapeHtml(def.zh)}</li>`,
+    )
+    .join('');
+  const prerender = [
+    '<div class="graph" data-prerender>',
+    '<h1>生态全景图</h1>',
+    `<p class="lede">把 ${counts.nodes} 条词条与 ${counts.edges} 条关系画在一张图上：` +
+      '圆心是生态的起点，外圈每一块是一个分区，方块越大表示这条词条越完整。' +
+      '<strong>这张图只画能指到出处的关系</strong>——「像不像」那种相似度不进来。</p>',
+    '<div class="graph__toolbar">',
+    `<ul class="graph__legend">${legend}</ul>`,
+    '<div class="graph__actions">',
+    '<button type="button" class="btn graph__toggle" data-graph-toggle="references" aria-pressed="false">显示「正文提到」</button>',
+    '<button type="button" class="btn graph__toggle" data-graph-reset>取消高亮</button>',
+    '</div>',
+    '</div>',
+    `<div class="graph__stage">${renderGraphSvg(graph)}</div>`,
+    `<p class="graph__note faint">共 ${counts.nodes} 个词条、${counts.edges} 条边（${escapeHtml(typeLines)}）。` +
+      '边只来自 front-matter 的 <code>relations</code> / <code>prereq</code> / <code>related</code> 与构建期反向索引' +
+      '（教程引用、整合包引用、正文提到）；每条边都带 <code>why</code>，可以在 ' +
+      '<a href="data/graph.json">data/graph.json</a> 里逐条核对。空白的部分不是「没有关系」，' +
+      '而是「还没人写关系」——欢迎从孤岛开始补。</p>',
+    '</div>',
+  ].join('');
+  return applyTemplate(template, {
+    title: '生态全景图 | DSH百科',
+    desc: `DSH 百科生态全景图：${counts.nodes} 条词条、${counts.edges} 条关系，按分区铺开；每条边都指得到出处。`,
+    prerender,
+    canonical: `${SITE_URL}/graph.html`,
+    payload: { base: BASE, page: 'graph', title: '生态全景图' },
   });
 }
 

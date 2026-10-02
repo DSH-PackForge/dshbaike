@@ -156,6 +156,7 @@ const ZONE_KEYS = new Set([
   'kinds',
   'sections',
   'howto',
+  'links',
   'itemFields',
   'snapshot',
   'items',

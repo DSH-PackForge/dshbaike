@@ -4,6 +4,12 @@ zone: plugins
 title: 插件
 desc: 给 DSH 加功能：官方本体的 packages/（本体就是一堆插件）+ 第三方的宿主侧 / 客户端侧插件与 bundle。这里只列「官方来源」「本站写了词条」「已被收录整合包用到」的条目；生态全貌在 awesome-dsh-plugin.com（4400 条）与 dshbase.com。
 kinds: [plugin]
+# 分区页顶部的入口卡（`links`，docs/06 §4）。插件这一层最容易迷路：
+# 条目是人工筛的子集，全貌在外部目录里，而「谁跟谁有关系」得看全景图。
+links:
+  - label: 生态全景图
+    href: graph.html
+    note: 把全部词条与它们之间的关系画在一张图上：圆心是生态起点，外圈按分区铺开，每条边都指得到出处
 sections:
   - id: markets
     title: 插件市场

@@ -46,7 +46,7 @@
 | `#/browse/<kind>` | 按类型浏览 | `concept` / `plugin` / `tutorial` / `pack` / `launcher` / `source` |
 | `#/category/<taxonomy-id>` | 按分类浏览 | 分类树的叶子节点 |
 | `#/search?q=…` | 搜索结果 | 分栏：词条 / 分区条目 / 教程 |
-| `#/graph` | 关系图 | 前置 / 联动 / 冲突（插件词条之间的关系） |
+| `#/graph` | 关系图 → **现为 `graph.html`** | 生态全景图：前置 / 联动 / 冲突 + 教程与整合包引用（构建期画好 SVG，入口在插件分区页） |
 | `#/matrix` | 版本兼容矩阵 | DSH 版本 × 插件（数据来自插件词条的 `compat`） |
 | `#/recent` | 最近更新 | 按 `updatedAt` 与 registry 的创建时间 |
 | `#/contributing` | 贡献指南 | 含**领号**流程（`node scripts/new.mjs`） |
