@@ -34,7 +34,7 @@ counters:
   recipe: 1
   pack: 1
   tool: 1
-  spec: 1
+  spec: 2
   concept: 4
   tutorial: 3
   source: 3
@@ -177,6 +177,11 @@ entries:
   - n: 1
     kind: spec
     title: 'manifest v5（当前）'
+    createdAt: 2026-10-02
+    status: published
+  - n: 2
+    kind: spec
+    title: 'DSH-PackForge 规范仓库'
     createdAt: 2026-10-02
     status: published
   - n: 1

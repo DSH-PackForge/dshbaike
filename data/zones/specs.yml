@@ -1,8 +1,14 @@
 # 分区层数据（docs/06 §2）。元层之一：规范与协议。external-index——条目就是规范仓库里的文件。
 # 一切字段争议的最终裁判在这里，概念词条的 spec 也多指向它。
+#
+# 结构说明（评审 2026-10-02）：这六份规范**同属一个仓库**（DSH-PackForge/DSH-PackForge 的 specs/），
+# 原先拆成 8 条条目过度了。现在只留两条词条：
+#   · spec/2 = 规范仓库总览（manifest / pack-structure / index / publishing / launcher-registry / workspace-config）
+#   · spec/1 = manifest v5（保留：它是最常被引用的那一份，值得独立成条）
+# 历史版本不再单列条目，收进 collapsed 小节，需要的人展开看。
 zone: specs
 title: 规范与协议
-desc: manifest、pack-structure、index、publishing、launcher-registry 等契约文档。谁说了算的问题在这一层结束：有争议时以规范仓库的文件为准，而不是以某个实现或某个包的现状为准。
+desc: manifest、pack-structure、index、publishing、launcher-registry 等契约文档——它们都写在同一个仓库里。谁说了算的问题在这一层结束：有争议时以规范仓库的文件为准，而不是以某个实现或某个包的现状为准。
 kinds: [spec]
 sections:
   - id: current
@@ -11,9 +17,21 @@ sections:
   - id: history
     title: 历史版本
     desc: 旧版本仍然可读：读它是为了理解字段怎么长出来的
+    collapsed: true
 howto: 读的顺序建议按版本读：manifest 从 v1 到 v5 看字段是怎么长出来的；pack-structure v3 是当前 .dspack 容器契约；index/index.md 是市场索引 schemaVersion 2；launcher-registry.md 与发布流程各一份。要改规范就向该仓库提 PR，别在实现里私自分叉。
 itemFields: [specVersion, specStatus, fileName]
 items:
+  - name: DSH-PackForge 规范仓库（总览）
+    section: current
+    blurb: 六份规范都在这里：manifest 决定包里声明什么、pack-structure 决定 .dspack 怎么装、index 决定市场怎么索引、publishing 决定怎么被收录，另有启动器 canonical ID 表与 .dshpkcfg 格式。一条词条看懂它们的分工与互相引用。
+    specVersion: null
+    specStatus: current
+    fileName: specs/
+    source: specs
+    entry: spec/2
+    tags: ["生态地基", "规范"]
+    links:
+      spec: https://github.com/DSH-PackForge/DSH-PackForge/tree/main/specs
   - name: manifest v5（当前）
     section: current
     blurb: 现行清单契约：type 分 profile / dshhome，bundles 与 dependencies 钉死坐标版本，patch 是包自带的一层；r2 追加 vendored、dshVersions、launchers 三组可选字段。
@@ -32,71 +50,16 @@ items:
     specStatus: historical
     fileName: specs/manifest/v1.md
     source: specs
-    entry: null
+    entry: spec/1
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/manifest/v1.md
-  - name: pack-structure v3（当前）
-    section: current
-    blurb: .dspack 容器契约：标准 ZIP，根放 dspack.json 标记与 manifest.json；profile 形态把机器文件放根、其余放 overrides/、home 级内容放 home/。含安装端判定规则与安全规则。
-    specVersion: 3
-    specStatus: current
-    fileName: specs/pack-structure/v3.md
-    source: specs
-    entry: null
-    tags: ["工具与能力"]
-    links:
-      spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/pack-structure/v3.md
   - name: pack-structure v1–v2（历史版本）
     section: history
-    blurb: 容器契约的历史版本，用于读旧包与追踪字段演进。
+    blurb: 容器契约的历史版本：v1 是 .tgz 时代的扁平快照，v2 是单 profile .dspack（没有 home/）。读旧包与追踪字段演进时用。
     specVersion: 1
     specStatus: historical
     fileName: specs/pack-structure/v1.md
     source: specs
-    entry: null
+    entry: spec/2
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/pack-structure/v1.md
-  - name: index/index.md（市场索引 schemaVersion 2）
-    section: current
-    blurb: 市场索引契约：index.json 只放 downloadUrl / sha256 / size 指针与元数据，完整 manifest 与 README 按 packs/<owner>.<repo>/ 懒加载。它是本站整合包分区的上游。
-    specVersion: 2
-    specStatus: current
-    fileName: specs/index/index.md
-    source: specs
-    entry: source/2
-    links:
-      spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/index/index.md
-  - name: publishing/v1.md（发布流程）
-    section: current
-    blurb: 把包发布出去并被市场收录的契约：仓库可见性、话题、Release 与侧车校验文件的约定。
-    specVersion: 1
-    specStatus: current
-    fileName: specs/publishing/v1.md
-    source: specs
-    entry: null
-    tags: ["工具与能力"]
-    links:
-      spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/publishing/v1.md
-  - name: launcher-registry.md（启动器认领表）
-    section: current
-    blurb: 5 条 canonical ID 的认领表，以及版本比较规则：逐段数值比较、缺段视为 0、不做预发布语义；不满足 minVersion 只提示不硬拒。机器可读版是 launchers.json。
-    specVersion: 1
-    specStatus: current
-    fileName: specs/launcher-registry.md
-    source: specs
-    entry: null
-    tags: ["工具与能力"]
-    links:
-      spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
-      url: https://dsh-packforge.github.io/dsh-pack-market/launchers.json
-  - name: workspace-config/v1.md（.dshpkcfg）
-    section: current
-    blurb: 导出工作区本地快照的契约：单个 UTF-8 JSON 对象、2 空格缩进 + 结尾换行、只认白名单字段，空字符串表示未填写。它对应实现里的 .dshpkcfg 文件。
-    specVersion: 1
-    specStatus: current
-    fileName: specs/workspace-config/v1.md
-    source: specs
-    entry: null
-    tags: ["工具与能力"]
-    links:
-      spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/workspace-config/v1.md
