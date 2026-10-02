@@ -25,7 +25,7 @@ zoneOrder:
 counters:
   client: 1
   launcher: 1
-  plugin: 4
+  plugin: 2
   mcp: 1
   theme: 1
   asset: 1
@@ -59,19 +59,9 @@ entries:
     title: client 半端
     createdAt: 2026-10-02
     status: published
-  - n: 3
-    kind: plugin
-    title: dsh-loader
-    createdAt: 2026-10-02
-    status: published
   - n: 2
     kind: plugin
     title: dsh-pack-plugin
-    createdAt: 2026-10-02
-    status: published
-  - n: 4
-    kind: plugin
-    title: dsh-packforge-app
     createdAt: 2026-10-02
     status: published
   - n: 1

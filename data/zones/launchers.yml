@@ -53,7 +53,7 @@ items:
     selfVersioning: 可自报
     importSupport: 支持 .dspack（profile / dshhome 两形态）
     source: launchers
-    entry: plugin/4
+    entry: tool/1
     tags: ["插件市场与管理"]
     risk: [desktop-control, network, build-script]
     links:

@@ -54,21 +54,10 @@ items:
     role: compat
     entryGate: pack
     source: curated
-    entry: plugin/3
     tags: ["开发与运行时"]
     links:
       github: dsh-plugins/dsh-loader
       npm: "@dsh-plugin/dsh-loader"
-  - name: dsh-packforge-app
-    section: plugins
-    blurb: 打包与安装工具：Electron 图形客户端加 dspack CLI，一键导出、浏览、安装整合包；包成分表的解析器就在它的 core 里。
-    role: bundle
-    entryGate: tutorial
-    source: curated
-    entry: plugin/4
-    tags: ["插件市场与管理"]
-    links:
-      github: DSH-PackForge/dsh-packforge-app
   - name: dsh-better-sidebar-loader
     section: plugins
     blurb: 被「更好的侧边栏」整合包用到的前置加载器（坐标 @dsh-plugin/dsh-better-sidebar-loader）。本轮只核实了它出现在哪个包里，仓库归属与行为未核实。

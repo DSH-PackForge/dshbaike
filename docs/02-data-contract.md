@@ -145,11 +145,16 @@ entities:
 
 MC百科的链接不会烂，靠的是数字即身份。我们照抄这一点：
 
-> **一次例外，已发生（2026-10-02）**：上线前做了一次**插件区编号重置**——
-> 官方插件（deepseek-harness 仓库）插到 `plugin/1`，原 `plugin/1` dsh-loader 让到 `plugin/3`，
-> 原 `plugin/3` dsh-packforge-app 让到 `plugin/4`（`plugin/2` dsh-pack-plugin 不动）。
-> 当时站点尚未上线、没有外部链接指向这些编号，所以**直接改号、不建墓碑**（评审：这次不需要墓碑机制）。
-> 从这次之后契约恢复严格：**编号一分配就不动，删除留墓碑**（见 §2.1 与规则 4）。
+> **一次例外，已发生（2026-10-02，两步）**：
+>
+> ① **插件区编号重置**——官方插件（deepseek-harness 仓库）插到 `plugin/1`，原 `plugin/1` dsh-loader 让到 `plugin/3`，
+> 原 `plugin/3` dsh-packforge-app 让到 `plugin/4`（`plugin/2` dsh-pack-plugin 不动）；
+> ② 随后**取消两条插件词条**——`dsh-loader`（第三方升级兼容层：保留分区卡片与教程里的提及，只是不再有独立词条）
+> 与 `dsh-packforge-app`（**它不是插件**：GUI + dspack CLI，已由 `tool/1`、启动器登记表与工具链分区覆盖）。
+> 计数器退回 `plugin: 2`，3 / 4 两个号码释放。当时站点尚未对外、没有外部链接指向这些编号，
+> 所以**直接改号、不建墓碑**（评审：这次不需要墓碑机制）。
+>
+> 此后契约严格：**编号一分配就不动，删除留墓碑**（见 §2.1 与规则 4）。
 
 ```yaml
 # data/registry.yml

@@ -14,13 +14,13 @@ sections:
 howto: 多数是命令行工具，装在 DSH 之外；只有做成插件的（如 dsh-pack-plugin）才走 dsh plugin add。用过之后仍建议用 dsh --dump-config 对一遍真实装配结果，别只信工具的预览。
 itemFields: [form, language]
 items:
-  - name: dsh-packforge-app
+  - name: dsh-packforge-app（GUI + dspack CLI）
     section: pack
     blurb: 一个 monorepo 两种宿主：Electron 图形客户端与 DSH 客户端插件，共用一个 core 引擎；core 不直接 import node:fs / node:crypto，I/O 全走 Host 接口注入，因此能脱离 DSH 单独测试。包成分表的解析器就在这里。
     form: gui
     language: javascript
     source: curated
-    entry: plugin/4
+    entry: tool/1
     tags: ["插件市场与管理"]
     risk: [desktop-control, build-script]
     links:

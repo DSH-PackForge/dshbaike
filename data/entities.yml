@@ -4,19 +4,10 @@
 # refs 由 collect.mjs 写、带快照时间；M1 首版留空（尚无采集产物），人工只维护 id 与 keys。
 version: 1
 entities:
-  - id: plugin/3
-    keys:
-      - "repo:dsh-plugins/dsh-loader"
-      - "npm:@dsh-plugin/dsh-loader"
-    refs: []
   - id: plugin/2
     keys:
       - "repo:DSH-PackForge/dsh-pack-plugin"
       - "npm:@dsh-packforge/dsh-pack-plugin"
-    refs: []
-  - id: plugin/4
-    keys:
-      - "repo:DSH-PackForge/dsh-packforge-app"
     refs: []
   # 以下为「有生态证据但尚未建词条」的实体（docs/07 §5 第二档）。
   # 保留在这里的价值：同一个插件被多个整合包用不同坐标写法引用时，分区页不会出现两遍。
