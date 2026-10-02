@@ -296,8 +296,8 @@ jobs:
             echo "url=$existing" >> "$GITHUB_OUTPUT"
             # 这条路是「同样的改动又提交了一次」：不重推分支，但如果那个 PR 还开着，
             # 顺手把 auto-merge 补挂上（比如 PR 是挂上这个功能之前开的，或者上次挂失败了）。
-            # 用 --merge 的理由同上：squash 会吃掉贡献者的署名。
-            if [ -n "$existing" ] && ! gh pr merge -R "$REPO" "$existing" --auto --merge 2>/dev/null; then
+            # 用 --rebase 的理由同上：squash 会吃掉贡献者的署名，merge 会留一个机器人署名的合并提交。
+            if [ -n "$existing" ] && ! gh pr merge -R "$REPO" "$existing" --auto --rebase 2>/dev/null; then
               echo "（那个 PR 的 auto-merge 没补挂上，不影响）"
             fi
             exit 0
@@ -392,13 +392,17 @@ jobs:
             # 挂上 auto-merge：第二道闸一过就自动合并，评审只点一次 Approve。
             # 本仓库没有必需状态检查，所以「批准」就是最后一个条件。
             #
-            # **必须用 --merge，不能用 --squash**：署名契约（docs/14）要求
-            # 「提交作者 = 贡献者、机器人只是共同作者」，而 squash 会新建一个提交、
-            # 作者变成 PR 作者（机器人），把贡献者的署名吃掉——实测踩过：
-            # 分支上的提交 author=贡献者、到 main 上变成 author=github-actions[bot]。
-            # merge 则原样保留分支上的提交，署名与 Co-authored-by 都不会丢。
+            # **必须用 --rebase，不能用 --squash，也不用 --merge**（署名契约 docs/14）：
+            #   · squash 会**新建**提交、作者取 PR 作者（机器人）——把贡献者的署名吃掉。
+            #     实测踩过：分支上 author=贡献者，squash 到 main 变成 author=github-actions[bot]；
+            #   · merge 保留分支提交，但会**多一个合并提交**，而合并提交的作者被记成
+            #     「执行合并的人」——现在执行的是 auto-merge（机器人），于是 main 上又会
+            #     出现机器人署名的提交（评审手点的那三次合并，作者都是他本人，正好对照）；
+            #   · rebase 既不加合并提交，又保留原提交的**作者**与 commit message
+            #     （含 `Co-authored-by: github-actions[bot]`）—— 于是 main 上作者全是贡献者、
+            #     机器人只以「共同作者」身份出现，正是契约要的形态。
             # 挂不上也不影响正事——PR 照样在，人工合并即可，所以只提示、不失败。
-            if ! gh pr merge -R "$REPO" "$url" --auto --merge 2>merge-error.txt; then
+            if ! gh pr merge -R "$REPO" "$url" --auto --rebase 2>merge-error.txt; then
               echo "auto-merge 没挂上（不影响：人工合并即可）：$(tail -n 1 merge-error.txt)"
             fi
 

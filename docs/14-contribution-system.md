@@ -205,18 +205,25 @@ B 类不能——「导航怎么改」没有机械解，只有设计判断。把
 - 每个机器人 PR 都带 `bot-pr` + `needs-review` 标签；
 - `.github/CODEOWNERS` 让这些 PR 自动请求维护者审核；
 - **人点一次 Approve 就够**（2026-10-02 起）：机器人开 PR 时会挂上 **auto-merge**（用
-  `--merge`，**不是** `--squash`），批准一到它就把 PR 合掉，维护者不必再点一次「合并」。
+  `--rebase`，见下面那条），批准一到它就把 PR 合掉，维护者不必再点一次「合并」。
   这里的关键是**决定权仍在人**：`main` 的分支保护要求 1 个 Code Owners 批准、
   且 `require_code_owner_reviews` 为真、CODEOWNERS 只写了仓库维护者，
   所以机器人**没有办法**让自己提的 PR 进入合并 —— 它只是执行已经批准的合并。
   workflow 里也**不得**出现 `gh pr review --approve` / `gh pr merge --admin`，
   这条约定由 `scripts/check-workflows.mjs` 第 ⑤ 项在 CI 里守着；
-- **为什么不能用 squash**：署名契约要求「提交作者 = 贡献者、机器人只是共同作者」，
-  而 squash 会**新建**一个提交、作者变成 PR 作者（机器人），把贡献者的署名吃掉。
-  实测踩过：分支上的提交 `author=贡献者`（committer 是机器人、message 带
-  `Co-authored-by: github-actions[bot]`），squash 到 main 之后变成
-  `author=github-actions[bot]`，贡献者署名与 Co-authored-by 全没了。
-  用 `--merge` 保留分支上的提交，署名原样落地；
+- **合并方式必须是 rebase**（署名契约）：契约要求「提交作者 = 贡献者、机器人只是共同作者」，
+  而三种合并方式里只有 rebase 能同时满足它：
+
+  | 方式 | 结果 | 判断 |
+  | --- | --- | --- |
+  | `--squash` | **新建**提交、作者取 PR 作者（机器人）；贡献者署名与 `Co-authored-by` 全丢 | ✗ 实测踩过 |
+  | `--merge` | 保留分支提交（作者=贡献者 ✓），但**多一个合并提交**，其作者被记成「执行合并的人」——auto-merge 时就是机器人 | ✗ 会再冒出一个机器人署名的提交 |
+  | `--rebase` | 不加合并提交，且保留原提交的**作者**与 commit message（含 `Co-authored-by: github-actions[bot]`） | ✓ 用这个 |
+
+  实测证据（踩过的坑）：分支上的提交 `author=HXH`、`committer=dshbaike-bot`、
+  message 带 `Co-authored-by: github-actions[bot]`；squash 到 main 之后变成
+  `author=github-actions[bot]`。对照：维护者手点的三次合并（`7262490` / `6e5ba98` / `27d74b2`）
+  合并提交作者都是他本人 —— 这正是 `--merge` 在 auto-merge 下会出问题的原因；
 - **分支清理**：合并后删 `bot/...` 分支，靠 `delete_branch_on_merge` **加**一层兜底
   （`.github/workflows/cleanup-bot-branch.yml`）—— 那个开关实测第一次没生效
   （`bot/claim-27` 在 #28 合并后仍在，可能是按 PR 创建时的设置判定的），
