@@ -320,6 +320,22 @@ export const OPS = {
 export const CONTENT_CLASS_TITLE = '内容变更';
 
 /**
+ * **人工处理**的贡献类型（与 OPS 里那四类机器代改相对）。
+ *
+ * 这些请求本身是合理的，只是机器人不做：新增词条要分配编号、纠错要人判断、
+ * 写教程/派生概念是创作、站点改进是改站本身。登记在这里是为了让机器人**明确回一句
+ * 「这类由人工处理」**——而不是回「认不出这是哪种表单，请用模板重新提交」
+ * （作者用的就是模板，那句话等于死胡同）。
+ */
+export const HUMAN_TASKS = ['新增词条', '纠错', '站点改进', '为它写一篇教程', '派生概念', '收录申请'];
+
+/** 标题是否属于「人工处理」那一类 */
+export function isHumanTask(title) {
+  const { opTitle } = parseTitle(title);
+  return opTitle != null && HUMAN_TASKS.includes(opTitle);
+}
+
+/**
  * 按标题（与表单）找操作。解析顺序从**最明确**到最含糊：
  *   ① `[补充分区条目] themes` —— 标题前缀就是操作名（独立表单与历史 Issue 都走这条）；
  *   ② `[内容变更] 改一个字段 plugin/1` —— 站点深链把操作名与编号都塞进标题

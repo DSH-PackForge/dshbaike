@@ -6,19 +6,29 @@ body:
   - type: markdown
     attributes:
       value: |
-        提交后，仓库的自动化会**分配编号、生成词条骨架、开一个 PR**，并在本 Issue 下回帖链接。
-        你只需（在 PR 里或在这里）把内容补上——**不用装 Node，也不用本地跑脚本**。
+        **这类请求由人工处理**（机器人只做四类代改：认领维护 / 改一个字段 / 改正文一句话 / 补充分区条目）。
+        提交后维护者会**分配编号、建好骨架、开 PR**并在本 Issue 下回帖——你不需要装 Node，也不用本地跑脚本。
+        想更快也可以自己来：照抄一条同类词条（如 `data/launcher/9.md`）改内容，提 PR 即可。
         编号是永久的：断号不回填、删除留墓碑。
   - type: dropdown
     id: kind
     attributes:
       label: 词条类型
       options:
-        - concept（概念：本体机制）
-        - plugin（插件：聚合页）
-        - tutorial（教程）
-        - pack（整合包）
         - launcher（启动器）
+        - plugin（插件）
+        - client（界面与客户端）
+        - mcp（MCP 与工具接入）
+        - skill（技能包）
+        - preset（预设与人设）
+        - recipe（指令与配方）
+        - theme（主题与皮肤）
+        - asset（素材与本地化）
+        - pack（整合包）
+        - tool（工具链）
+        - spec（规范文件）
+        - concept（概念：本体机制）
+        - tutorial（教程）
         - source（资源源：外部渠道）
     validations:
       required: true

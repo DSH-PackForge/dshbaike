@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import process from 'node:process';
 
-import { findOp, parseFormBody } from './lib/ops.mjs';
+import { findOp, isHumanTask, parseFormBody } from './lib/ops.mjs';
 import { normalizeUsername, usernameProblem } from './lib/util.mjs';
 
 /**
@@ -108,6 +108,20 @@ async function main(argv) {
   // 先解析表单：合并表单要靠「操作类型」下拉才知道用哪个操作
   const found = findOp(title, form);
   if (!found) {
+    // 先分清两种情况：**这类请求本来就由人工处理**（新增词条 / 纠错 / 站点改进…），
+    // 还是表单本身填得不对。前者要说清楚"你没问题、是我们不做这个"，
+    // 否则回「请用模板重新提交」——作者用的就是模板，等于死胡同。
+    if (isHumanTask(title)) {
+      process.stderr.write(`人工任务，机器人不处理：\`${title}\`\n`);
+      emit({
+        ok: 'false',
+        reason: 'human-task',
+        escalate: 'false',
+        fingerprint: fp,
+        message: '这类请求由**人工**处理（机器人只做四类代改：认领维护 / 改一个字段 / 改正文里的一句话 / 补充分区条目）。表单没有问题，你不需要再改什么。',
+      });
+      return 1;
+    }
     process.stderr.write(`认不出这是哪种贡献表单：\`${title}\`\n`);
     emit({
       ok: 'false',

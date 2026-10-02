@@ -92,6 +92,18 @@ jobs:
           那个 PR 还要再审一次才能合并。
 
           审核指纹：\`${FP}\`（只看这一版；正文在这之后被改过的话，机器人会拒绝执行并要求重新批准）"
+          elif [ "$REASON" = "human-task" ]; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "🙋 **这类请求由人工处理**——表单没问题，你不需要再改什么。
+
+          > \${MESSAGE}
+
+          维护者会接手（一般几天内）。如果你愿意自己动手更快，也可以直接改文件提 PR：
+
+          1. 打开 https://github.com/\${REPO}/edit/main/data/ 找到对应目录（新增词条就先照抄一条同类词条，比如 `data/launcher/9.md`）；
+          2. 改完在提交对话框里选 **Create a new branch … and start a pull request**；
+          3. 在 PR 里说清写的是什么、凭什么这么写（**出处**：上游链接 / 规范路径 / 代码位置）。
+
+          编号是永久的：断号不回填、删除留墓碑；内容纪律见 [CONTRIBUTING.md](https://github.com/\${REPO}/blob/main/CONTRIBUTING.md)。"
           elif [ "$ESCALATE" = "true" ]; then
             gh issue comment "$ISSUE" -R "$REPO" --body "🙅 这个改动机器人**不能安全地做**：
 
