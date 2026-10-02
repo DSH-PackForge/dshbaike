@@ -8,6 +8,10 @@
 # 所以新标签只要值得长期做，来这里补一行即可——不补也能上线，只是地址难看。
 
 tags:
+  设置: settings
+  插件: plugin
+  排错: troubleshooting
+  整合包安装: pack-install
   启动器: launchers
   机制: mechanics
   启动: boot
