@@ -222,6 +222,52 @@
     fileName: '仓库内路径',
     supersedes: '取代了'
   };
+  /* ----- 标签外观（docs/08 §4、docs/13）-----
+     图标是内联 SVG：站点离线构建、不发外部请求，也不依赖图标字体。
+     TAG_STYLE 是**登记表**——登记过的标签才上色/带图标，其余走中性样式。 */
+  var TAG_ICONS = {
+    block: '<svg viewBox="0 0 12 12"><rect x="1" y="1" width="4.4" height="4.4" rx=".6"/><rect x="6.6" y="1" width="4.4" height="4.4" rx=".6"/><rect x="1" y="6.6" width="4.4" height="4.4" rx=".6"/><rect x="6.6" y="6.6" width="4.4" height="4.4" rx=".6"/></svg>',
+    window: '<svg viewBox="0 0 12 12"><rect x="1" y="2.5" width="10" height="7.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1 5.4h10" stroke="currentColor" stroke-width="1.4"/></svg>',
+    layers: '<svg viewBox="0 0 12 12"><path d="M6 1.2 11 4 6 6.8 1 4Z"/><path d="M1 7.4 6 10.2l5-2.8" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>'
+  };
+
+  var TAG_STYLE = {
+    'MC 系': { tone: 'grass', icon: 'block' },
+    'WinUI': { tone: 'sky', icon: 'window' },
+    '多版本管理': { tone: 'violet', icon: 'layers' },
+    '生态管理': { tone: 'amber' },
+    '支持 .dspack': { tone: 'slate' },
+    '不支持 .dspack': { tone: 'rose' }
+  };
+
+  /**
+   * 标签 chip：登记过的标签带色调与小图标，其余保持中性。
+   * 为什么不做成「所有标签自动配色」：颜色一多就没有重点；
+   * 而且颜色不该是唯一信号——标签文字始终在，图标只是装饰。
+   */
+  function tagChip(tag, opts) {
+    var o = opts || {};
+    var name = String(tag);
+    var style = TAG_STYLE[name] || {};
+    var attrs = { class: o.className || 'tag' };
+    if (style.tone) attrs.dataset = { tone: style.tone };
+    var children = [];
+    if (style.icon && TAG_ICONS[style.icon]) {
+      children.push(el('span', { class: 'tag__icon', 'aria-hidden': 'true', html: TAG_ICONS[style.icon] }));
+    }
+    children.push(document.createTextNode(isPresent(o.label) ? String(o.label) : name));
+    if (o.button) {
+      attrs.type = 'button';
+      attrs['aria-pressed'] = o.pressed === true ? 'true' : 'false';
+      return el('button', attrs, children);
+    }
+    if (o.href) {
+      attrs.href = o.href;
+      return el('a', attrs, children);
+    }
+    return el('span', attrs, children);
+  }
+
 
   var FIELD_GROUPS = [
     { title: '基本信息', keys: ['positioning', 'titleEn', 'aliases', 'category', 'tags', 'role', 'layer', 'difficulty', 'origin', 'fitFor', 'packType', 'launcherId', 'sourceKind', 'form', 'targets', 'assetType', 'locale', 'skillKind', 'roots', 'presetKind', 'recipeKind', 'targetLayer', 'language', 'specVersion', 'specStatus', 'maintainers', 'status', 'updatedAt'] },
@@ -1519,7 +1565,7 @@
     var tags = asArray(meta.tags);
     if (tags.length) {
       subBits.push(frag([document.createTextNode('标签：'),
-        el('span', { class: 'tagset' }, tags.map(function (t) { return el('span', { class: 'tag' , text: String(t) }); }))
+        el('span', { class: 'tagset' }, tags.map(function (t) { return tagChip(t); }))
       ]));
     }
     var tutCount = asArray(entry.referencedByTutorials).length;
@@ -2739,7 +2785,7 @@
 
     var chips = [el('button', { type: 'button', class: 'tag tag--on', dataset: { tag: '*' }, 'aria-pressed': 'true', text: '全部 · ' + items.length })];
     names.forEach(function (t) {
-      chips.push(el('button', { type: 'button', class: 'tag', dataset: { tag: t }, 'aria-pressed': 'false', text: t + ' · ' + tags[t] }));
+      chips.push(tagChip(t, { button: true, label: t + ' · ' + tags[t] }));
     });
 
     var input = el('input', {
@@ -2921,7 +2967,7 @@
       fieldBits.length ? el('div', { class: 'card__fields' }, fieldBits) : null,
       el('div', { class: 'card__meta' }, [
         asArray(it.tags).length ? el('span', { class: 'tagset' }, asArray(it.tags).map(function (t) {
-          return el('button', { type: 'button', class: 'tag', dataset: { tag: String(t) }, text: String(t) });
+          return tagChip(t, { button: true });
         })) : null,
         isPresent(it.version) ? el('span', { class: 'mono', text: 'v' + String(it.version) }) : null,
         isPresent(it.updatedAt) ? el('span', { text: '更新 ' + fmtDate(it.updatedAt) }) : null,

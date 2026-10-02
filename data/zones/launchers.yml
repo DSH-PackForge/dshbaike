@@ -16,8 +16,10 @@ sections:
       | --- | --- | --- |
       | **已认领 ID** | `launcherId`（如 `dshl`） | 整合包可以在 manifest 的 `launchers` 字段里**声明支持它**；安装端判定规则见 pack-structure/v3.md §9.1 |
       | **未认领 ID** | 没有 `launcherId` | 它是个能下载、能用的启动器，但整合包**暂时声明不了它**——只能靠 README 让人手装 |
-      | **支持 .dspack** | `importSupport` 写明支持 | 能把 `.dspack` 直接装进 profile（本站的整合包就是这个格式） |
-      | **不支持 .dspack** | `importSupport` 写明不支持 | 仍能起 DSH，但装整合包得手工。这类启动器**也列在这一区**，不会因为不支持就被藏起来 |
+      | **支持 .dspack** | 带 `支持 .dspack` 标签 | 能把 `.dspack` 直接装进 profile（本站的整合包就是这个格式） |
+      | **不支持 .dspack** | 带 `不支持 .dspack` 标签 | 仍能起 DSH，但装整合包得手工。这类启动器**也列在这一区**，不会因为不支持就被藏起来 |
+
+      这两件事用**标签**表达，不为它单开字段——标签能筛选、能上色，够用了。
 
       当前认领表里共 **5 个 ID**（`dshl` / `hdsl` / `dsh-packforge-app` / `official-desktop` / `dsh-cli`，
       快照 2026-10-02）；下面列出的启动器项目多于 5 个，**差额就是还没认领的那几个**。
@@ -35,7 +37,7 @@ items:
     lineage: 独立实现（Rust）
     platforms: [windows, macos, linux]
     selfVersioning: 未核实
-    importSupport: 支持 .dspack（编辑确认 2026-10-02，未逐仓库实测）
+    importSupport: null
     source: curated
     entry: null
     tags: ["多版本管理", "支持 .dspack"]
@@ -50,10 +52,10 @@ items:
     lineage: PCL2 魔改
     platforms: [windows]
     selfVersioning: 四段式（如 0.1.1.2）
-    importSupport: 支持 .dspack（编辑确认 2026-10-02，未逐仓库实测）
+    importSupport: null
     source: launchers
     entry: launcher/1
-    tags: ["工具与能力", "支持 .dspack"]
+    tags: ["工具与能力", "支持 .dspack", "MC 系"]
     risk: [desktop-control, network]
     links:
       github: Loliyer520/DSHL-Deepseek-Harness-Launcher
@@ -65,10 +67,10 @@ items:
     lineage: HMCL 内核
     platforms: [windows, macos, linux]
     selfVersioning: 注册表记为「可自报」，格式未核实
-    importSupport: 支持 .dspack（另自有 .hdslp；编辑确认 2026-10-02）
+    importSupport: 支持 .dspack（另自有 .hdslp）
     source: launchers
     entry: null
-    tags: ["工具与能力", "支持 .dspack"]
+    tags: ["工具与能力", "支持 .dspack", "MC 系"]
     risk: [desktop-control, network]
     links:
       github: MCXCC303/HDSL
@@ -80,7 +82,7 @@ items:
     lineage: 独立实现（WinUI 3）
     platforms: [windows]
     selfVersioning: 未核实
-    importSupport: 支持 .dspack（编辑确认 2026-10-02，未逐仓库实测）
+    importSupport: null
     source: curated
     entry: null
     tags: ["WinUI", "支持 .dspack"]
@@ -95,7 +97,7 @@ items:
     lineage: 独立实现（C#）
     platforms: [windows]
     selfVersioning: 未核实
-    importSupport: 支持 .dspack（编辑确认 2026-10-02，未逐仓库实测）
+    importSupport: null
     source: curated
     entry: null
     tags: ["生态管理", "支持 .dspack"]
