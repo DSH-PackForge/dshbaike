@@ -98,7 +98,7 @@
       .catch(function () { /* 拿不到映射就什么都不做，不影响页面 */ });
   }
 
-  /** 外壳（顶栏/侧栏/正文）是 pedia.js 异步搭的：轮询 + MutationObserver 双保险 */
+  /** 外壳（顶栏/侧栏/正文）是 pedia.js 异步搭的：轻量轮询，命中即停（上限 ~7.5 秒） */
   function retryMount(indexes, names) {
     var tries = 0;
     var timer = setInterval(function () {

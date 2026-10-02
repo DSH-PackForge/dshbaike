@@ -44,7 +44,31 @@ var a=localStorage.getItem('dsh-pedia-accent');if(a)d.setAttribute('data-accent'
 </noscript>
 
 <div class="layout">
-  <main id="main" tabindex="-1"></main>
+  <main id="main" tabindex="-1">
+    <!-- 首页的静态内容（不跑 JS 也有）：十二个分区的入口。JS 接管时 renderIndex() 会
+         clear(main) 把它换成带条目数的版本；这里刻意不写数字，免得数字变了没人改。 -->
+    <div class="prerender" data-prerender="index">
+      <article class="prose">
+        <h1>DSH 百科</h1>
+        <p>一站式的 DeepSeek Harness 中文百科：十二个一级分区，从「界面与客户端」到「规范与协议」。</p>
+        <ul>
+          <li><a href="clients.html">界面与客户端</a> —— 从哪种界面使用 DSH</li>
+          <li><a href="plugins.html">插件</a> —— 给 DSH 加功能</li>
+          <li><a href="skills.html">技能包</a> —— 以 SKILL.md 为单位的可加载能力</li>
+          <li><a href="launchers.html">启动器</a> —— 图形启动器、包装器与命令行入口</li>
+          <li><a href="packs.html">整合包</a> —— 一次装一整套</li>
+          <li><a href="mcps.html">MCP 与工具接入</a> —— 把外部工具接成模型能调用的能力</li>
+          <li><a href="themes.html">主题与皮肤</a> —— 换掉 DSH 的样子</li>
+          <li><a href="assets.html">素材与本地化</a> —— 图标、字体、界面文案</li>
+          <li><a href="presets.html">预设与人设</a> —— 改 DSH 的行为与语气</li>
+          <li><a href="recipes.html">指令与配方</a> —— 可粘贴的配置片段</li>
+          <li><a href="toolchain.html">工具链</a> —— 打包、安装、市场索引与调试工具</li>
+          <li><a href="specs.html">规范与协议</a> —— manifest、pack-structure、index 等约定</li>
+        </ul>
+        <p>也可以<a href="tags.html">按标签或平台浏览</a>（「支持 .dspack 的启动器」「Windows 上的 DSH」）。</p>
+      </article>
+    </div>
+  </main>
 </div>
 
 <footer class="footer" id="site-footer"></footer>
