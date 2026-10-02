@@ -108,6 +108,18 @@ items:
     risk: [build-script]                   # 可选：desktop-control | network | credentials | build-script
 ```
 
+**`risk` 四个取值是什么意思**（卡片上渲染成 `⚠ 桌面操控` 这类徽章；悬停与读屏给出同一句话）：
+
+| 值 | 徽章 | 含义 |
+| --- | --- | --- |
+| `desktop-control` | 桌面操控 | 装在系统里的**原生程序**，不是沙箱网页：等于把用户权限交给它（读写文件、起进程、装东西），系统权限模型拦不住 |
+| `network` | 网络访问 | 会联网下载包与更新、拉远程清单；它装回来的东西本站无法预先核实 |
+| `credentials` | 凭据 | 会接触登录凭据 / token |
+| `build-script` | 构建脚本 | 安装时会执行仓库里的构建脚本（pnpm 默认拦截，要手动 `allowBuilds` 放行） |
+
+打徽章的纪律：**只标这条东西确实具备的能力**，不替读者做决定、也不写成免责声明——
+一句话说清「它能做什么」就够（[08](08-visual-system.md) §8.3 解释了为什么全站只留一句总声明）。
+
 规则：
 
 1. 条目必填 `name` / `blurb` / `links`（至少一个链接）；**宁缺毋滥**，一条冗余条目比没有更糟。
@@ -263,6 +275,7 @@ plugins:                    # 插件引用块，见 §5
 | `usedInPacks` | string[] | 采集 | 反查市场 manifest 的 `bundles` / `dependencies` 得到「出现在哪些整合包」——纯自动，首版就做 |
 | `referencedByTutorials` | string[] | 构建期派生 | 引用它的教程（来自反向索引） |
 | `entryGate` | enum | 校验用 | 记录满足的收录门槛：`official` \| `tutorial` \| `pack` \| `maintainer`（见 §1.2） |
+| `risk` | enum[] | 风险徽章 | `desktop-control` 桌面操控 / `network` 网络访问 / `credentials` 凭据 / `build-script` 构建脚本。含义见下表 |
 
 > 三个必须遵守的边界：**① 不复制上游正文**（README 整篇搬进词条就退回成 awesome 详情页了，只做摘要 + 出处链接）；**② 热度数字一律引用外部源并标快照时间**，我们不自建统计；**③ 没有采集到的字段显示「未声明」**，不推断。
 

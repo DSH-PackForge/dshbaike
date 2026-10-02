@@ -111,6 +111,19 @@
     'build-script': '构建脚本'
   };
 
+  /**
+   * 每个风险取值的大白话解释（docs/02 §3.2）。
+   * 此前徽章的提示只有「风险提示：桌面操控」——把标签重复一遍，**等于没解释**；
+   * 而四个词的含义只写在内部文档里。这里给读者一句能看懂的话。
+   * 语气刻意克制：说清「它能做什么」，不吓人、也不替读者做决定。
+   */
+  var RISK_NOTE = {
+    'desktop-control': '它是装在系统里的原生程序，不是沙箱里的网页：装它等于把你的用户权限交给它——能读写你的文件、启动别的进程、装东西，系统权限模型不会替你拦。',
+    network: '它会联网：下载包与更新、拉远程清单。它装回来的东西本站无法预先核实，内容可能随时变。',
+    credentials: '它会接触登录凭据或 token。给多少权限由你决定，拿不准就先只给只读的。',
+    'build-script': '安装时会执行仓库里的构建脚本（pnpm 默认拦截，要手动加 allowBuilds 才放行）——脚本内容本站不逐个审。'
+  };
+
   var SOURCE_ZH = {
     manual: '人工',
     verified: '已核实',
@@ -1353,7 +1366,11 @@
   function riskBadges(list) {
     return asArray(list).map(function (r) {
       var key = String(r);
-      return badge('⚠ ' + (RISK_ZH[key] || key), 'risk', '风险提示：' + (RISK_ZH[key] || key));
+      var zh = RISK_ZH[key] || key;
+      var note = RISK_NOTE[key] || '';
+      var full = '风险提示：' + zh + (note ? '——' + note : '');
+      // title 给鼠标，aria-label 给读屏：title 对键盘与触屏都不出现，不能只靠它
+      return el('span', { class: 'badge badge--risk', text: '⚠ ' + zh, title: full, 'aria-label': full });
     });
   }
 
