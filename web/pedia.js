@@ -814,18 +814,7 @@
       'aria-autocomplete': 'list'
     });
 
-    // 「相关」：词条页的本页导航在窄视口（及侧栏占位时）收进正文流，用这个按钮展开
-    var navToggle = el('button', {
-      type: 'button',
-      class: 'icon-btn nav-toggle',
-      id: 'nav-toggle',
-      'aria-expanded': 'false',
-      'aria-controls': 'entry-nav-panel',
-      text: '相关'
-    });
-    var hasNavPanel = !!document.getElementById('entry-nav-panel');
-    if (!hasNavPanel) navToggle.setAttribute('hidden', '');
-
+    // 「相关」不再需要一个展开按钮：它已经并进右侧信息栏（窄屏时信息栏排在最前，照样看得到）
     // 侧栏最下面的按钮：向左收回
     var collapseBtn = el('button', {
       type: 'button',
@@ -849,7 +838,6 @@
           el('div', { class: 'search__panel', id: 'site-search-panel', role: 'listbox', 'aria-label': '搜索结果', hidden: true })
         ]),
         themeButton(),
-        navToggle,
         collapseBtn
       ])
     ]);
@@ -859,15 +847,6 @@
     bindThemeButton($('#theme-toggle', host));
 
     collapseBtn.addEventListener('click', function () { setRailCollapsed(true, true); });
-
-    navToggle.addEventListener('click', function () {
-      var panel = document.getElementById('entry-nav-panel');
-      if (!panel) return;
-      var open = navToggle.getAttribute('aria-expanded') === 'true';
-      // 用类切换而不是 panel.hidden：hidden 属性会被样式表里的 display 覆盖
-      panel.classList.toggle('is-open', !open);
-      navToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
-    });
 
     ensureRailChrome();
     syncRailAria();
@@ -1394,7 +1373,7 @@
     // entry.toc 的锚点必须能在正文里找到，否则回退到实测锚点
     if (asArray(entry.toc).length && !anchorExists(prose, entry.toc[0].anchor)) toc = computedToc;
 
-    var aside = renderAside(entry, id, kind, toc);
+    var aside = renderAside(entry, id, kind, toc, zone);
     var tabs = renderTabs(entry, id, kind, prose);
 
     main.appendChild(frag([
@@ -1402,7 +1381,7 @@
       titleBar(entry, id, kind, zone),
       statusNotice(entry, id),
       el('div', { class: 'entry-grid' }, [
-        renderNav(toc, entry, zone),
+        // 两栏：正文 + 信息栏（「相关」已并入信息栏，不再单开左侧一列——评审：太占空间）
         el('div', { class: 'entry-grid__main' }, [leadBlock(entry), tabs, backlinksBlock(entry)]),
         el('div', { class: 'entry-grid__aside' }, aside)
       ]),
@@ -1814,9 +1793,12 @@
 
   /* ----- 信息表（分组 dl） ----- */
 
-  function renderAside(entry, id, kind, toc) {
+  function renderAside(entry, id, kind, toc, zone) {
     var out = [];
     out.push(completenessBlock(entry, id));
+    // 「相关」放在完整度之后：它是短的跳转列表，应该不滚动就能看到；
+    // 它此前是正文左边独立的一列（240px），评审判定「太占空间」，已并入信息栏
+    if (zone) out.push(relatedBlock(entry, zone));
     out.push(infoTable(entry, id, kind));
     out.push(tocBlock(toc));
     if (kind === 'plugin') out.push(dropZone({ hit: 'profiles' }));
@@ -2550,25 +2532,28 @@
     ]);
   }
 
-  /* ----- 左侧导航（≥1280 显示） ----- */
+  /* ----- 相关（并进右侧信息栏；不再占正文左边的整列） ----- */
 
-  function renderNav(toc, entry, zone) {
-    var items = [];
-    items.push(entryLink(entry.id || '', entry.title, { known: true }));
-    items.push(el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label }));
+  /**
+   * 「相关」：所属分区 + `related` / `prereq` 指向的词条。
+   *
+   * 历史：它曾经是正文左边独立的一列（240px，`--w-nav`），而里面只放这么一小块——
+   * 正文被挤窄，评审直接点出来「不要放在左边，太占空间」。现在它是信息栏里的一格。
+   * 同时**不再把词条自己列一遍**：你就在这一页上。
+   */
+  function relatedBlock(entry, zone) {
+    var items = [el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label })];
     var related = asArray(entry.meta && (entry.meta.related || entry.meta.prereq));
     related.forEach(function (r) {
       if (!isPresent(r)) return;
       items.push(entryLink(String(r), null));
     });
 
-    return el('nav', { class: 'entry-grid__nav', id: 'entry-nav-panel', 'aria-label': '本页导航与相关词条' }, [
-      el('div', { class: 'box' }, [
-        el('div', { class: 'box__head', text: '相关' }),
-        el('div', { class: 'box__body' }, el('ul', { class: 'toc__list' }, items.map(function (n) {
-          return el('li', {}, n);
-        })))
-      ])
+    return el('div', { class: 'box' }, [
+      el('div', { class: 'box__head', text: '相关' }),
+      el('div', { class: 'box__body' }, el('ul', { class: 'toc__list' }, items.map(function (n) {
+        return el('li', {}, n);
+      })))
     ]);
   }
 

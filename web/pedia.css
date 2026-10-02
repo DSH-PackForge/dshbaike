@@ -49,7 +49,6 @@
   --fs-h1: 24px;
 
   /* 尺度 */
-  --w-nav: 240px;
   --w-aside: 280px;
   --max-prose: 72ch;
   --h-masthead: auto;
@@ -623,23 +622,13 @@ html.rail-collapsed .rail-reopen {
   color: var(--link);
 }
 
-/* 三栏：左导航 / 正文 / 信息表 + 目录（吸顶） */
+/* 词条页两栏：正文 / 信息表 + 目录（吸顶）。
+   「相关」曾单独占左边一列（240px），评审判定「太占空间」，已并入信息栏（docs/08 §5）。 */
 .entry-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
   align-items: start;
-}
-
-.entry-grid__nav {
-  display: none;
-}
-
-/* 「相关」按钮展开后进入正文流。
-   用类而不是 hidden 属性：hidden 会被下面作者样式里的 display 覆盖，
-   这正是这个按钮此前点了没反应的原因。 */
-.entry-grid__nav.is-open {
-  display: block;
 }
 
 /* --------------------------------------------------------------------------
@@ -2270,18 +2259,10 @@ details.collapse[open] > summary {
     padding: 0 20px 40px;
   }
 
-  /* 三栏：左导航 / 正文 / 信息表 + 目录 */
+  /* 两栏：正文 / 信息表 + 目录（吸顶） */
   .entry-grid {
-    grid-template-columns: var(--w-nav) minmax(0, 1fr) var(--w-aside);
+    grid-template-columns: minmax(0, 1fr) var(--w-aside);
     gap: 24px;
-  }
-
-  .entry-grid__nav {
-    display: block;
-    position: sticky;
-    top: 12px;
-    max-height: calc(100vh - 24px);
-    overflow-y: auto;
   }
 
   .entry-grid__aside {
@@ -2336,26 +2317,8 @@ body {
 /* 侧栏吃掉 180px（外加 .layout 的 40px 内边距）：词条页三栏需要内容区 ≥ 1280px，
    也就是视口 ≥ 1500px 才放得下。1280–1499 之间收掉词条页自己的左栏（位置与侧栏重复，
    内容仍可从「相关」进入正文流）；侧栏收起后正文重新变宽，这套降级同时撤销。 */
-@media (min-width: 1280px) and (max-width: 1499px) {
-  html:not(.rail-collapsed) .entry-grid {
-    grid-template-columns: minmax(0, 1fr) var(--w-aside);
-  }
-
-  /* 三栏放不下：把「本页导航」从一整列改成正文上方的可展开块（点侧栏的「相关」）。
-     显式写 display:none —— 否则上面 ≥1280 的 display:block 会赢，面板会常显。 */
-  html:not(.rail-collapsed) .entry-grid__nav {
-    display: none;
-    grid-column: 1 / -1;
-    order: -1;
-    position: static;
-    max-height: none;
-    overflow: visible;
-  }
-
-  html:not(.rail-collapsed) .entry-grid__nav.is-open {
-    display: block;
-  }
-}
+/* 1280 起就是两栏（正文 + 信息栏），侧栏展开时也不再需要专门降级：
+   「相关」已经并进信息栏，词条页没有自己那一栏要与侧栏抢宽度了。 */
 
 /* 打印：侧栏、把手、遮罩都不出现，正文铺满 */
 @media print {
