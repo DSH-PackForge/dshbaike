@@ -1,0 +1,39 @@
+name: 内容变更 · 认领维护
+description: 认领一条词条的维护：你愿意跟进它（上游变了、内容过时了能被 @ 到）——机器人只加一个用户名并开 PR
+title: "[认领维护] "
+labels: ["内容变更"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        认领之后你的用户名会出现在这条词条的「维护者」里，意思是**你愿意跟进它**：上游变了、
+        内容过时了，@ 你能叫得应。它不是荣誉称号，也不要求你写多少字。
+        
+        机器人只做一件事：把用户名加进那个文件的 `maintainers`。它**不会**动正文，
+        改完开 PR，由维护者审核后合并。
+        
+        **「GitHub 用户名」是必填的**——署名要用它（提交作者会写成这个名字），机器人会核实账号存在；填错直接拒绝。
+
+  - type: input
+    id: entry
+    attributes:
+      label: 词条 id
+      description: 形如 plugin/1 或 concept/2。从词条页点「我来维护」进来时标题里已带编号，可留空。
+      placeholder: plugin/1
+    validations:
+      required: false
+  - type: input
+    id: username
+    attributes:
+      label: GitHub 用户名
+      description: 必填——署名要用它：这条改动的提交作者会写成这个名字。只填用户名本身（不是显示名、不是邮箱、不要 @）；机器人会核实账号存在，填错直接拒绝。
+      placeholder: your-github-name
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 你与这一条的关系（可选）
+      description: 例如「我在用这个插件」「我是上游作者」「我在这个包上踩过坑」。写清楚会让维护者更放心。
+    validations:
+      required: false

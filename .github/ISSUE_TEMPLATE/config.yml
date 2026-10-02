@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: 不确定该用哪张表？
-    url: https://github.com/DSH-PackForge/dshbaike/issues/new?template=5-meta.yml
+    url: https://github.com/DSH-PackForge/dshbaike/issues/new?template=7-meta.yml
     about: 用「站点改进 / 百科自身的问题」——写清哪里、现在怎样、你期望怎样，由人来处理。
   - name: 想直接动手改（不走表单）
     url: https://github.com/DSH-PackForge/dshbaike/blob/main/CONTRIBUTING.md

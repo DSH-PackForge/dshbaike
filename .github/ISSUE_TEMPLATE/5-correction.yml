@@ -1,4 +1,4 @@
-name: 纠错
+name: 纠错（只报告，不动文件）
 description: 报一个事实错误、失效链接或过时内容（不需要会 Markdown，也不需要本地工具）
 title: "[纠错] "
 labels: ["内容变更"]

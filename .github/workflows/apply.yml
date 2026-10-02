@@ -29,13 +29,18 @@ concurrency:
 
 jobs:
   # ---- 第一道闸（a）：提交后立刻干跑并回帖，等维护者 /approve -------------------
-  # 只处理**内容变更**类的两张表单（`[内容变更]` 合并表单 + `[补充分区条目]` 独立表单；
-  # 前者用「操作类型」下拉在表单内选具体操作，这就是选择器的第二级）。
-  # 像「站点改进」那种关于百科本身的 Issue 由人处理，机器人**不插话**——插话只会变成噪音。
+  # 只处理**内容变更**类的**四张单一意图表单**（前缀与 scripts/lib/ops.mjs 的操作标题一一对应，
+  # 由 scripts/check-workflows.mjs 强制一致）。像「站点改进」那种关于百科本身的 Issue
+  # 由人处理，机器人**不插话**——插话只会变成噪音。
+  #
+  # 为什么不是「一张合并表单 + 表单内选操作」：实测那样更不直观——从词条页点了「改一句话」
+  # 进来的人还要在下拉里再选一次（GitHub 不让预填表单字段），而且面对的是所有操作的字段并集。
   check:
     if: >
       github.event_name == 'issues' &&
-      (startsWith(github.event.issue.title, '[内容变更]') ||
+      (startsWith(github.event.issue.title, '[认领维护]') ||
+       startsWith(github.event.issue.title, '[改一个字段]') ||
+       startsWith(github.event.issue.title, '[改正文里的一句话]') ||
        startsWith(github.event.issue.title, '[补充分区条目]'))
     runs-on: ubuntu-latest
     steps:
@@ -106,7 +111,9 @@ jobs:
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request == null &&
       startsWith(github.event.comment.body, '/approve') &&
-      (startsWith(github.event.issue.title, '[内容变更]') ||
+      (startsWith(github.event.issue.title, '[认领维护]') ||
+       startsWith(github.event.issue.title, '[改一个字段]') ||
+       startsWith(github.event.issue.title, '[改正文里的一句话]') ||
        startsWith(github.event.issue.title, '[补充分区条目]'))
     runs-on: ubuntu-latest
     outputs:

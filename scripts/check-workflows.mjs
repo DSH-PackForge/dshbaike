@@ -71,29 +71,18 @@ const declared = [...opsSrc.matchAll(/^\s*title:\s*'([^']+)'/gm)].map((m) => m[1
 const applySrc = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'apply.yml'), 'utf8');
 const tplDir = EXTRA[0];
 
-// ① 合并表单（1-entry-content.yml）的「操作类型」下拉必须覆盖它该覆盖的操作
-const mergedPath = path.join(tplDir, '1-entry-content.yml');
-const merged = fs.readFileSync(mergedPath, 'utf8');
-const dropdown = (() => {
-  const at = merged.indexOf('label: 操作类型');
-  if (at < 0) return [];
-  const tail = merged.slice(at);
-  const opts = tail.match(/options:\n((?:\s*-\s*.+\n)+)/);
-  return opts ? opts[1].split('\n').map((l) => l.replace(/^\s*-\s*/, '').trim()).filter(Boolean) : [];
-})();
-
-// ② 独立表单（2-zone-content.yml）的标题前缀也是路由入口
-const standalone = [...fs.readdirSync(tplDir)]
-  .filter((f) => /^2-.*\.yml$/.test(f))
-  .flatMap((f) => [...fs.readFileSync(path.join(tplDir, f), 'utf8').matchAll(/^title:\s*"\[([^\]]+)\]\s*"/gm)].map((m) => m[1]));
-
-const routedOps = [...new Set([...dropdown, ...standalone])].sort();
+// ① 四张「机器代改」表单（1-claim / 2-field / 3-replace / 4-zone-item）的标题前缀
+//    必须与 ops.mjs 声明的操作**一一对应**：一张表 = 一个意图（评审实测：合并成一张、
+//    操作在表单内选，体验更差——已经点了「改一句话」的人还要再选一次）。
+const botFormFiles = fs.readdirSync(tplDir).filter((f) => /^[1-4]-.*\.yml$/.test(f)).sort();
+const prefixes = botFormFiles.flatMap((f) =>
+  [...fs.readFileSync(path.join(tplDir, f), 'utf8').matchAll(/^title:\s*"\[([^\]]+)\]\s*"/gm)].map((m) => m[1]));
+const routedOps = [...new Set(prefixes)].sort();
 process.stdout.write(`\n路由检查：\n  ops.mjs 声明 ${declared.length} 个操作：${declared.join(' / ')}\n`);
-process.stdout.write(`  合并表单下拉 ${dropdown.length} 项：${dropdown.join(' / ')}\n`);
-process.stdout.write(`  独立表单前缀 ${standalone.length} 个：${standalone.join(' / ')}\n`);
+process.stdout.write(`  机器代改表单 ${botFormFiles.length} 张，标题前缀 ${routedOps.length} 个：${routedOps.join(' / ')}\n`);
 const sameSet = declared.length === routedOps.length && declared.every((v, i) => v === routedOps[i]);
 if (sameSet) {
-  process.stdout.write('  OK   表单覆盖了全部操作，不多不少\n');
+  process.stdout.write('  OK   一张表单一个意图，且与 ops.mjs 完全对应\n');
 } else {
   ok = false;
   process.stdout.write('  FAIL 表单与 ops.mjs 不一致——机器人会静默漏掉或错认操作：\n');
@@ -101,13 +90,13 @@ if (sameSet) {
   process.stdout.write(`       只在表单：${routedOps.filter((r) => !declared.includes(r)).join(' ') || '（无）'}\n`);
 }
 
-// ③ workflow 的 if 必须认得这两类前缀，否则机器人根本不醒
-for (const prefix of ['[内容变更]', '[补充分区条目]']) {
-  if (applySrc.includes(`'${prefix}'`)) {
-    process.stdout.write(`  OK   apply.yml 认得前缀 ${prefix}\n`);
+// ② workflow 的 if 必须认得每一个操作前缀，否则那条路机器人根本不醒
+for (const prefix of routedOps) {
+  if (applySrc.includes(`'[${prefix}]'`)) {
+    process.stdout.write(`  OK   apply.yml 认得前缀 [${prefix}]\n`);
   } else {
     ok = false;
-    process.stdout.write(`  FAIL apply.yml 不认前缀 ${prefix}——那条路机器人不会醒\n`);
+    process.stdout.write(`  FAIL apply.yml 不认前缀 [${prefix}]——那条路机器人不会醒\n`);
   }
 }
 
@@ -119,7 +108,7 @@ const noLabel = templates
 
 // ④ 机器人代改的两张表单必须**必填** GitHub 用户名——署名契约（docs/14）：
 // 署名靠它，所以它是输入里的必填项；少一处，那条路就会退化成「署不出名」。
-const botForms = templates.filter((p) => /^[12]-.*\.yml$/.test(path.basename(p)));
+const botForms = templates.filter((p) => /^[1-4]-.*\.yml$/.test(path.basename(p)));
 const missingUser = botForms.filter((p) => {
   const src = fs.readFileSync(p, 'utf8');
   const at = src.indexOf('label: GitHub 用户名');

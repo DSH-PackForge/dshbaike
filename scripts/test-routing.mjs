@@ -23,13 +23,16 @@ const check = (name, got, want) => {
 };
 
 console.log('== ① 路由：标题 → 操作 + 编号 ==');
+// 一张表单 = 一个意图：站点深链把编号写进标题（GitHub 不能预填表单字段，只能预填标题）
 const routes = [
+  ['[认领维护] plugin/1', {}, 'claim', 'plugin/1'],
+  ['[改一个字段] concept/1', {}, 'field', 'concept/1'],
+  ['[改正文里的一句话] plugin/1', {}, 'replace', 'plugin/1'],
   ['[补充分区条目] themes', {}, 'zone-item', 'themes'],
+  // 兼容历史 Issue：早期用了「内容变更 + 操作名」的合并形式，仍然认得
   ['[内容变更] 改一个字段 concept/1', {}, 'field', 'concept/1'],
-  ['[内容变更] 认领维护 plugin/1', {}, 'claim', 'plugin/1'],
-  ['[内容变更] 改正文里的一句话 plugin/1', {}, 'replace', 'plugin/1'],
   ['[内容变更] 随便什么', { 操作类型: '改一个字段' }, 'field', '随便什么'],
-  ['[内容变更] 改一个字段 plugin/1', { 操作类型: '认领维护' }, 'field', 'plugin/1'],
+  // 不由机器人处理的两类（人来接手），以及无前缀的
   ['[站点改进] 导航太绕', {}, null, null],
   ['[纠错] 某个词条', {}, null, null],
   ['不是方括号标题', {}, null, null],
