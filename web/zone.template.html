@@ -29,11 +29,12 @@
 <header class="masthead" id="site-masthead"></header>
 <noscript>
   <p class="notice notice--warn"><span class="notice__icon" aria-hidden="true">!</span>
-  本站的分区卡片与来源区块由 JavaScript 读取静态 JSON 渲染；请启用 JavaScript。</p>
+  分区条目与来源已经直接写在页面里，不启用 JavaScript 也能阅读；
+  搜索、筛选、页签、主题切换这些交互需要 JavaScript。</p>
 </noscript>
 
 <div class="layout">
-  <main id="main" tabindex="-1"></main>
+  <main id="main" tabindex="-1"><!--{{PRERENDER}}--></main>
 </div>
 
 <footer class="footer" id="site-footer"></footer>

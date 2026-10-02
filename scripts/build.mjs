@@ -30,7 +30,7 @@ import {
 import { splitFrontMatter } from './lib/frontmatter.mjs';
 import { computeCompleteness, EXPECTED_FIELDS, FIELD_SOURCE, OPTIONAL_FIELDS } from './lib/fields.mjs';
 import { presentationFor } from './lib/presentation.mjs';
-import { renderMarkdown } from './lib/markdown.mjs';
+import { renderMarkdown, escapeHtml } from './lib/markdown.mjs';
 import { ENTRY_KINDS } from './lib/registry.mjs';
 import {
   compareIds,
@@ -210,13 +210,13 @@ function main(argv) {
   }
 
   for (const output of entryOutputs.values()) {
-    const html = renderEntryPage(entryTemplate?.text ?? null, output);
+    const html = renderEntryPage(entryTemplate?.text ?? null, output, entryOutputs);
     const rel = path.posix.join(output.kind, `${output.n}.html`);
     push(writes, nextManifest, rel, html);
   }
   for (const zone of model.zones) {
     const output = buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt);
-    const html = renderZonePage(zoneTemplate?.text ?? null, output);
+    const html = renderZonePage(zoneTemplate?.text ?? null, output, entryOutputs);
     push(writes, nextManifest, `${zone.zone}.html`, html);
   }
 
@@ -802,6 +802,7 @@ function buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt) {
 /* HTML 生成                                                           */
 /* ------------------------------------------------------------------ */
 
+const PRERENDER_COMMENT = '<!--{{PRERENDER}}-->';
 const BOOT_COMMENT = '<!--{{PEDIA_BOOT}}-->';
 const BOOT_COMMENT_COMPACT = '<!-- {{PEDIA_BOOT}} -->';
 
@@ -832,9 +833,13 @@ function fallbackShell({ title, desc, payload }) {
   return meta.join('\n');
 }
 
-function applyTemplate(template, { title, desc, payload }) {
+function applyTemplate(template, { title, desc, payload, prerender }) {
   if (!template) return fallbackShell({ title, desc, payload });
   let html = template;
+  // 预渲染块（P0，docs/10 §7）：没有就替换成空串，模板里的占位注释不会留在产物里
+  if (html.includes(PRERENDER_COMMENT)) {
+    html = html.replace(PRERENDER_COMMENT, String(prerender ?? '').trim());
+  }
   html = html.replaceAll('{{TITLE}}', title);
   html = html.replaceAll('{{DESC}}', desc);
   // 部署根写进 <base href>：模板里写死的是 "/"，项目子路径部署（GitHub Pages 的 /<repo>/）
@@ -845,22 +850,137 @@ function applyTemplate(template, { title, desc, payload }) {
   return html.endsWith('\n') ? html : `${html}\n`;
 }
 
-function renderEntryPage(template, output) {
+/* ------------------------------------------------------------------ */
+/* 预渲染（P0，docs/10 §7）                                            */
+/*                                                                     */
+/* 为什么要有：正文原先只在 data/entries/*.json 里，靠浏览器跑 JS 才填进 */
+/* 页面——实测构建产物的静态可见文字只有 181 字、线上裸 HTML 43 字。     */
+/* 百度基本不执行 JS，等于抓不到正文。这里把内容直接写进静态 HTML，     */
+/* 前端 boot() 接管前再移除它，所以「有 JS / 无 JS」看到的是同一份内容。 */
+/* ------------------------------------------------------------------ */
+
+function htmlIdToPath(id, entryOutputs) {
+  const parsed = parseEntryId(id);
+  if (!parsed) return null;
+  const out = entryOutputs?.get(parsed.id);
+  return { href: `${parsed.kind}/${parsed.n}.html`, title: out?.title ?? parsed.id };
+}
+
+function formatMetaValue(value) {
+  if (Array.isArray(value)) return value.map((v) => String(v)).join('、');
+  if (value && typeof value === 'object') return null;
+  return String(value);
+}
+
+/** 词条页的静态内容：标题 / 别名 / 摘要 / 正文 / 相关教程 / 反向链接 / 信息表 / 标签 */
+function prerenderEntry(output, entryOutputs) {
+  const L = [];
+  L.push('<div class="prerender" data-prerender="entry">');
+  L.push('<article class="prose">');
+  L.push(`<h1>${escapeHtml(output.title ?? output.id)}</h1>`);
+  if (output.titleEn) L.push(`<p class="faint">${escapeHtml(output.titleEn)}</p>`);
+  if (output.aliases?.length) L.push(`<p class="faint">别名：${output.aliases.map(escapeHtml).join('、')}</p>`);
+  if (output.summary) L.push(`<p>${escapeHtml(output.summary)}</p>`);
+  // 正文：构建期已经由 markdown 渲染成 HTML（同一个字段前端也在用）
+  if (output.html) L.push(String(output.html));
+
+  const tutorials = (output.referencedByTutorials ?? []).map((id) => htmlIdToPath(id, entryOutputs)).filter(Boolean);
+  if (tutorials.length) {
+    L.push('<h2>相关教程</h2>');
+    L.push('<ul>');
+    for (const t of tutorials) L.push(`<li><a href="${t.href}">${escapeHtml(t.title)}</a></li>`);
+    L.push('</ul>');
+  }
+
+  const backs = (output.backlinks ?? []).map((b) => htmlIdToPath(b.id, entryOutputs)).filter(Boolean);
+  if (backs.length) {
+    L.push('<h2>谁引用了这一条</h2>');
+    L.push('<ul>');
+    for (const b of backs) L.push(`<li><a href="${b.href}">${escapeHtml(b.title)}</a></li>`);
+    L.push('</ul>');
+  }
+
+  const metaRows = Object.entries(output.meta ?? {})
+    .map(([k, v]) => [k, formatMetaValue(v)])
+    .filter(([, v]) => v !== null && v !== undefined && v !== '');
+  if (metaRows.length) {
+    L.push('<h2>信息表</h2>');
+    L.push('<dl>');
+    for (const [k, v] of metaRows) L.push(`<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd>`);
+    L.push('</dl>');
+  }
+
+  if (output.tags?.length) L.push(`<p class="faint">标签：${output.tags.map(escapeHtml).join('、')}</p>`);
+  L.push('</article>');
+  L.push('</div>');
+  return L.join('\n');
+}
+
+/** 分区页的静态内容：分区名与说明 + 各二级分区 + 条目（名字 + 一句话 + 词条链接） */
+function prerenderZone(output, entryOutputs) {
+  const L = [];
+  L.push('<div class="prerender" data-prerender="zone">');
+  L.push('<article class="prose">');
+  L.push(`<h1>${escapeHtml(output.title ?? output.id)}</h1>`);
+  if (output.desc) L.push(`<p>${escapeHtml(output.desc)}</p>`);
+
+  const items = output.items ?? [];
+  const sections = (output.sections ?? []).filter((s) => s?.id);
+  const grouped = new Map();
+  for (const item of items) {
+    const key = item.section && sections.some((s) => s.id === item.section) ? item.section : '';
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(item);
+  }
+
+  const emit = (list) => {
+    L.push('<ul>');
+    for (const item of list) {
+      const label = escapeHtml(item.name ?? '');
+      const link = item.entry ? htmlIdToPath(item.entry, entryOutputs) : null;
+      const name = link ? `<a href="${link.href}">${label}</a>` : label;
+      const blurb = item.blurb ? ` —— ${escapeHtml(item.blurb)}` : '';
+      L.push(`<li>${name}${blurb}</li>`);
+    }
+    L.push('</ul>');
+  };
+
+  for (const sec of sections) {
+    const list = grouped.get(sec.id) ?? [];
+    if (!list.length) continue;
+    L.push(`<h2>${escapeHtml(sec.title ?? sec.id)}</h2>`);
+    if (sec.desc) L.push(`<p>${escapeHtml(sec.desc)}</p>`);
+    emit(list);
+  }
+  const rest = grouped.get('') ?? [];
+  if (rest.length) {
+    if (sections.length) L.push('<h2>其余条目</h2>');
+    emit(rest);
+  }
+
+  L.push('</article>');
+  L.push('</div>');
+  return L.join('\n');
+}
+
+function renderEntryPage(template, output, entryOutputs) {
   const title = `${output.title ?? output.id} | DSH百科`;
   const desc = output.summary ?? '';
   return applyTemplate(template, {
     title,
     desc,
+    prerender: prerenderEntry(output, entryOutputs),
     payload: { base: BASE, page: 'entry', kind: output.kind, n: output.n, title: output.title },
   });
 }
 
-function renderZonePage(template, output) {
+function renderZonePage(template, output, entryOutputs) {
   const title = `${output.title ?? output.id} | DSH百科`;
   const desc = output.desc ?? '';
   return applyTemplate(template, {
     title,
     desc,
+    prerender: prerenderZone(output, entryOutputs),
     payload: { base: BASE, page: 'zone', zone: output.id, title: output.title },
   });
 }

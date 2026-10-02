@@ -3412,6 +3412,11 @@
     var P = window.__PEDIA__ || {};
     var page = P.page || (document.body && document.body.getAttribute('data-page')) || 'index';
 
+    // 构建期预渲染的内容（P0，docs/10 §7）：现在由 JS 接管，先移除它，
+    // 否则正文会在页面上出现两份。无 JS 时它就留在那里当正文（这正是 P0 的目的）。
+    var prerendered = document.querySelector('[data-prerender]');
+    if (prerendered && prerendered.parentNode) prerendered.parentNode.removeChild(prerendered);
+
     // 顶栏与页脚都要用 registry / zones/index，所以先取数据再渲染外壳。
     var pre = Promise.all([
       DATA.soft('registry.json'),
