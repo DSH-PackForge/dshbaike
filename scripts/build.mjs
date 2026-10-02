@@ -1468,7 +1468,7 @@ function renderEntryPage(template, output, entryOutputs, indexes = []) {
     desc,
     prerender: prerenderEntry(output, entryOutputs, indexes),
     canonical: `${SITE_URL}/${output.kind}/${output.n}.html`,
-    // 草稿页也 noindex（spec/1 那种预留站位就是草稿）
+    // 草稿页也 noindex（spec/1 那种占位条目就是草稿）
     noindex: output.status === 'deleted' || output.status === 'draft',
     payload: { base: BASE, page: 'entry', kind: output.kind, n: output.n, title: output.title },
   });
