@@ -35,3 +35,9 @@
 ## 第三方内容
 
 本仓库**不复制**上游 README、外部教程正文或外部源的元数据，只做引用与外链（见 `CONTRIBUTING.md` 的四条内容纪律）。被引用内容的版权归其原作者，适用其各自的许可。
+
+**例外：吉祥物素材。** `web/mascot-fatfish-idle.png`、`web/mascot-fatfish-walk.png` 不是本站原创，来自第三方项目，按其自身许可分发——**不适用上表的 CC0 / CC BY-SA 划分**：
+
+- 作者：YunYueSama · 仓库：<https://github.com/YunYueSama/codex-deepseek-pet> · 许可：**大肥鱼项目署名许可 1.0**（允许使用、修改、分享及商用；须署名并保留许可；本站在其素材基础上裁切、缩放与量化）。
+- 署名与修改说明见 [`web/mascot-CREDITS.txt`](web/mascot-CREDITS.txt)，许可全文见 [`docs/third-party/fatfish-attribution-license-1.0.txt`](docs/third-party/fatfish-attribution-license-1.0.txt)。
+- **再分发本站素材时，这两份文件必须一并带走**（该许可第 3 条的要求）。角色形象（鲸鱼娘 / 大肥鱼）本身是社区二创，其权利不在这份许可的授权范围内。

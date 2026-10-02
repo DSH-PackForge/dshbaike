@@ -33,6 +33,8 @@ import { presentationFor } from './lib/presentation.mjs';
 import { createHash } from 'node:crypto';
 import { renderMarkdown, escapeHtml } from './lib/markdown.mjs';
 import { ENTRY_KINDS } from './lib/registry.mjs';
+// 注意别名：build.mjs 里已有一个同名的 buildGraph（分区条目的图结构），别撞。
+import { buildGraph as buildEcosystemGraph, renderGraphSvg } from './lib/graph.mjs';
 import {
   compareIds,
   displayPath,
@@ -177,6 +179,12 @@ function main(argv) {
 
   /* ---- registry / search / taxonomy / entities / reverse / plugins ---- */
   push(writes, nextManifest, path.posix.join('data', 'registry.json'), toJson(registryJson));
+
+  /* ---- 生态全景图（docs/02 §产物 graph.json；页面 graph.html 在下面一起写）---- */
+  const graph = buildEcosystemGraph({ model, entryOutputs, reverse });
+  push(writes, nextManifest, path.posix.join('data', 'graph.json'), toJson(graph));
+  counts.graphNodes = graph.counts.nodes;
+  counts.graphEdges = graph.counts.edges;
 
   const searchItems = sortByNumericId(
     [...entryOutputs.values()]
