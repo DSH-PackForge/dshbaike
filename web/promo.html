@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>DSH 百科 | 一站式的 DeepSeek Harness 中文百科</title>
+<meta name="description" content="一站式的 DeepSeek Harness 中文百科：把 DSH 自身的机制讲清楚，把每一层资源的入口收到一处；每个数字都标出处与快照日期。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DSH百科">
+<meta property="og:title" content="DSH 百科 | 一站式的 DeepSeek Harness 中文百科">
+<meta property="og:description" content="插件生态交给 awesome 与 dshbase，整合包交给市场——我们补上没人做的那半：机制解释与资源入口。">
+<!--
+  宣传页（独立于 web/index.html 的资料站外壳）。
+  为什么单独一页：宣传页要「高级」、区块页要「高级」、词条页要「朴实」——
+  三种页面是三种语域，塞进同一套模板就会互相拖累（见 docs/11）。
+  这一页零位图、零第三方依赖：主视觉是 inline SVG 画的等距方块，
+  以 shape-rendering="crispEdges" 保证硬像素边（缩放不糊）。
+-->
+<style>
+  :root{
+    color-scheme: dark;     /* 宣传页只做深色：品牌页可以定调，也正好与朴实的白底词条页区分开 */
+    --px: 4px;
+    --bg:      #0c1219;
+    --bg-2:    #0f1720;
+    --panel:   #131d27;
+    --panel-2: #18242f;
+    --line:    #24323f;
+    --line-2:  #2f4150;
+    --ink:     #080d12;
+    --text:    #e9eff5;
+    --muted:   #9db0c2;
+    --faint:   #6c8093;
+    --teal:    #1fb8a6;
+    --diamond: #4fd1c5;
+    --gold:    #e3a83c;
+    --grass:   #5aa544;
+    --redstone:#c0392b;
+    --lapis:   #3a6fc4;
+    --amethyst:#8c60be;
+    --stone:   #8f9aa6;
+    --shadow:  6px 6px 0 var(--ink);
+    --shadow-hi: 9px 9px 0 var(--ink);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  /* 像素底纹：4px 一格的极淡网格，让整页「吸附在格子上」 */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.55;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(127,160,190,.055) 0 1px, transparent 1px 16px),
+      repeating-linear-gradient(90deg, rgba(127,160,190,.055) 0 1px, transparent 1px 16px);
+  }
+  .wrap{max-width:1200px; margin:0 auto; padding:0 20px; position:relative; z-index:1}
+  a{color:inherit}
+  .skip{position:absolute; left:-9999px}
+  .skip:focus{left:12px; top:12px; background:var(--gold); color:#111; padding:6px 10px; z-index:9}
+
+  /* ---------- 顶栏 ---------- */
+  .top{position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--bg) 88%, transparent);
+       backdrop-filter:blur(6px); border-bottom:2px solid var(--line)}
+  .top__in{display:flex; align-items:center; gap:16px; height:56px}
+  .brand{display:flex; align-items:center; gap:8px; font-weight:700; font-size:17px; text-decoration:none; letter-spacing:.02em}
+  .brand__mark{width:16px; height:16px; background:var(--teal); box-shadow:4px 4px 0 var(--ink); flex:0 0 auto}
+  .nav{display:flex; gap:2px; flex-wrap:wrap; margin-left:4px}
+  .nav a{padding:5px 9px; font-size:13px; color:var(--muted); text-decoration:none; border:2px solid transparent}
+  .nav a:hover{color:var(--text); border-color:var(--line-2); background:var(--panel)}
+  .nav a.is-on{color:var(--text); border-color:var(--teal); background:var(--panel)}
+  .top__tools{margin-left:auto; display:flex; gap:8px; align-items:center}
+  .searchbox{position:relative}
+  .searchbox input{
+    width:230px; padding:7px 10px; font:inherit; font-size:13px; color:var(--text);
+    background:var(--panel); border:2px solid var(--line-2); outline:none;
+  }
+  .searchbox input:focus{border-color:var(--teal)}
+  .panel{position:absolute; right:0; top:calc(100% + 6px); width:380px; max-width:80vw; background:var(--panel);
+         border:2px solid var(--line-2); box-shadow:var(--shadow); padding:4px; max-height:60vh; overflow:auto}
+  .panel[hidden]{display:none}
+  .panel a{display:block; padding:7px 9px; text-decoration:none; border-bottom:1px solid var(--line)}
+  .panel a:last-child{border-bottom:0}
+  .panel a:hover,.panel a:focus{background:var(--panel-2); outline:none}
+  .panel .t{font-weight:600}
+  .panel .k{font-size:12px; color:var(--faint); margin-left:6px}
+  .panel .s{display:block; font-size:12px; color:var(--muted); margin-top:2px}
+  .panel .none{padding:10px; color:var(--faint); font-size:13px}
+
+  section{position:relative; z-index:1}
+  .sec{padding:56px 0 8px}
+  .sec__head{display:flex; align-items:baseline; gap:12px; border-bottom:2px solid var(--line); padding-bottom:10px; margin-bottom:22px}
+  .sec__head h2{margin:0; font-size:19px; letter-spacing:.01em}
+  .sec__head .n{font:600 12px/1 ui-monospace,SFMono-Regular,Consolas,monospace; color:var(--ink); background:var(--gold); padding:5px 6px}
+  .sec__head .note{margin-left:auto; color:var(--faint); font-size:12.5px}
+
+  /* ---------- 首屏 ---------- */
+  .hero{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); gap:28px; align-items:center; padding:44px 0 20px}
+  .eyebrow{display:inline-block; font:600 12px/1 ui-monospace,Consolas,monospace; letter-spacing:.14em; text-transform:uppercase;
+           color:var(--diamond); border:2px solid var(--line-2); padding:6px 8px; background:var(--panel)}
+  h1{margin:16px 0 6px; font-size:clamp(34px,5.2vw,54px); line-height:1.06; letter-spacing:.01em}
+  .lede{margin:0; font-size:clamp(16px,2vw,20px); color:var(--text); font-weight:600}
+  .sub{margin:14px 0 0; color:var(--muted); max-width:52ch}
+  .sub b{color:var(--text)}
+  .cta{display:flex; flex-wrap:wrap; gap:10px; margin:22px 0 0}
+  .btn{display:inline-block; padding:11px 16px; font-weight:600; font-size:14px; text-decoration:none;
+       border:2px solid var(--ink); background:var(--teal); color:#06201d; box-shadow:var(--shadow); transition:transform .06s linear, box-shadow .06s linear}
+  .btn:hover{transform:translate(-2px,-2px); box-shadow:var(--shadow-hi)}
+  .btn--ghost{background:var(--panel); color:var(--text); border-color:var(--line-2)}
+  .facts{display:flex; flex-wrap:wrap; gap:8px 18px; margin:22px 0 0; padding:0; list-style:none; color:var(--muted); font-size:13px}
+  .facts b{font:600 15px/1 ui-monospace,Consolas,monospace; color:var(--text); margin-right:5px}
+  .hero__art{display:flex; justify-content:center}
+  .hero__art svg{width:100%; max-width:560px; height:auto}
+
+  /* ---------- 数据带 ---------- */
+  .band{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:8px}
+  .fact{background:var(--panel); border:2px solid var(--line-2); box-shadow:var(--shadow); padding:14px 16px}
+  .fact__k{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted)}
+  .chip{width:12px; height:12px; flex:0 0 auto; box-shadow:2px 2px 0 var(--ink)}
+  .fact__v{font:700 26px/1.2 ui-monospace,Consolas,monospace; margin-top:8px}
+  .fact__d{font-size:12.5px; color:var(--faint)}
+
+  /* ---------- 七层 ---------- */
+  .layers{display:grid; gap:10px}
+  .layer{display:grid; grid-template-columns:230px 1fr; gap:16px; background:var(--panel);
+         border:2px solid var(--line-2); border-left-width:8px; box-shadow:var(--shadow); padding:14px 16px}
+  .layer__name{display:flex; align-items:center; gap:10px; font-weight:700}
+  .layer__name i{width:14px; height:14px; box-shadow:3px 3px 0 var(--ink)}
+  .layer__desc{color:var(--muted); font-size:13px; margin:2px 0 0}
+  /* 分区块撑满整行：不然右边会空出一大片，看着像没做完 */
+  .layer__zones{display:flex; flex-wrap:wrap; gap:8px; align-items:stretch}
+  .zone{display:flex; align-items:baseline; justify-content:space-between; gap:14px; text-decoration:none;
+        padding:10px 12px; background:var(--panel-2); border:2px solid var(--line); flex:1 1 190px}
+  .zone:hover{border-color:var(--teal); background:var(--panel)}
+  .zone b{font-weight:600}
+  .zone span{font:600 12px/1 ui-monospace,Consolas,monospace; color:var(--faint)}
+
+  /* ---------- 引用源 ---------- */
+  .srcs{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
+  .src{background:var(--panel); border:2px solid var(--line-2); box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:10px}
+  .src__top{display:flex; align-items:center; gap:10px}
+  .src__name{font-weight:700; font-size:15px}
+  .src__role{color:var(--muted); font-size:13px; margin:0}
+  .src__data{margin:0; padding:10px 12px; background:var(--bg-2); border-left:4px solid var(--gold); font-size:13px; color:var(--text)}
+  .src__data b{font:700 15px/1 ui-monospace,Consolas,monospace}
+  .src__foot{margin-top:auto; display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--faint)}
+  .src__foot a{margin-left:auto; color:var(--diamond); text-decoration:none; border-bottom:2px solid transparent}
+  .src__foot a:hover{border-color:var(--diamond)}
+
+  /* ---------- 两条入口 ---------- */
+  .paths{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .path{background:var(--panel); border:2px solid var(--line-2); box-shadow:var(--shadow); padding:18px}
+  .path h3{margin:0 0 4px; font-size:16px}
+  .path p{margin:0 0 14px; color:var(--muted); font-size:13px}
+  .steps{margin:0; padding:0; list-style:none; counter-reset:s}
+  .steps li{display:flex; gap:12px; align-items:baseline; padding:9px 0; border-top:1px solid var(--line)}
+  .steps li::before{counter-increment:s; content:counter(s,decimal-leading-zero);
+    font:700 12px/1 ui-monospace,Consolas,monospace; color:var(--ink); background:var(--diamond); padding:5px 6px}
+  .steps a{text-decoration:none; font-weight:600}
+  .steps a:hover{color:var(--diamond)}
+  .steps .why{display:block; color:var(--faint); font-weight:400; font-size:12.5px}
+
+  /* ---------- 贡献 ---------- */
+  .ways{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0; padding:0; list-style:none}
+  .way{background:var(--panel); border:2px solid var(--line-2); box-shadow:var(--shadow); padding:16px}
+  .way h3{margin:0 0 6px; font-size:15px}
+  .way p{margin:0 0 12px; color:var(--muted); font-size:13px}
+  .way a{color:var(--diamond); text-decoration:none; font-weight:600}
+  .way a:hover{border-bottom:2px solid var(--diamond)}
+
+  footer{margin-top:64px; border-top:2px solid var(--line); background:var(--bg-2); position:relative; z-index:1}
+  .foot{padding:26px 0 34px; color:var(--faint); font-size:12.5px; display:grid; gap:6px}
+  .foot a{color:var(--muted); text-decoration:none}
+  .foot a:hover{color:var(--text)}
+
+  @media (max-width:1024px){
+    .hero{grid-template-columns:1fr; gap:8px}
+    .hero__art{order:-1}
+    .band{grid-template-columns:repeat(2,1fr)}
+    .srcs,.paths{grid-template-columns:1fr}
+    .ways{grid-template-columns:1fr}
+    .layer{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 16px}
+    .nav{display:none}
+    .searchbox input{width:150px}
+    /* 数据带在窄屏必须一列：两列时「2026-10-02」这种等宽长串会把格子撑破，
+       整个页面跟着横向溢出（右半屏被切）——踩过。 */
+    .band{grid-template-columns:1fr}
+    .fact__v{font-size:22px}
+    .sec{padding:38px 0 6px}
+    .sec__head{flex-wrap:wrap}
+    .sec__head .note{margin-left:0; flex-basis:100%}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到主内容</a>
+
+<header class="top">
+  <div class="wrap top__in">
+    <a class="brand" href="./"><span class="brand__mark" aria-hidden="true"></span>DSH 百科</a>
+    <nav class="nav" aria-label="主要板块">
+      <a href="./clients.html">界面与客户端</a>
+      <a href="./launchers.html">启动器</a>
+      <a href="./plugins.html">插件</a>
+      <a href="./packs.html">整合包</a>
+      <a href="./themes.html">主题与皮肤</a>
+      <a href="./skills.html">技能包</a>
+      <a href="./specs.html">规范与协议</a>
+      <a href="./#/browse/all">全部词条</a>
+    </nav>
+    <div class="top__tools">
+      <div class="searchbox">
+        <input id="q" type="search" placeholder="搜索 词条 / 插件 / 教程 …" aria-label="站内搜索" autocomplete="off"
+               role="combobox" aria-expanded="false" aria-controls="qpanel">
+        <div class="panel" id="qpanel" role="listbox" aria-label="搜索结果" hidden></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+
+    <!-- 首屏 -->
+    <section class="hero" aria-label="本站是什么">
+      <div>
+        <span class="eyebrow">DeepSeek Harness · 中文资料站</span>
+        <h1>DSH 百科</h1>
+        <p class="lede">一站式的 DeepSeek Harness 中文百科</p>
+        <p class="sub">
+          插件生态交给 awesome 与 dshbase，整合包交给市场——我们补上<b>没人做的那一半</b>：
+          把 DSH 自身的机制讲清楚，把每一层资源的入口收到一处。
+          每个数字都标<b>出处与快照日期</b>，查不到的写「未核实」。
+        </p>
+        <div class="cta">
+          <a class="btn" href="./tutorial/1.html">从这三篇开始读 →</a>
+          <a class="btn btn--ghost" href="./#/browse/all">浏览全部词条（12）</a>
+        </div>
+        <ul class="facts">
+          <li><b>12</b>条词条</li>
+          <li><b>11</b>个一级分区</li>
+          <li><b>4</b>个引用源</li>
+          <li><b>∞</b>编号永不复用</li>
+        </ul>
+      </div>
+      <div class="hero__art">
+        <!-- 主视觉：七层等距堆叠 = 本站的装配层架构。纯 inline SVG，crispEdges 保证硬边。
+             每一层对应一个分区层，颜色与下方「七层」区块一一对应。 -->
+        <svg viewBox="0 0 720 580" role="img" aria-label="七层装配结构的等距方块示意图" shape-rendering="crispEdges">
+          <defs>
+            <g id="slab">
+              <polygon points="-170,-85 0,0 170,-85 0,-170" class="f-top"/>
+              <polygon points="-170,-85 0,0 0,38 -170,-47" class="f-left"/>
+              <polygon points="170,-85 0,0 0,38 170,-47" class="f-right"/>
+            </g>
+          </defs>
+          <style>
+            .f-top{stroke:#080d12; stroke-width:3}
+            .f-left{stroke:#080d12; stroke-width:3}
+            .f-right{stroke:#080d12; stroke-width:3}
+            .s-ink{fill:#080d12; opacity:.5}
+          </style>
+          <polygon class="s-ink" points="260,470 430,555 600,470 430,385"/>
+          <g transform="translate(430,470)">
+            <use href="#slab" style="fill:#b8862c"/><use href="#slab" y="-38" style="fill:#8f9aa6"/>
+            <use href="#slab" y="-76" style="fill:#5aa544"/><use href="#slab" y="-114" style="fill:#8c60be"/>
+            <use href="#slab" y="-152" style="fill:#3a6fc4"/><use href="#slab" y="-190" style="fill:#4fd1c5"/>
+            <use href="#slab" y="-228" style="fill:#1fb8a6"/>
+          </g>
+          <!-- 悬浮方块：贴着左上沿排成一条上升对角线，全部在画布内 -->
+          <g>
+            <g transform="translate(180,300)">
+              <polygon points="-26,-13 0,0 26,-13 0,-26" fill="#4fd1c5" stroke="#080d12" stroke-width="3"/>
+              <polygon points="-26,-13 0,0 0,14 -26,1" fill="#2f9e95" stroke="#080d12" stroke-width="3"/>
+              <polygon points="26,-13 0,0 0,14 26,1" fill="#3fb8ad" stroke="#080d12" stroke-width="3"/>
+            </g>
+            <g transform="translate(126,214)">
+              <polygon points="-22,-11 0,0 22,-11 0,-22" fill="#5aa544" stroke="#080d12" stroke-width="3"/>
+              <polygon points="-22,-11 0,0 0,12 -22,1" fill="#427a32" stroke="#080d12" stroke-width="3"/>
+              <polygon points="22,-11 0,0 0,12 22,1" fill="#4c8f3b" stroke="#080d12" stroke-width="3"/>
+            </g>
+            <g transform="translate(196,132)">
+              <polygon points="-18,-9 0,0 18,-9 0,-18" fill="#e3a83c" stroke="#080d12" stroke-width="3"/>
+              <polygon points="-18,-9 0,0 0,10 -18,1" fill="#a97a24" stroke="#080d12" stroke-width="3"/>
+              <polygon points="18,-9 0,0 0,10 18,1" fill="#c08f2c" stroke="#080d12" stroke-width="3"/>
+            </g>
+            <g transform="translate(120,368)">
+              <polygon points="-15,-8 0,0 15,-8 0,-16" fill="#8c60be" stroke="#080d12" stroke-width="3"/>
+              <polygon points="-15,-8 0,0 0,9 -15,1" fill="#66418f" stroke="#080d12" stroke-width="3"/>
+              <polygon points="15,-8 0,0 0,9 15,1" fill="#774fa6" stroke="#080d12" stroke-width="3"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <!-- 数据带 -->
+    <section class="band" aria-label="本站规模">
+      <div class="fact">
+        <div class="fact__k"><span class="chip" style="background:#1fb8a6"></span>一级分区</div>
+        <div class="fact__v">11</div>
+        <div class="fact__d">按装配位置分层：从界面到规范</div>
+      </div>
+      <div class="fact">
+        <div class="fact__k"><span class="chip" style="background:#e3a83c"></span>词条</div>
+        <div class="fact__v">12</div>
+        <div class="fact__d">概念 4 · 插件 3 · 教程 3 · 资源源 2</div>
+      </div>
+      <div class="fact">
+        <div class="fact__k"><span class="chip" style="background:#5aa544"></span>引用的外部源</div>
+        <div class="fact__v">4</div>
+        <div class="fact__d">awesome · dshbase · 市场 · 规范仓库</div>
+      </div>
+      <div class="fact">
+        <div class="fact__k"><span class="chip" style="background:#8f9aa6"></span>数据快照</div>
+        <div class="fact__v">2026-10-02</div>
+        <div class="fact__d">每个数字都标日期；查不到的写「未核实」</div>
+      </div>
+    </section>
+
+    <!-- 七层 -->
+    <section class="sec" aria-label="七层装配结构">
+      <div class="sec__head">
+        <span class="n">01</span>
+        <h2>十一个分区，按「装配位置」分成七层</h2>
+        <span class="note">左边一列是层，右边是这一层的分区与已有条目数</span>
+      </div>
+      <div class="layers">
+        <div class="layer" style="border-left-color:#1fb8a6">
+          <div>
+            <div class="layer__name"><i style="background:#1fb8a6"></i>界面层</div>
+            <p class="layer__desc">你从哪、用什么界面使用 DSH。管的是「装上与起得来」。</p>
+          </div>
+          <div class="layer__zones">
+            <a class="zone" href="./clients.html"><b>界面与客户端</b><span>6</span></a>
+          </div>
+        </div>
+        <div class="layer" style="border-left-color:#4fd1c5">
+          <div>
+            <div class="layer__name"><i style="background:#4fd1c5"></i>装配层</div>
+            <p class="layer__desc">给 DSH 加功能的那一层：启动器决定怎么起，插件决定有什么。</p>
+          </div>
+          <div class="layer__zones">
+            <a class="zone" href="./launchers.html"><b>启动器</b><span>5</span></a>
+            <a class="zone" href="./plugins.html"><b>插件</b><span>6</span></a>
+          </div>
+        </div>
+        <div class="layer" style="border-left-color:#3a6fc4">
+          <div>
+            <div class="layer__name"><i style="background:#3a6fc4"></i>配置层</div>
+            <p class="layer__desc">改行为与语气，但不装任何插件：一小段可粘贴的配置就是一个变化。</p>
+          </div>
+          <div class="layer__zones">
+            <a class="zone" href="./recipes.html"><b>指令与配方</b><span>4</span></a>
+            <a class="zone" href="./presets.html"><b>预设与人设</b><span>5</span></a>
+            <a class="zone" href="./skills.html"><b>技能包</b><span>5</span></a>
+          </div>
+        </div>
+        <div class="layer" style="border-left-color:#8c60be">
+          <div>
+            <div class="layer__name"><i style="background:#8c60be"></i>外观层</div>
+            <p class="layer__desc">换掉 DSH 的样子与读起来的感觉；主题改的是同一个界面里的样子。</p>
+          </div>
+          <div class="layer__zones">
+            <a class="zone" href="./themes.html"><b>主题与皮肤</b><span>4</span></a>
+            <a class="zone" href="./assets.html"><b>素材与本地化</b><span>3</span></a>
+          </div>
+        </div>
+        <div class="layer" style="border-left-color:#5aa544">
+          <div>
+            <div class="layer__name"><i style="background:#5aa544"></i>分发层</div>
+            <p class="layer__desc">一次装一整套：.dspack 单文件包，由启动器或 dspack CLI 承担。</p>
+          </div>
+          <div class="layer__zones">
+            <a class="zone" href="./packs.html"><b>整合包</b><span>8</span></a>
+          </div>
+        </div>
+        <div class="layer" style="border-left-color:#8f9aa6">
+          <div>
+            <div class="layer__name"><i style="background:#8f9aa6"></i>工具层</div>
+            <p class="layer__desc">打包、安装、市场索引与调试：共同点是「在 DSH 之外运行」。</p>
+          </div>
+          <div class="layer__zones">
+            <a class="zone" href="./toolchain.html"><b>工具链</b><span>6</span></a>
+          </div>
+        </div>
+        <div class="layer" style="border-left-color:#e3a83c">
+          <div>
+            <div class="layer__name"><i style="background:#e3a83c"></i>元层</div>
+            <p class="layer__desc">一切字段争议的最终裁判：有争议时以规范仓库的文件为准。</p>
+          </div>
+          <div class="layer__zones">
+            <a class="zone" href="./specs.html"><b>规范与协议</b><span>8</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 引用源 -->
+    <section class="sec" aria-label="我们引用的外部源">
+      <div class="sec__head">
+        <span class="n">02</span>
+        <h2>市面上的源：我们引用他们的数据</h2>
+        <span class="note">数字照实引用并标快照日期；不复制全文，去处永远是原站</span>
+      </div>
+      <div class="srcs">
+        <article class="src">
+          <div class="src__top"><span class="chip" style="background:#4fd1c5"></span><span class="src__name">awesome-dsh-plugin.com</span></div>
+          <p class="src__role">社区维护的插件精选目录：中英双语，按分类浏览，机器可读入口是一份 catalog.json。插件生态的<b>全貌</b>交给它。</p>
+          <p class="src__data">收录 <b>4400</b> 条 · 首页自述 <b>24</b> 分类（我们实测 catalog.json 的 <b>cat</b> 去重是 <b>23</b>，口径不一致已注明）</p>
+          <div class="src__foot">快照 2026-10-01<a href="https://awesome-dsh-plugin.com/zh/" target="_blank" rel="noopener noreferrer">去源头看全量 →</a></div>
+        </article>
+        <article class="src">
+          <div class="src__top"><span class="chip" style="background:#5aa544"></span><span class="src__name">dshbase.com</span></div>
+          <p class="src__role">中文指南与排错：入门与常见故障交给它。我们做的是<b>机制解释</b>，与它的定位不重叠。</p>
+          <p class="src__data">收录 <b>7797</b> 条插件条目</p>
+          <div class="src__foot">快照 2026-10-01<a href="https://dshbase.com/" target="_blank" rel="noopener noreferrer">去源头看看 →</a></div>
+        </article>
+        <article class="src">
+          <div class="src__top"><span class="chip" style="background:#e3a83c"></span><span class="src__name">dsh-pack-market</span></div>
+          <p class="src__role">整合包的索引与分发入口：一份可懒加载的公开索引（index.json + plugins.json + launchers.json），完整清单与下载量留在市场。</p>
+          <p class="src__data">索引 <b>8</b> 个包 · <b>4</b> 个插件 · <b>5</b> 条启动器认领</p>
+          <div class="src__foot">快照 2026-10-01<a href="https://github.com/DSH-PackForge/dsh-pack-market" target="_blank" rel="noopener noreferrer">去源头看索引 →</a></div>
+        </article>
+        <article class="src">
+          <div class="src__top"><span class="chip" style="background:#8f9aa6"></span><span class="src__name">DSH-PackForge 规范仓库</span></div>
+          <p class="src__role">manifest、pack-structure、index、publishing、launcher-registry 等契约文档。<b>谁说了算</b>的问题在这里结束。</p>
+          <p class="src__data">manifest <b>v1–v5</b> · pack-structure <b>v1–v3</b> · index / publishing / launcher-registry 各一份</p>
+          <div class="src__foot">快照 2026-10-01<a href="https://github.com/DSH-PackForge/DSH-PackForge" target="_blank" rel="noopener noreferrer">去源头读规范 →</a></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 两条入口 -->
+    <section class="sec" aria-label="怎么开始">
+      <div class="sec__head">
+        <span class="n">03</span>
+        <h2>你大概是从这两条路进来的</h2>
+        <span class="note">想找具体东西 → 上面的搜索框；想搞懂 DSH → 左边三篇按顺序读</span>
+      </div>
+      <div class="paths">
+        <div class="path">
+          <h3>我刚接触 DSH，先读什么</h3>
+          <p>按这个顺序读，三篇建立起「层」的心智模型，后面看什么都顺。</p>
+          <ol class="steps">
+            <li><span><a href="./tutorial/1.html">为什么 DSH 升级后插件会失效</a><span class="why">先知道「补丁是一层层叠上去的」，才知道为什么会断</span></span></li>
+            <li><span><a href="./tutorial/3.html">装插件时到底发生了什么</a><span class="why">add 命令其实是 pnpm 转发器；搞清落点、构建授权与「装了没生效」</span></span></li>
+            <li><span><a href="./tutorial/2.html">写一个 DSH 插件</a><span class="why">从零声明 bundle 与 patch 层，并说清它为什么不是普通 npm 依赖</span></span></li>
+          </ol>
+        </div>
+        <div class="path">
+          <h3>我在找某个东西</h3>
+          <p>三条路都通向同一批词条，只是入口不同。</p>
+          <ol class="steps">
+            <li><span><a href="./#/browse/all">按类型浏览全部词条</a><span class="why">概念 / 插件 / 教程 / 资源源，一次看全</span></span></li>
+            <li><span><a href="./plugins.html">从分区进</a><span class="why">十一个分区各自是一张清单 + 去源头的外链</span></span></li>
+            <li><span><a href="./#/browse/plugin">看插件聚合页</a><span class="why">定位、关系、兼容与坑——不是把上游 README 抄一遍</span></span></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- 贡献 -->
+    <section class="sec" aria-label="参与">
+      <div class="sec__head">
+        <span class="n">04</span>
+        <h2>纠错与投稿：三条路，都不用装东西</h2>
+        <span class="note">内容全在 git 里；改词条不需要账号以外的任何准备</span>
+      </div>
+      <ul class="ways">
+        <li class="way">
+          <h3>改一个错字 / 一句话</h3>
+          <p>词条页右上角的「编辑此条」会打开 GitHub 网页编辑器，改完直接提交即可——GitHub 自己负责建分支与开 PR。</p>
+          <a href="./#/browse/all">找一条来改 →</a>
+        </li>
+        <li class="way">
+          <h3>发现问题但不想动文件</h3>
+          <p>用「纠错」表单报给我们：词条、问题类型、哪里不对、建议改法、出处——结构化填写，按行改。</p>
+          <a href="https://github.com/DSH-PackForge/dshbaike/issues/new?template=correction.yml" target="_blank" rel="noopener noreferrer">填纠错表单 →</a>
+        </li>
+        <li class="way">
+          <h3>新增一条词条</h3>
+          <p>填「新增词条」表单：编号与骨架由自动化处理并开好 PR，你只需补内容。编号永不复用，删除留墓碑。</p>
+          <a href="https://github.com/DSH-PackForge/dshbaike/issues/new?template=new-entry.yml" target="_blank" rel="noopener noreferrer">申请新词条 →</a>
+        </li>
+      </ul>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div>DSH 百科 · dshbaike.com · 数据快照 2026-10-02 · 代码 CC0 / 正文 CC BY-SA</div>
+    <div>非官方社区资料站</div>
+    <div>生态：<a href="https://awesome-dsh-plugin.com/" target="_blank" rel="noopener noreferrer">awesome-dsh-plugin.com ↗</a> · <a href="https://dshbase.com/" target="_blank" rel="noopener noreferrer">dshbase.com ↗</a> · <a href="https://github.com/DSH-PackForge/dsh-pack-market" target="_blank" rel="noopener noreferrer">整合包市场 ↗</a> · <a href="https://github.com/DSH-PackForge/DSH-PackForge" target="_blank" rel="noopener noreferrer">规范仓库 ↗</a></div>
+    <div><a href="https://github.com/DSH-PackForge/dshbaike/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">贡献指南（领号流程）</a> · <a href="https://github.com/DSH-PackForge/dshbaike" target="_blank" rel="noopener noreferrer">仓库</a></div>
+  </div>
+</footer>
+
+<script>
+/* 真搜索（不是摆设）：读构建产物 data/search.json，命中后跳到对应词条页。
+   这一页不加载 pedia.js（宣传页要自己的语域），所以这里只带最小必要逻辑。 */
+(function () {
+  var input = document.getElementById('q');
+  var panel = document.getElementById('qpanel');
+  if (!input || !panel) return;
+  var cache = null, active = -1;
+
+  function load() {
+    if (cache) return Promise.resolve(cache);
+    return fetch('./data/search.json', { cache: 'no-cache' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (j) { cache = (j && j.items) || []; return cache; })
+      .catch(function () { cache = []; return cache; });
+  }
+  function close() { panel.hidden = true; input.setAttribute('aria-expanded', 'false'); active = -1; }
+  function text(it, k) { var v = it[k]; if (v === null || v === undefined) return ''; return Array.isArray(v) ? v.join(' ') : String(v); }
+
+  function render(hits, q) {
+    panel.textContent = '';
+    if (!q) { close(); return; }
+    if (!hits.length) {
+      var none = document.createElement('div');
+      none.className = 'none';
+      none.textContent = '没有命中「' + q + '」。试试搜「插件」「profile」「升级」。';
+      panel.appendChild(none);
+      panel.hidden = false; input.setAttribute('aria-expanded', 'true');
+      return;
+    }
+    hits.forEach(function (it) {
+      var a = document.createElement('a');
+      a.href = './' + it.id + '.html';
+      var t = document.createElement('span'); t.className = 't'; t.textContent = it.title || it.id;
+      var k = document.createElement('span'); k.className = 'k'; k.textContent = it.id;
+      var s = document.createElement('span'); s.className = 's'; s.textContent = it.summary || '';
+      a.appendChild(t); a.appendChild(k); a.appendChild(s);
+      panel.appendChild(a);
+    });
+    panel.hidden = false; input.setAttribute('aria-expanded', 'true');
+    active = -1;
+  }
+
+  input.addEventListener('input', function () {
+    var q = input.value.trim().toLowerCase();
+    if (!q) { close(); return; }
+    load().then(function (items) {
+      var hits = items.filter(function (it) {
+        var hay = (text(it, 'title') + ' ' + text(it, 'aliases') + ' ' + text(it, 'tags') + ' ' + text(it, 'summary') + ' ' + it.id).toLowerCase();
+        return hay.indexOf(q) >= 0;
+      }).slice(0, 8);
+      render(hits, q);
+    });
+  });
+
+  input.addEventListener('keydown', function (e) {
+    var links = panel.querySelectorAll('a');
+    if (e.key === 'Escape') { close(); input.blur(); return; }
+    if (e.key === 'Enter') { if (links.length) { links[active < 0 ? 0 : active].click(); } return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (!links.length) return;
+      e.preventDefault();
+      active = e.key === 'ArrowDown' ? (active + 1) % links.length : (active - 1 + links.length) % links.length;
+      links.forEach(function (l, i) { l.style.outline = i === active ? '2px solid #1fb8a6' : 'none'; });
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (!panel.contains(e.target) && e.target !== input) close();
+  });
+})();
+</script>
+</body>
+</html>
