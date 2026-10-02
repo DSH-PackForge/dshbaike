@@ -15,7 +15,7 @@ sections:
 howto: 认领方式：向规范仓库提 PR，在 launcher-registry.md 加一行（ID + 启动器名 + 版本自报方式 + 仓库链接）。安装端判定规则见 pack-structure/v3.md §9.1：不满足 minVe
 itemFields: [launcherId, lineage, platforms, selfVersioning, importSupport]
 items:
-  - name: dsh-launcher
+  - name: DSH Launcher（dsh-plugins）
     section: launchers
     blurb: Rust 写的桌面启动器（dsh-plugins 组织，69 star，快照 2026-10-02）：主打「多版本、多实例并排跑」——同一台机器上几个 DSH 版本互不干扰。未认领 canonical ID（2026-10-02 查证），所以整合包暂时声明不了它。
     launcherId: null
@@ -24,7 +24,7 @@ items:
     selfVersioning: 未核实
     importSupport: null
     source: curated
-    entry: null
+    entry: launcher/1
     tags: ["多版本管理", "支持 .dspack"]
     risk: [desktop-control, network]
     links:
@@ -39,7 +39,7 @@ items:
     selfVersioning: 四段式（如 0.1.1.2）
     importSupport: null
     source: launchers
-    entry: launcher/1
+    entry: launcher/2
     tags: ["工具与能力", "支持 .dspack", "MC 系"]
     risk: [desktop-control, network]
     links:
@@ -50,11 +50,11 @@ items:
     blurb: MC 同款思路「仿 HMCL」——HMCL 内核的 JavaFX 启动器（Java，GPL-3.0，19 star，快照 2026-10-02）；.dspack 市场的采纳者，另外维护自有 .hdslp 格式。与 dshl（PCL 系）一个字母之差、完全无关。
     launcherId: hdsl
     lineage: HMCL 内核
-    platforms: [windows, macos, linux]
+    platforms: [macos, linux]
     selfVersioning: 注册表记为「可自报」，格式未核实
     importSupport: 支持 .dspack（另自有 .hdslp）
     source: launchers
-    entry: null
+    entry: launcher/3
     tags: ["工具与能力", "支持 .dspack", "MC 系"]
     risk: [desktop-control, network]
     links:
@@ -69,13 +69,13 @@ items:
     selfVersioning: 未核实
     importSupport: null
     source: curated
-    entry: null
+    entry: launcher/4
     tags: ["WinUI", "支持 .dspack"]
     risk: [desktop-control, network]
     links:
       github: zzbuaoye-love/Another-DeepSeek-Harness-Launcher
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
-  - name: DSH-Launcher（121103qwq）
+  - name: DSH Launcher（121103qwq）
     section: launchers
     blurb: 面向 Windows x64 的启动器与生态管理器（C#，MIT，30 star，快照 2026-10-02）——它的自我定位比「启动」更宽，把生态管理也算进职责。未认领 canonical ID（2026-10-02 查证）。
     launcherId: null
@@ -84,7 +84,7 @@ items:
     selfVersioning: 未核实
     importSupport: null
     source: curated
-    entry: null
+    entry: launcher/5
     tags: ["生态管理", "支持 .dspack"]
     risk: [desktop-control, network]
     links:

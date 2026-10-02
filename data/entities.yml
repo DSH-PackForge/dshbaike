@@ -9,6 +9,26 @@ entities:
       - "repo:DSH-PackForge/dsh-pack-plugin"
       - "npm:@dsh-packforge/dsh-pack-plugin"
     refs: []
+  - id: launcher/1
+    keys:
+      - "repo:dsh-plugins/dsh-launcher"
+    refs: []
+  - id: launcher/2
+    keys:
+      - "repo:Loliyer520/DSHL-Deepseek-Harness-Launcher"
+    refs: []
+  - id: launcher/3
+    keys:
+      - "repo:MCXCC303/HDSL"
+    refs: []
+  - id: launcher/4
+    keys:
+      - "repo:zzbuaoye-love/Another-DeepSeek-Harness-Launcher"
+    refs: []
+  - id: launcher/5
+    keys:
+      - "repo:121103qwq/DSH-Launcher"
+    refs: []
   # 以下为「有生态证据但尚未建词条」的实体（docs/07 §5 第二档）。
   # 保留在这里的价值：同一个插件被多个整合包用不同坐标写法引用时，分区页不会出现两遍。
   - id: external:dsh-wildmon

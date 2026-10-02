@@ -55,7 +55,22 @@ export const OPTIONAL_FIELDS = {
     'providedBy',
     'archivedNote',
   ],
-  launcher: ['launcherId', 'url', 'support', 'platforms', 'supportedManifest', 'archivedNote'],
+  // 启动器一度是唯一没有证据字段的 kind（M1 的 5 张注册表卡片用不上）。
+  // 现在启动器词条要写清许可、归属、版本口径与快照，所以补齐成与其它 kind 一致的这套：
+  // 它们记的是「这条事实从哪来、什么时候核实的」（docs/02 §3.1）。
+  launcher: [
+    'launcherId',
+    'url',
+    'support',
+    'platforms',
+    'supportedManifest',
+    'archivedNote',
+    'positioning',
+    'roles',
+    'licenseRefs',
+    'compat',
+    'providedBy',
+  ],
   source: [
     'url',
     'zones',
