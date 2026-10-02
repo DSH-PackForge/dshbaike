@@ -241,8 +241,9 @@ jobs:
             uid=$(gh api "users/${u}" --jq '.id' 2>/dev/null || echo "")
             email="${u}@users.noreply.github.com"
             [ -n "$uid" ] && email="${uid}+${u}@users.noreply.github.com"
-            trailers="${trailers}Co-authored-by: ${u} <${email}>
-"
+            # 换行用 $'\n' 显式写出来：多行双引号字符串的收尾引号一旦顶到第 0 列，
+            # 就会终止 run: | 的块标量，整个 workflow 静默失效（GitHub 不报错）。
+            trailers="${trailers}Co-authored-by: ${u} <${email}>"$'\n'
             credit_line="${credit_line}@${u} "
           done
           echo "署名：${credit_line:-（无）}"
