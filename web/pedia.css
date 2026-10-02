@@ -73,8 +73,6 @@
   --tone-amber-weak: #fbf1e0;
   --tone-violet: #5b3fb0;
   --tone-violet-weak: #efeafa;
-  --tone-rose: #a52a52;
-  --tone-rose-weak: #fbe9ef;
   --tone-slate: #44505f;
   --tone-slate-weak: #eaeef2;
 
@@ -109,8 +107,6 @@
   --tone-amber-weak: #2a2113;
   --tone-violet: #b9a3f0;
   --tone-violet-weak: #1f1a2e;
-  --tone-rose: #eb9ab5;
-  --tone-rose-weak: #2b1620;
   --tone-slate: #aab6c4;
   --tone-slate-weak: #1e242a;    color-scheme: dark;
   }
@@ -142,8 +138,6 @@
   --tone-amber-weak: #2a2113;
   --tone-violet: #b9a3f0;
   --tone-violet-weak: #1f1a2e;
-  --tone-rose: #eb9ab5;
-  --tone-rose-weak: #2b1620;
   --tone-slate: #aab6c4;
   --tone-slate-weak: #1e242a;  color-scheme: dark;
 }
@@ -872,11 +866,6 @@ a.tag:hover {
 .tag[data-tone="violet"] {
   background: var(--tone-violet-weak);
   color: var(--tone-violet);
-}
-
-.tag[data-tone="rose"] {
-  background: var(--tone-rose-weak);
-  color: var(--tone-rose);
 }
 
 .tag[data-tone="slate"] {

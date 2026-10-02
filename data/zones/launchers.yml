@@ -9,17 +9,15 @@ sections:
     title: 启动器
     desc: 替你起 DSH 的那一层：包装器、图形入口与它们认领的 canonical ID
     intro: |
-      **「有个启动器仓库」「认领了 canonical ID」「支持 .dspack」是三件独立的事。**
-      一个启动器可以三个都占、也可以只占前两个，这一区都列，但状态不同：
+      **「有个启动器仓库」和「认领了 canonical ID」是两件事。** 这一区把两者都列出来，
+      但状态不同，看卡片上有没有 `launcherId`：
 
-      | 状态 | 看卡片上的哪一行 | 意味着什么 |
-      | --- | --- | --- |
-      | **已认领 ID** | `launcherId`（如 `dshl`） | 整合包可以在 manifest 的 `launchers` 字段里**声明支持它**；安装端判定规则见 pack-structure/v3.md §9.1 |
-      | **未认领 ID** | 没有 `launcherId` | 它是个能下载、能用的启动器，但整合包**暂时声明不了它**——只能靠 README 让人手装 |
-      | **支持 .dspack** | 带 `支持 .dspack` 标签 | 能把 `.dspack` 直接装进 profile（本站的整合包就是这个格式） |
-      | **不支持 .dspack** | 带 `不支持 .dspack` 标签 | 仍能起 DSH，但装整合包得手工。这类启动器**也列在这一区**，不会因为不支持就被藏起来 |
+      | 状态 | 意味着什么 |
+      | --- | --- |
+      | **已认领 ID**（卡片写了 `launcherId`，如 `dshl`） | 整合包可以在 manifest 的 `launchers` 字段里**声明支持它**；安装端判定规则见 pack-structure/v3.md §9.1 |
+      | **未认领**（卡片没有 `launcherId`） | 它是个能下载、能用的启动器，但整合包**暂时声明不了它**——只能靠 README 让人手装 |
 
-      这两件事用**标签**表达，不为它单开字段——标签能筛选、能上色，够用了。
+      能把本站的整合包直接装进 profile 的启动器，卡片上带 **`支持 .dspack`** 标签。
 
       当前认领表里共 **5 个 ID**（`dshl` / `hdsl` / `dsh-packforge-app` / `official-desktop` / `dsh-cli`，
       快照 2026-10-02）；下面列出的启动器项目多于 5 个，**差额就是还没认领的那几个**。
