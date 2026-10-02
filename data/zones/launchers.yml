@@ -8,15 +8,42 @@ sections:
   - id: launchers
     title: 启动器
     desc: 替你起 DSH 的那一层：包装器、图形入口与它们认领的 canonical ID
+    intro: |
+      **「有个启动器仓库」和「认领了 canonical ID」是两件事。** 这一区把两者都列出来，
+      但状态不同，看卡片上有没有 `launcherId`：
+
+      | 状态 | 意味着什么 |
+      | --- | --- |
+      | **已认领 ID**（卡片写了 `launcherId`，如 `dshl`） | 整合包可以在 manifest 的 `launchers` 字段里**声明支持它**；安装端判定规则见 pack-structure/v3.md §9.1 |
+      | 「未认领」（卡片标「未认领」） | 它是个能下载、能用的启动器，但整合包**暂时声明不了它**——只能靠 README 让人手装 |
+
+      当前认领表里共 **5 个 ID**（`dshl` / `hdsl` / `dsh-packforge-app` / `official-desktop` / `dsh-cli`，
+      快照 2026-10-02）；下面列出的启动器项目多于 5 个，**差额就是还没认领的那几个**。
+      认领方式与安装端判定规则见本分区 howto。
   - id: bare
     title: 无启动器起步
     desc: 不装任何启动器时的起点
-howto: 认领方式：向规范仓库提 PR，在 launcher-registry.md 加一行（ID + 启动器名 + 版本自报方式 + 仓库链接）。安装端判定规则见 pack-structure/v3.md §9.1：不满足 minVersion 时提示后**放行**，绝不硬拒。注意 dshl 与 hdsl 只差一个字母、完全无关。
+howto: 认领方式：向规范仓库提 PR，在 launcher-registry.md 加一行（ID + 启动器名 + 版本自报方式 + 仓库链接）。安装端判定规则见 pack-structure/v3.md §9.1：不满足 minVe
 itemFields: [launcherId, lineage, platforms, selfVersioning, importSupport]
 items:
+  - name: dsh-launcher
+    section: launchers
+    blurb: Rust 写的桌面启动器（dsh-plugins 组织，69 star，快照 2026-10-02）：主打「多版本、多实例并排跑」——同一台机器上几个 DSH 版本互不干扰。未认领 canonical ID（2026-10-02 查证），所以整合包暂时声明不了它。
+    launcherId: null
+    lineage: 独立实现（Rust）
+    platforms: [windows, macos, linux]
+    selfVersioning: 未核实
+    importSupport: null
+    source: curated
+    entry: null
+    tags: ["多版本管理"]
+    risk: [desktop-control, network]
+    links:
+      github: dsh-plugins/dsh-launcher
+      registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
   - name: DSHL · DeepSeek Harness Launcher
     section: launchers
-    blurb: PCL2 魔改（Plain Craft Launcher 二次开发）：Windows 上一站式安装、启动与管理 DSH，版本自报是四段式（如 0.1.1.2）。
+    blurb: MC 同款思路「仿 PCL」——PCL2 魔改（Plain Craft Launcher 二次开发）。Windows 上一站式安装、启动与管理 DSH，版本自报是四段式（如 0.1.1.2）。11 star（快照 2026-10-02）。
     launcherId: dshl
     lineage: PCL2 魔改
     platforms: [windows]
@@ -31,7 +58,7 @@ items:
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
   - name: HDSL · Hello DeepSeek Launcher
     section: launchers
-    blurb: HMCL 内核的 JavaFX 启动器；.dspack 市场的采纳者，另外维护自有 .hdslp 格式。与 dshl（PCL 系）一个字母之差、完全无关。
+    blurb: MC 同款思路「仿 HMCL」——HMCL 内核的 JavaFX 启动器（Java，GPL-3.0，19 star，快照 2026-10-02）；.dspack 市场的采纳者，另外维护自有 .hdslp 格式。与 dshl（PCL 系）一个字母之差、完全无关。
     launcherId: hdsl
     lineage: HMCL 内核
     platforms: [windows, macos, linux]
@@ -43,6 +70,36 @@ items:
     risk: [desktop-control, network]
     links:
       github: MCXCC303/HDSL
+      registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
+  - name: ADL · Another DSH Launcher
+    section: launchers
+    blurb: 「WinUI 3 风格」（C#，GPL-3.0，仓库自述「beautiful and easy to use」）。0 star、2026-10-01 还在推提交，是这一区里最年轻的一个；未认领 canonical ID（2026-10-02 查证）。
+    launcherId: null
+    lineage: 独立实现（WinUI 3）
+    platforms: [windows]
+    selfVersioning: 未核实
+    importSupport: null
+    source: curated
+    entry: null
+    tags: ["WinUI"]
+    risk: [desktop-control, network]
+    links:
+      github: zzbuaoye-love/Another-DeepSeek-Harness-Launcher
+      registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
+  - name: DSH-Launcher（121103qwq）
+    section: launchers
+    blurb: 面向 Windows x64 的启动器与生态管理器（C#，MIT，30 star，快照 2026-10-02）——它的自我定位比「启动」更宽，把生态管理也算进职责。未认领 canonical ID（2026-10-02 查证）。
+    launcherId: null
+    lineage: 独立实现（C#）
+    platforms: [windows]
+    selfVersioning: 未核实
+    importSupport: null
+    source: curated
+    entry: null
+    tags: ["生态管理"]
+    risk: [desktop-control, network]
+    links:
+      github: 121103qwq/DSH-Launcher
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
   - name: DSH PackForge GUI / dspack CLI
     section: launchers
