@@ -8,18 +8,40 @@
 
 ---
 
-## 1. 词条模型：六类，各自独立编号
+## 1. 词条模型：十四类，各自独立编号
+
+**一个分区一种类型** + 三个跨分区类型（扩展设计见 [12](12-m2-kinds.md)）。分区类型与
+`data/zones/*.yml` 的 `kinds:` 声明一一对应，校验规则 24 保证「一种类型恰好属于一个分区」。
+
+### 1.1 分区类型（十一种）
+
+| kind | 文件位置 | URL | 归属分区 | 事实源 |
+| --- | --- | --- | --- | --- |
+| `client` | `data/client/<n>.md` | `/client/<n>.html` | `clients` 界面与客户端 | 人工（`form` 区分桌面/终端/浏览器） |
+| `launcher` | `data/launcher/<n>.md` | `/launcher/<n>.html` | `launchers` 启动器 | 人工 + 采集（`launchers.json` 认领表） |
+| `plugin` | `data/plugin/<n>.md` | `/plugin/<n>.html` | `plugins` 插件 | 人工撰写 + **外部源聚合**（awesome / npm / GitHub / dshbase），不自建全量登记 |
+| `theme` | `data/theme/<n>.md` | `/theme/<n>.html` | `themes` 主题与皮肤 | 人工（`targets` 说明改了界面哪几部分） |
+| `asset` | `data/asset/<n>.md` | `/asset/<n>.html` | `assets` 素材与本地化 | 人工（`assetType`：字体/图标/壁纸/文案） |
+| `skill` | `data/skill/<n>.md` | `/skill/<n>.html` | `skills` 技能包 | 人工（`roots` 说明在哪个发现根生效） |
+| `preset` | `data/preset/<n>.md` | `/preset/<n>.html` | `presets` 预设与人设 | 人工（`presetKind` + `files`） |
+| `recipe` | `data/recipe/<n>.md` | `/recipe/<n>.html` | `recipes` 指令与配方 | 人工（`snippet` 可直接粘贴的最小片段） |
+| `pack` | `data/pack/<n>.md` | `/pack/<n>.html` | `packs` 整合包 | 人工 + 采集（市场 manifest / stats） |
+| `tool` | `data/tool/<n>.md` | `/tool/<n>.html` | `toolchain` 工具链 | 人工（共同点是「在 DSH 之外运行」） |
+| `spec` | `data/spec/<n>.md` | `/spec/<n>.html` | `specs` 规范与协议 | 人工（指向规范仓库的文件；**有争议时以它为准**） |
+
+### 1.2 跨分区类型（三种）
 
 | kind | 文件位置 | URL | MC百科对应物 | 事实源 |
 | --- | --- | --- | --- | --- |
 | `concept` | `data/concept/<n>.md` | `/concept/<n>.html` | 游戏机制 / 概念页 | 人工（须指到权威出处） |
-| `plugin` | `data/plugin/<n>.md` | `/plugin/<n>.html` | **模组条目 `/class/<n>.html`** | 人工撰写 + **外部源聚合**（awesome / npm / GitHub / dshbase），不自建全量登记 |
 | `tutorial` | `data/tutorial/<n>.md` | `/tutorial/<n>.html` | 教程 `/post/<n>.html` | 人工（原创 + 外部聚合） |
-| `pack` | `data/pack/<n>.md` | `/pack/<n>.html` | 整合包 `/modpack/<n>.html` | 人工 + 采集（市场） |
-| `launcher` | `data/launcher/<n>.md` | `/launcher/<n>.html` | （无对应物） | 人工 + 采集（注册表） |
 | `source` | `data/source/<n>.md` | `/source/<n>.html` | （无对应物） | 人工 + 采集（外部站） |
 
-**「资源源」（`source`）是本版新增的核心类型**，也是「资源整合」这个定位的落点：一个外部资源站/渠道一页，写清它收录什么、提供哪些字段、收录量、许可、与我们的互补关系、怎么投稿与怎么用它。首批候选：`awesome-dsh-plugin.com`、`dshbase.com`、`dsh-pack-market`、npm registry、GitHub topic `dsh-plugin`、`dsh-packforge-app`、DSH 官方仓库与规范仓库。
+**跨分区三种不绑分区**：概念与教程是「读的东西」，不属于任何一层；一条源本身覆盖多个分区（用 `zones:` 声明它覆盖谁），所以也不属于任何一层。
+
+**「资源源」（`source`）是「资源整合」这个定位的落点**：一个外部资源站/渠道一页，写清它收录什么、提供哪些字段、收录量、许可、与我们的互补关系、怎么投稿与怎么用它。首批候选：`awesome-dsh-plugin.com`、`dshbase.com`、`dsh-pack-market`、npm registry、GitHub topic `dsh-plugin`、`dsh-packforge-app`、DSH 官方仓库与规范仓库。
+
+> **为什么「一个分区一种类型」**：在此之前只有六类词条，而分区有十一个——主题、技能、预设、配方、客户端、素材、工具链、规范这八类东西**连发号的地方都没有**，所以那些分区永远只有外链卡片、长不出百科详情。类型一旦发号就永久（`docs/02 §2`），所以这次扩展先冻结契约（[12](12-m2-kinds.md)）再写内容。
 
 ### 1.1 插件词条做，但**不做插件全量收录**
 
@@ -271,18 +293,23 @@ plugins:                    # 插件引用块，见 §5
 
 ## 4. 分类契约（`data/taxonomy.yml`）
 
-结构同 v1（点分层级、每节点 `label.zh` + `desc` 必填、父节点不可作 `category`、节点只能 `deprecated` 不能删），变化在**它现在只服务五类词条**：
+结构同 v1（点分层级、每节点 `label.zh` + `desc` 必填、父节点不可作 `category`、节点只能 `deprecated` 不能删）。分类树是**主题导向**的，不是「一种 kind 一个根」：
 
-| 一级 | 二级（示例） | 收什么 |
+| 一级 | 二级 | 收什么 |
 | --- | --- | --- |
 | `concept` 本体机制 | `concept.runtime` / `concept.plugin` / `concept.agent` / `concept.workspace` / `concept.ecosystem` | 概念词条（与 `layer` 枚举一致） |
-| `plugin` 插件与兼容 | `plugin.compat` 前置与兼容 / `plugin.ui` 界面 / `plugin.capability` 能力 / `plugin.data` 数据与记忆 | 教程按主题归入（**不是**插件目录分类） |
-| `pack` 整合包 | `pack.coding` / `pack.media` / `pack.fun` | 整合包词条 |
+| `plugin` 插件与兼容 | `plugin.compat` 前置与兼容 / `plugin.ui` 界面 / `plugin.capability` 能力 / `plugin.data` 数据与记忆 / `plugin.packaging` | 插件词条（**不是**插件目录分类） |
+| `pack` 整合包 | `pack.coding` / `pack.media` / `pack.fun` / `pack.general` | 整合包词条 |
 | `ops` 运维与排错 | `ops.install` / `ops.upgrade` / `ops.troubleshoot` | 教程 |
-| `ecosystem` 生态与分发 | `ecosystem.spec` 规范 / `ecosystem.source` 资源源 / `ecosystem.publish` 发布 | 概念、资源源、教程 |
+| `ecosystem` 生态与分发 | `ecosystem.spec` 规范 / `ecosystem.source` 资源源 / `ecosystem.publish` 发布 | 规范文件、资源源、教程 |
 | `meta` 元 | `meta.contributing` | 参与与维护类词条 |
+| `interface` 界面与入口 | `interface.desktop` / `interface.tui` / `interface.web` | 客户端词条（M2 新增） |
+| `launch` 启动与装载 | `launch.wrapper` / `launch.desktop` / `launch.cli` | 启动器词条（M2 新增；同时补上了 launcher 此前**没有可用叶子**的缺口） |
+| `appearance` 外观与素材 | `appearance.theme` / `appearance.asset` / `appearance.locale` | 主题与素材词条（M2 新增） |
+| `capability` 能力与配置 | `capability.skill` / `capability.preset` / `capability.recipe` | 技能、预设、配方词条（M2 新增） |
+| `tooling` 工具与实践 | `tooling.pack` / `tooling.install` / `tooling.index` | 工具词条（M2 新增） |
 
-> **插件的分类不搬到我们这边**：插件聚合页直接用 `awesome-dsh-plugin.com` 的 24 个分类键（`cat`）筛选。同一个插件在两站落进不同的类，读者与下游机器都要多做一次映射，没必要。
+> **插件的分类不搬到我们这边**：插件聚合页直接用 `awesome-dsh-plugin.com` 的分类键（`cat`）做筛选标签。同一个插件在两站落进不同的类，读者与下游机器都要多做一次映射，没必要。
 
 ---
 

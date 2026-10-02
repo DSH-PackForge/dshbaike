@@ -52,6 +52,7 @@ export const OPTIONAL_FIELDS = {
     'roles',
     'licenseRefs',
     'plugins',
+    'providedBy',
     'archivedNote',
   ],
   launcher: ['launcherId', 'url', 'support', 'platforms', 'supportedManifest', 'archivedNote'],
@@ -68,6 +69,15 @@ export const OPTIONAL_FIELDS = {
     'linkOut',
     'archivedNote',
   ],
+  // ---- M2：一个分区一种类型（docs/12 §3）。这些键只在该类型下合法 ----
+  client: ['form', 'platforms', 'repo', 'install', 'compat', 'licenseRefs', 'providedBy', 'screenshots'],
+  theme: ['targets', 'install', 'repo', 'npm', 'screenshots', 'compat', 'licenseRefs', 'providedBy'],
+  asset: ['assetType', 'locale', 'install', 'repo', 'provides', 'licenseRefs', 'providedBy'],
+  skill: ['skillKind', 'roots', 'files', 'install', 'repo', 'provides', 'licenseRefs', 'providedBy'],
+  preset: ['presetKind', 'files', 'install', 'repo', 'permissions', 'provides', 'licenseRefs', 'providedBy'],
+  recipe: ['recipeKind', 'targetLayer', 'dshRef', 'snippet', 'why', 'providedBy'],
+  tool: ['form', 'language', 'repo', 'npm', 'install', 'provides', 'requires', 'licenseRefs', 'providedBy'],
+  spec: ['specVersion', 'specStatus', 'fileName', 'url', 'supersedes', 'repo', 'providedBy'],
 };
 
 /** 每个 kind 期望出现的字段（用于完备度；顺序也决定缺项清单的次序） */
@@ -149,6 +159,15 @@ export const EXPECTED_FIELDS = {
     'maintainers',
     'updatedAt',
   ],
+  // ---- M2：各分区类型的期望字段（顺序即缺项清单里的次序）----
+  client: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'form', 'platforms', 'repo', 'install', 'compat', 'tags', 'maintainers', 'updatedAt'],
+  theme: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'targets', 'install', 'repo', 'screenshots', 'tags', 'maintainers', 'updatedAt'],
+  asset: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'assetType', 'locale', 'install', 'repo', 'tags', 'maintainers', 'updatedAt'],
+  skill: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'roots', 'files', 'install', 'repo', 'tags', 'maintainers', 'updatedAt'],
+  preset: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'presetKind', 'files', 'install', 'repo', 'tags', 'maintainers', 'updatedAt'],
+  recipe: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'recipeKind', 'targetLayer', 'dshRef', 'why', 'tags', 'maintainers', 'updatedAt'],
+  tool: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'form', 'language', 'repo', 'install', 'tags', 'maintainers', 'updatedAt'],
+  spec: [...COMMON_REQUIRED, 'titleEn', 'aliases', 'specVersion', 'specStatus', 'fileName', 'url', 'tags', 'maintainers', 'updatedAt'],
 };
 
 /** 字段权重：必填项缺了扣得更狠（M1 的初始口径，可调） */
@@ -182,6 +201,26 @@ const FIELD_WEIGHT = {
   packType: 2,
   launcherId: 2,
   platforms: 2,
+  // M2 各类型的「必填」字段给 3，期望字段给 2（docs/12 §3）
+  form: 3,
+  targets: 3,
+  assetType: 3,
+  roots: 3,
+  presetKind: 3,
+  recipeKind: 3,
+  targetLayer: 3,
+  specVersion: 3,
+  specStatus: 3,
+  fileName: 3,
+  files: 2,
+  language: 2,
+  provides: 2,
+  requires: 2,
+  supersedes: 2,
+  locale: 2,
+  dshRef: 2,
+  snippet: 2,
+  why: 2,
 };
 
 const DEFAULT_WEIGHT = 1;
@@ -235,6 +274,27 @@ const FIELD_META = {
   howto: ['怎么用未写', '补 howto（怎么用它 / 怎么投稿）'],
   linkOut: ['默认外链未给', '补 linkOut（默认把读者送去哪）'],
   screenshot: ['截图缺失', '补图片或删掉 screenshots 项'],
+  // ---- M2 新类型的字段提示（docs/12 §3）----
+  form: ['形态未标', '补 form（client: desktop / tui / web / cli / ide；tool: cli / app / library / service）'],
+  targets: ['改界面的哪几部分未写', '补 targets（shell / colors / wallpaper / icons / editor）'],
+  assetType: ['素材类型未标', '补 assetType（font / icons / wallpaper / locale / snippet）'],
+  locale: ['语言未标', '补 locale（如 zh-CN、language-neutral）'],
+  skillKind: ['技能类型未标', '可选：补 skillKind（skill / collection）'],
+  roots: ['发现根未写', '补 roots（project / user / builtin，见技能扫描根的概念词条）'],
+  files: ['关键文件未列', '补 files（如 SKILL.md、agent.cordis.yml）'],
+  presetKind: ['预设类型未标', '补 presetKind（agent / client）'],
+  permissions: ['权限档位未写', '可选：补 permissions（默认档与可切换档）'],
+  recipeKind: ['配方类型未标', '补 recipeKind（config / snippet / instructions）'],
+  targetLayer: ['落点层未标', '补 targetLayer（project / userspace / machine）'],
+  dshRef: ['对应的 DSH 文件未给', '补 dshRef（如 AGENTS.md、cordis.patch.yml）'],
+  snippet: ['片段未给', '补 snippet（可直接粘贴的最小片段）'],
+  why: ['为什么这样配未说', '补 why（一句话说明它改变什么行为）'],
+  language: ['实现语言未标', '补 language'],
+  requires: ['依赖未列', '可选：补 requires（它需要什么才能跑）'],
+  specVersion: ['规格版本未给', '补 specVersion'],
+  specStatus: ['规格状态未标', '补 specStatus（current / draft / deprecated）'],
+  fileName: ['仓库内路径未给', '补 fileName（如 specs/manifest/v5.md）'],
+  supersedes: ['替代关系未写', '可选：补 supersedes（它取代了哪一份）'],
 };
 
 /**

@@ -4,10 +4,19 @@ zone: launchers
 title: 启动器
 desc: .dspack 的安装端，也是「怎么装上并起得来」那一步的承载者。事实源是规范仓库的 launcher-registry.md 与它的机器可读版 launchers.json，当前共 5 条已认领 ID。
 dataSource: launchers
+kinds: [launcher]
+sections:
+  - id: launchers
+    title: 启动器
+    desc: 替你起 DSH 的那一层：包装器、图形入口与它们认领的 canonical ID
+  - id: bare
+    title: 无启动器起步
+    desc: 不装任何启动器时的起点
 howto: 认领方式：向规范仓库提 PR，在 launcher-registry.md 加一行（ID + 启动器名 + 版本自报方式 + 仓库链接）。安装端判定规则见 pack-structure/v3.md §9.1：不满足 minVersion 时提示后**放行**，绝不硬拒。注意 dshl 与 hdsl 只差一个字母、完全无关。
 itemFields: [launcherId, lineage, platforms, selfVersioning, importSupport]
 items:
   - name: DSHL · DeepSeek Harness Launcher
+    section: launchers
     blurb: PCL2 魔改（Plain Craft Launcher 二次开发）：Windows 上一站式安装、启动与管理 DSH，版本自报是四段式（如 0.1.1.2）。
     launcherId: dshl
     lineage: PCL2 魔改
@@ -15,13 +24,14 @@ items:
     selfVersioning: 四段式（如 0.1.1.2）
     importSupport: null
     source: launchers
-    entry: null
+    entry: launcher/1
     tags: ["工具与能力"]
     risk: [desktop-control, network]
     links:
       github: Loliyer520/DSHL-Deepseek-Harness-Launcher
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
   - name: HDSL · Hello DeepSeek Launcher
+    section: launchers
     blurb: HMCL 内核的 JavaFX 启动器；.dspack 市场的采纳者，另外维护自有 .hdslp 格式。与 dshl（PCL 系）一个字母之差、完全无关。
     launcherId: hdsl
     lineage: HMCL 内核
@@ -36,6 +46,7 @@ items:
       github: MCXCC303/HDSL
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
   - name: DSH PackForge GUI / dspack CLI
+    section: launchers
     blurb: 官方工具链形态的安装端：Electron 图形客户端加 dspack 命令行，导出、浏览、安装整合包；也是唯一同时出现在「工具链」分区的条目。
     launcherId: dsh-packforge-app
     lineage: 官方工具链
@@ -49,6 +60,7 @@ items:
     links:
       github: DSH-PackForge/dsh-packforge-app
   - name: DeepSeek Harness 官方桌面端
+    section: launchers
     blurb: 官方桌面端，在注册表里认领了 official-desktop。它的仓库与平台清单在本机可读副本里查不到，标未核实。
     launcherId: official-desktop
     lineage: 官方
@@ -59,6 +71,7 @@ items:
     links:
       registry: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
   - name: 裸 dsh 命令行
+    section: bare
     blurb: 不依赖任何启动器：dsh --version 自报版本，dsh --profile <name> 直接起 profile。注册表把它作为「无启动器」这一档登记，是排查启动器问题时的对照组。
     launcherId: dsh-cli
     lineage: 官方 CLI

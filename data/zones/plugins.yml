@@ -4,10 +4,33 @@ zone: plugins
 title: 插件
 desc: 给 DSH 加功能：宿主侧 / 客户端侧插件、bundle 与兼容层。这里只列「本站写了词条」和「已被收录整合包用到」的条目；生态全貌在 awesome-dsh-plugin.com（4400 条）与 dshbase.com。
 dataSource: awesome
+kinds: [plugin]
+sections:
+  - id: markets
+    title: 插件市场
+    desc: 市面上的插件源与目录：它们负责「发现」与全量收录，我们负责解释
+    intro: |
+      插件这一层现在有四家在做**不同的事**，把它们混为一谈是新手最常见的误解：
+
+      | 去处 | 它负责什么 | 我们引用的数字（快照 2026-10-01） |
+      | --- | --- | --- |
+      | [awesome-dsh-plugin.com](https://awesome-dsh-plugin.com/zh/) | 社区精选目录：中英双语、按分类浏览，机器可读入口是 `catalog.json` | 收录 **4400** 条（首页自述 24 个分类；我们实测 `cat` 去重是 **23**，口径不一致已注明） |
+      | [dshbase.com](https://dshbase.com/) | 中文指南与排错：入门与常见故障 | 收录 **7797** 条插件条目 |
+      | [dsh-pack-market](https://github.com/DSH-PackForge/dsh-pack-market) | 整合包索引与启动器认领（不是插件目录） | **8** 个包 · **4** 个插件 · **5** 条启动器认领 |
+      | [规范仓库](https://github.com/DSH-PackForge/DSH-PackForge) | 契约的定义者：`manifest`、`pack-structure`、`index`、`publishing` | manifest **v1–v5** · pack-structure **v1–v3** |
+
+      **本站刻意不做插件全量收录。** 全量目录交给上面两家——它们做得比我们好，而且一直在更新。
+      我们收的是**被教程引用过、或被整合包用到**的插件，为它写一篇聚合页：定位、关系、兼容、
+      以及踩过的坑（这些是目录里查不到的）。所以这里的条目数会一直远小于生态总量，
+      这是设计目标，不是进度落后。
+  - id: plugins
+    title: 插件
+    desc: 本站收录的插件聚合页：只收被教程引用过、或被整合包用到的
 howto: 装插件用 `dsh plugin --profile <name> add <npm 包名 | github:owner/repo>`。GitHub 来源会在安装时跑构建脚本，pnpm 默认拦截，需要按提示把键名加进该 profile 的 pnpm-workspace.yaml 的 allowBuilds 后再装一次；只装可信来源，并尽量锁 commit（github:owner/repo#sha）。落点是 profile 目录，见「profile」与「$DSH_HOME」两条概念。
 itemFields: [role, entryGate]
 items:
   - name: dsh-loader
+    section: plugins
     blurb: 版本感知的运行时兼容层：在 DSH 升级、内部包版本变化之后，让第三方插件不必改源码就能继续挂上。升级炸插件时的第一根救命稻草。
     role: compat
     entryGate: pack
@@ -18,6 +41,7 @@ items:
       github: dsh-plugins/dsh-loader
       npm: "@dsh-plugin/dsh-loader"
   - name: dsh-pack-plugin
+    section: plugins
     blurb: 整合包管理 bundle（host + client 双半端）：.dspack 导出 / 安装、多 profile 切换、市场浏览、工作区配置与任务中心，零官方源码改动。
     role: bundle+client
     entryGate: pack
@@ -28,6 +52,7 @@ items:
       github: DSH-PackForge/dsh-pack-plugin
       npm: "@dsh-packforge/dsh-pack-plugin"
   - name: dsh-packforge-app
+    section: plugins
     blurb: 打包与安装工具：Electron 图形客户端加 dspack CLI，一键导出、浏览、安装整合包；包成分表的解析器就在它的 core 里。
     role: bundle
     entryGate: tutorial
@@ -37,6 +62,7 @@ items:
     links:
       github: DSH-PackForge/dsh-packforge-app
   - name: dsh-better-sidebar-loader
+    section: plugins
     blurb: 被「更好的侧边栏」整合包用到的前置加载器（坐标 @dsh-plugin/dsh-better-sidebar-loader）。本轮只核实了它出现在哪个包里，仓库归属与行为未核实。
     role: compat
     entryGate: pack
@@ -46,6 +72,7 @@ items:
     links:
       npm: "@dsh-plugin/dsh-better-sidebar-loader"
   - name: dsh-wildmon
+    section: plugins
     blurb: 被宝可梦整合包用到的桌宠类插件，同一实体在市场里以两种坐标写法出现（dsh-wildmon 与 github:swaylq/dsh-wildmon）——是 entities.yml 归并键的样板。
     role: bundle
     entryGate: pack
@@ -55,10 +82,38 @@ items:
     links:
       npm: dsh-wildmon
       github: swaylq/dsh-wildmon
+  - name: awesome-dsh-plugin.com
+    section: markets
+    blurb: 社区精选的插件目录：中英双语、按分类浏览，机器可读入口是一份 catalog.json。要按分类、Star、最新收录浏览整个生态，去这里（我们实测 4400 条、cat 去重 23 个分类）。
+    role: compat
+    source: awesome
+    entry: source/1
+    tags: ["插件目录"]
+    links:
+      awesome: https://awesome-dsh-plugin.com/zh/
+  - name: dshbase.com
+    section: markets
+    blurb: 中文指南与排错站：入门、安装与常见故障交给它。它的定位是「教你用起来」，我们的定位是「把机制讲清楚」，两者不重叠。
+    role: compat
+    source: curated
+    entry: null
+    tags: ["中文指南"]
+    links:
+      dshbase: https://dshbase.com/
+  - name: dsh-pack-market
+    section: markets
+    blurb: 整合包的索引与分发入口（不是插件目录）：一份可懒加载的公开索引，整合包分区与启动器分区都读它。索引 8 个包 / 4 个插件 / 5 条启动器认领（快照 2026-10-01）。
+    role: compat
+    source: market
+    entry: source/2
+    tags: ["整合包市场"]
+    links:
+      market: https://github.com/DSH-PackForge/dsh-pack-market
   - name: 看全量去源头
+    section: markets
     blurb: 本站刻意不做插件全量收录。要按分类、Star、下载量、最新收录浏览整个生态，请直接去源站；四个源的分工与状态见本分区的来源区块。
-    role: bundle
+    role: compat
     source: curated
     entry: null
     links:
-      "awesome-dsh-plugin.com（4400 条 · 24 分类）": https://awesome-dsh-plugin.com/zh/
+      awesome: https://awesome-dsh-plugin.com/zh/

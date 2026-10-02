@@ -57,24 +57,41 @@
     { id: 'toolchain', label: '工具链', desc: '打包 / 安装 / 市场 / 索引 / 调试工具。' }
   ];
 
-  /* 词条 kind → 中文名（面包屑、最近更新、词条页归属） */
+  /* 词条 kind → 中文名（面包屑、最近更新、词条页归属）。顺序与 docs/12 §1 一致 */
   var KIND_ZH = {
-    concept: '概念',
-    plugin: '插件',
-    tutorial: '教程',
-    pack: '整合包',
+    client: '客户端',
     launcher: '启动器',
+    plugin: '插件',
+    theme: '主题与皮肤',
+    asset: '素材与本地化',
+    skill: '技能包',
+    preset: '预设与人设',
+    recipe: '指令与配方',
+    pack: '整合包',
+    tool: '工具',
+    spec: '规范文件',
+    concept: '概念',
+    tutorial: '教程',
     source: '资源源'
   };
 
-  /* kind → 默认所属分区（构建期产物里带 zone 时以产物为准） */
+  /* kind → 默认所属分区（构建期产物里带 zone 时以产物为准）。
+     跨分区的 concept / tutorial / source 不绑分区。 */
   var KIND_ZONE = {
-    concept: 'plugins',
-    plugin: 'plugins',
-    tutorial: 'plugins',
-    pack: 'packs',
+    client: 'clients',
     launcher: 'launchers',
-    source: 'sources'
+    plugin: 'plugins',
+    theme: 'themes',
+    asset: 'assets',
+    skill: 'skills',
+    preset: 'presets',
+    recipe: 'recipes',
+    pack: 'packs',
+    tool: 'toolchain',
+    spec: 'specs',
+    concept: null,
+    tutorial: null,
+    source: null
   };
 
   var STATUS = {
@@ -177,13 +194,34 @@
     prereq: '前置词条',
     related: '相关词条',
     external: '原站信息',
-    plugins: '引用的插件'
+    plugins: '引用的插件',
+    // M2 各分区类型的专有字段（docs/12 §3）
+    form: '形态',
+    targets: '改造范围',
+    assetType: '素材类型',
+    locale: '语言',
+    skillKind: '技能类型',
+    roots: '发现根',
+    files: '关键文件',
+    presetKind: '预设类型',
+    permissions: '权限档位',
+    recipeKind: '配方类型',
+    targetLayer: '落点层',
+    dshRef: '对应文件',
+    snippet: '可粘贴片段',
+    why: '为什么这样配',
+    language: '实现语言',
+    requires: '依赖',
+    specVersion: '规格版本',
+    specStatus: '规格状态',
+    fileName: '仓库内路径',
+    supersedes: '取代了'
   };
 
   var FIELD_GROUPS = [
-    { title: '基本信息', keys: ['positioning', 'titleEn', 'aliases', 'category', 'tags', 'role', 'layer', 'difficulty', 'origin', 'fitFor', 'packType', 'launcherId', 'sourceKind', 'maintainers', 'status', 'updatedAt'] },
-    { title: '兼容与平台', keys: ['dshVersion', 'dshVersions', 'appliesTo', 'runtime', 'platforms', 'supportedManifest', 'launchers', 'importSupport', 'selfVersioning', 'lineage'] },
-    { title: '安装与出处', keys: ['install', 'repo', 'npm', 'marketId', 'spec', 'url', 'linkOut', 'coverage', 'downloads', 'relation', 'howto', 'zones', 'prereq', 'related'] },
+    { title: '基本信息', keys: ['positioning', 'titleEn', 'aliases', 'category', 'tags', 'role', 'layer', 'difficulty', 'origin', 'fitFor', 'packType', 'launcherId', 'sourceKind', 'form', 'targets', 'assetType', 'locale', 'skillKind', 'roots', 'presetKind', 'recipeKind', 'targetLayer', 'language', 'specVersion', 'specStatus', 'maintainers', 'status', 'updatedAt'] },
+    { title: '兼容与平台', keys: ['dshVersion', 'dshVersions', 'appliesTo', 'runtime', 'platforms', 'supportedManifest', 'launchers', 'importSupport', 'selfVersioning', 'lineage', 'permissions'] },
+    { title: '安装与出处', keys: ['install', 'repo', 'npm', 'marketId', 'spec', 'url', 'linkOut', 'coverage', 'downloads', 'relation', 'howto', 'zones', 'prereq', 'related', 'files', 'dshRef', 'fileName', 'supersedes', 'requires', 'provides', 'snippet', 'why'] },
     { title: '许可证', keys: ['license', 'licenseRefs'] }
   ];
 
@@ -2402,6 +2440,38 @@
 
   /* ------------------------------------------------------------ 分区页 */
 
+  /**
+   * 二级分区块（docs/06 §2.0.1）：标题 + 条数 + 一句说明 + 可选编辑综述 + 该组的卡片。
+   * `introHtml` 由构建期渲染（已转义），这里只负责插进 DOM。
+   */
+  function sectionBlock(sec, list, items, zone, zoneId) {
+    var anchor = 'sec-' + (sec.id || 'none');
+    var children = [
+      el('div', { class: 'subsec__head' }, [
+        el('h2', { class: 'subsec__title', text: sec.title || sec.id }),
+        el('span', { class: 'subsec__count', text: list.length + ' 条' }),
+        el('a', { class: 'subsec__anchor', href: '#' + anchor, text: '#', 'aria-label': '这一节的链接' })
+      ])
+    ];
+    if (isPresent(sec.desc)) children.push(el('p', { class: 'subsec__desc', text: sec.desc }));
+    if (isPresent(sec.introHtml)) {
+      var intro = el('div', { class: 'subsec__intro' });
+      intro.innerHTML = sec.introHtml; // 构建期已渲染并转义（pedia 的 markdown 渲染器先转义再替换）
+      children.push(intro);
+    }
+    children.push(el('ul', { class: 'cards', id: 'zone-cards-' + (sec.id || 'none') },
+      list.map(function (it) { return cardFor(it, items, zone, zoneId); })));
+    return el('section', { class: 'subsection', id: anchor, 'aria-label': sec.title || sec.id }, children);
+  }
+
+  /** 给卡片打上它在 items 里的下标：分组后卡片不再同处一个 ul，筛选必须按 data-idx 认领数据 */
+  function cardFor(it, items, zone, zoneId) {
+    var card = zoneCard(it, zone, zoneId);
+    var idx = items.indexOf(it);
+    if (card && card.dataset) card.dataset.idx = String(idx < 0 ? '' : idx);
+    return card;
+  }
+
   function renderZone(zone) {
     GLOBAL.zone = zone;
     var main = $('#main');
@@ -2439,7 +2509,46 @@
     main.appendChild(sourcesSection(sources, id, zone.dataSource));
 
     main.appendChild(filterBar(items, id));
-    main.appendChild(el('ul', { class: 'cards', id: 'zone-cards' }, items.map(function (it) { return zoneCard(it, zone, id); })));
+
+    // 二级分区（docs/06 §2.0.1）：一级分区回答「这是哪一层」，二级回答「同一层里属于哪一类」。
+    var sections = asArray(zone.sections);
+    if (sections.length) {
+      var bySection = {};
+      items.forEach(function (it) {
+        var key = isPresent(it.section) ? String(it.section) : '';
+        (bySection[key] = bySection[key] || []).push(it);
+      });
+      var renderedItems = [];
+      sections.forEach(function (sec) {
+        var list = bySection[sec.id] || [];
+        if (!list.length) return;
+        main.appendChild(sectionBlock(sec, list, items, zone, id));
+        renderedItems = renderedItems.concat(list);
+      });
+      var ungrouped = bySection[''] || [];
+      if (ungrouped.length) {
+        main.appendChild(sectionBlock(
+          { id: 'none', title: '未分组', desc: '还没有归到二级分区的条目：补上 section 就会自动归位' },
+          ungrouped, items, zone, id,
+        ));
+        renderedItems = renderedItems.concat(ungrouped);
+      }
+      // 声明了却一条都没有的二级分区：如实说出来，而不是静默消失
+      var missingSections = sections.filter(function (sec) { return !(bySection[sec.id] || []).length; });
+      if (missingSections.length) {
+        main.appendChild(el('p', { class: 'section__empty' }, document.createTextNode(
+          '这几个二级分区还没有条目：' + missingSections.map(function (s) { return s.title || s.id; }).join(' / '),
+        )));
+      }
+      // 兜底：section 写成了没声明的 id（校验器会报错）时，条目也不能从页面上消失
+      var leftovers = items.filter(function (it) { return renderedItems.indexOf(it) < 0; });
+      if (leftovers.length) {
+        main.appendChild(el('ul', { class: 'cards', id: 'zone-cards-leftover' },
+          leftovers.map(function (it) { return cardFor(it, items, zone, id); })));
+      }
+    } else {
+      main.appendChild(el('ul', { class: 'cards', id: 'zone-cards' }, items.map(function (it) { return cardFor(it, items, zone, id); })));
+    }
     var empty = el('p', { class: 'notice notice--unknown', id: 'zone-empty', hidden: true }, [
       el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '?' }),
       document.createTextNode('没有匹配的条目。'),
@@ -2541,7 +2650,9 @@
   }
 
   function bindZoneFilter(items, zone, zoneId) {
-    var cards = document.querySelectorAll('#zone-cards > li');
+    // 分组后卡片分散在多个 ul 里（zone-cards-<section>），所以按 id 前缀一次取全，
+    // 并且用每张卡自己的 data-idx 认领数据——不能再靠循环下标（顺序已经变了）。
+    var cards = document.querySelectorAll('[id^="zone-cards"] > li');
     var chips = document.querySelectorAll('.filterbar .tag');
     var input = document.getElementById('zone-filter');
     var empty = document.getElementById('zone-empty');
@@ -2549,14 +2660,20 @@
 
     function apply() {
       var shown = 0;
-      Array.prototype.forEach.call(cards, function (card, i) {
-        var it = items[i] || {};
+      Array.prototype.forEach.call(cards, function (card) {
+        var idx = Number(card.getAttribute('data-idx'));
+        var it = Number.isFinite(idx) ? (items[idx] || {}) : {};
         var okTag = state.tag === '*' || asArray(it.tags).map(String).indexOf(state.tag) >= 0;
         var hay = [it.name, it.blurb, asArray(it.tags).join(' '), asArray(it.risk).join(' ')].join(' ').toLowerCase();
         var okQ = !state.q || hay.indexOf(state.q) >= 0;
         var on = okTag && okQ;
         card.hidden = !on;
         if (on) shown++;
+      });
+      // 整组被筛空时，连二级分区标题一起收起来（否则会留下一排空标题）
+      Array.prototype.forEach.call(document.querySelectorAll('.subsection'), function (sec) {
+        var visible = sec.querySelectorAll('[id^="zone-cards"] > li:not([hidden])').length;
+        sec.hidden = visible === 0;
       });
       if (empty) empty.hidden = shown !== 0;
     }
@@ -2723,7 +2840,7 @@
 
   /* ----------------------------------------------- 按类型浏览（#/browse/<kind>） */
 
-  var KIND_ORDER = ['concept', 'plugin', 'tutorial', 'pack', 'launcher', 'source'];
+  var KIND_ORDER = ['client', 'launcher', 'plugin', 'theme', 'asset', 'skill', 'preset', 'recipe', 'pack', 'tool', 'spec', 'concept', 'tutorial', 'source'];
 
   /** kind/n 的确定性排序：先按 KIND_ORDER 的固定次序，再按 n 的数字大小 */
   function compareEntryIds(a, b) {
@@ -2836,11 +2953,19 @@
 
   function kindBlurb(kind) {
     return {
-      concept: '本体机制：DSH 自己怎么跑起来',
-      plugin: '插件聚合页：定位、关系、兼容与坑',
-      tutorial: '教程：自写 + 外部教程的索引卡',
-      pack: '整合包：组成与适合谁',
+      client: '界面与客户端：用什么界面使用 DSH',
       launcher: '启动器：canonical ID 与血缘',
+      plugin: '插件聚合页：定位、关系、兼容与坑',
+      theme: '主题与皮肤：换掉界面的样子',
+      asset: '素材与本地化：图标、字体、界面文案',
+      skill: '技能包：以 SKILL.md 为单位的可加载能力',
+      preset: '预设与人设：决定这个智能体是什么',
+      recipe: '指令与配方：一小段可粘贴的配置',
+      pack: '整合包：组成与适合谁',
+      tool: '工具：在 DSH 之外运行的那些',
+      spec: '规范文件：有争议时以它为准',
+      concept: '本体机制：DSH 自己怎么跑起来',
+      tutorial: '教程：自写 + 外部教程的索引卡',
       source: '资源源：外部渠道收录什么、怎么用'
     }[kind] || '';
   }

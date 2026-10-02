@@ -4,19 +4,29 @@ zone: assets
 title: 素材与本地化
 desc: 图标、字体、界面文案与本地化包。这一层解决的不是「DSH 能做什么」，而是「它看起来、读起来像不像中文用户的东西」。
 dataSource: curated
+kinds: [asset]
+sections:
+  - id: locale
+    title: 界面文案与本地化
+    desc: 界面词条、语言切换，以及第三方插件的中文化
+  - id: visual
+    title: 字体与图标
+    desc: 可替换的静态资源：界面字体、图标集
 howto: 界面文案走客户端半端的国际化机制：插件在 locales 里按命名空间提供词条，语言切换即时生效，不用重载页面。字体与图标更简单——多数主题类插件允许直接给 CSS 与图片资源。想贡献汉化请优先改上游插件自己的 locales，而不是在外层覆盖。
 itemFields: [assetType, locale]
 items:
   - name: 官方中文界面词条
+    section: locale
     blurb: DSH 本体自带中文界面：客户端半端的 locale 机制按语言切换文案，服务端与客户端都用同一套命名空间。想找汉化的第一步其实是确认语言设置，而不是装插件。
     assetType: locale
-    locale: zh-CN
+    locale: zh
     source: curated
-    entry: null
+    entry: asset/1
     tags: ["主题与外观"]
     links:
       github: deepseek-ai/deepseek-harness
   - name: 字体与图标（占位 · 欢迎补充）
+    section: visual
     blurb: 替换界面字体与图标。本轮没有可指名的独立素材包——已知的做法是把字体与图标塞进主题类插件的 CSS 与 canvas 配置里，所以还没有「先装素材、再装主题」这种拆分的生态。欢迎提 PR 补一条有仓库的。
     assetType: font
     locale: "language-neutral"
@@ -26,9 +36,10 @@ items:
     links:
       github: https://github.com/topics/dsh-plugin
   - name: 第三方插件的中文化（占位 · 欢迎贡献）
+    section: locale
     blurb: 大量第三方插件只有英文或中英混排文案，汉化缺口在这一层。正确做法是给上游插件的 locales 提 PR（改上游、不覆盖），这样升级不会把你的翻译冲掉。本条目作为入口，收录具体的汉化贡献记录。
     assetType: locale
-    locale: zh-CN
+    locale: zh
     source: curated
     entry: null
     tags: ["主题与外观"]

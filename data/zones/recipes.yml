@@ -4,23 +4,33 @@ zone: recipes
 title: 指令与配方
 desc: 改 DSH 的行为与语气，但不装任何插件：cordis.patch.yml 片段（禁用一个内置组件、改默认模型、换配色令牌）与 AGENTS.md 指令模板。相当于 MC百科的合成表——一小段可粘贴的配置，换一个明确的行为变化。
 dataSource: curated
+kinds: [recipe]
+sections:
+  - id: instructions
+    title: 指令模板
+    desc: 写给智能体的常驻指令：改的是它怎么理解你的项目
+  - id: config
+    title: 配置片段
+    desc: 一小段可粘贴的配置：改的是它的行为与外观
 howto: 配方贴进 profile 目录的 cordis.patch.yml（路径 $DSH_HOME/profiles/<name>/cordis.patch.yml），或更上层的 $DSH_HOME/cordis.patch.yml。层级越高越优先：同 id 的行被后面应用的补丁整段覆盖。改完保存即生效——两个补丁文件都在热重载监视下，不必重启。
 itemFields: [recipeKind, targetLayer, dshRef]
 items:
   - name: 禁用一个内置 UI 组件
+    section: config
     blurb: 在 profile 的 cordis.patch.yml 里按 id 打 disabled:true，就能摘掉某个内置界面行（例如关掉设置入口）。比「卸载」更安全：行还在树上，只是不激活，随时删掉那三行即可还原。
-    recipeKind: disable
-    targetLayer: profile
+    recipeKind: config
+    targetLayer: userspace
     dshRef: cordis.patch.yml
     source: curated
-    entry: null
+    entry: recipe/1
     tags: ["UI 增强"]
     links:
       "cordis.patch.yml": https://github.com/deepseek-ai/deepseek-harness
   - name: 改默认模型
+    section: config
     blurb: 给 agent-default-model 这一行insert 或 override 一段 config（provider / model / reasoningEffort），即可改掉默认模型与思考强度。注意 config 是**整段替换**：写这一行时要把想保留的键一起写全。
-    recipeKind: override
-    targetLayer: profile
+    recipeKind: config
+    targetLayer: userspace
     dshRef: agent-default-model
     source: curated
     entry: null
@@ -28,9 +38,10 @@ items:
     links:
       "cordis.patch.yml": https://github.com/deepseek-ai/deepseek-harness
   - name: 换配色令牌
+    section: config
     blurb: 不装皮肤插件也能换外观：把 --dsw-* 设计令牌写进某个插件行的 config（例如皮肤行的 tokens），亮暗两套各给一遍。整合包作者常这么做，美术上的自由度比装插件低，但零额外依赖。
-    recipeKind: tokens
-    targetLayer: profile
+    recipeKind: config
+    targetLayer: userspace
     dshRef: "--dsw-*"
     source: curated
     entry: null
@@ -38,6 +49,7 @@ items:
     links:
       "cordis.patch.yml": https://github.com/deepseek-ai/deepseek-harness
   - name: AGENTS.md 指令模板
+    section: instructions
     blurb: 项目根的 AGENTS.md 是智能体指令的落点之一。模板只给结构与写法（约束、命名、提交纪律），不写业务内容——这份模板尚未定稿，欢迎先提你正在用的那一份。
     recipeKind: instructions
     targetLayer: project

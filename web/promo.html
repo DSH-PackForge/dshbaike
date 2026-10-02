@@ -238,12 +238,12 @@
         </p>
         <div class="cta">
           <a class="btn" href="./tutorial/1.html">从这三篇开始读 →</a>
-          <a class="btn btn--ghost" href="./#/browse/all">浏览全部词条（12）</a>
+          <a class="btn btn--ghost" href="./#/browse/all">浏览全部词条（<span data-count="entries">—</span>）</a>
         </div>
         <ul class="facts">
-          <li><b>12</b>条词条</li>
-          <li><b>11</b>个一级分区</li>
-          <li><b>4</b>个引用源</li>
+          <li><b data-count="entries">—</b>条词条</li>
+          <li><b data-count="zones">—</b>个一级分区</li>
+          <li><b data-count="sources">—</b>个引用源</li>
           <li><b>∞</b>编号永不复用</li>
         </ul>
       </div>
@@ -302,22 +302,22 @@
     <section class="band" aria-label="本站规模">
       <div class="fact">
         <div class="fact__k"><span class="chip" style="background:#1fb8a6"></span>一级分区</div>
-        <div class="fact__v">11</div>
+        <div class="fact__v" data-count="zones">—</div>
         <div class="fact__d">按装配位置分层：从界面到规范</div>
       </div>
       <div class="fact">
         <div class="fact__k"><span class="chip" style="background:#e3a83c"></span>词条</div>
-        <div class="fact__v">12</div>
-        <div class="fact__d">概念 4 · 插件 3 · 教程 3 · 资源源 2</div>
+        <div class="fact__v" data-count="entries">—</div>
+        <div class="fact__d" data-count="entryBreakdown">读取中…</div>
       </div>
       <div class="fact">
         <div class="fact__k"><span class="chip" style="background:#5aa544"></span>引用的外部源</div>
-        <div class="fact__v">4</div>
+        <div class="fact__v" data-count="sources">—</div>
         <div class="fact__d">awesome · dshbase · 市场 · 规范仓库</div>
       </div>
       <div class="fact">
         <div class="fact__k"><span class="chip" style="background:#8f9aa6"></span>数据快照</div>
-        <div class="fact__v">2026-10-02</div>
+        <div class="fact__v" data-count="snapshot">—</div>
         <div class="fact__d">每个数字都标日期；查不到的写「未核实」</div>
       </div>
     </section>
@@ -571,6 +571,48 @@
   document.addEventListener('click', function (e) {
     if (!panel.contains(e.target) && e.target !== input) close();
   });
+})();
+
+/* 页面上的数字不写死：从构建产物读。
+   上一版把「词条 12」写进 HTML，类型一扩展就过期了——这类漂移只能靠「不抄数字」根治。
+   注意每个数字都有静态兜底（—），JS 不可用时不会显示一个错的旧值。 */
+(function () {
+  function set(key, value) {
+    var nodes = document.querySelectorAll('[data-count="' + key + '"]');
+    for (var i = 0; i < nodes.length; i += 1) nodes[i].textContent = value;
+  }
+  var KIND_ZH = {
+    client: '客户端', launcher: '启动器', plugin: '插件', theme: '主题', asset: '素材',
+    skill: '技能包', preset: '预设', recipe: '配方', pack: '整合包', tool: '工具',
+    spec: '规范', concept: '概念', tutorial: '教程', source: '资源源'
+  };
+  var ORDER = ['client', 'launcher', 'plugin', 'theme', 'asset', 'skill', 'preset', 'recipe', 'pack', 'tool', 'spec', 'concept', 'tutorial', 'source'];
+
+  // 引用源的数量直接数页面上真实的「来源卡」，不再维护第二个常量
+  set('sources', String(document.querySelectorAll('.src').length));
+
+  fetch('./data/zones/index.json', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (z) {
+      if (!z) return;
+      var list = z.zones || (Array.isArray(z) ? z : []);
+      if (list.length) set('zones', String(list.length));
+      if (z.generatedAt) set('snapshot', String(z.generatedAt).slice(0, 10));
+    })
+    .catch(function () { /* 读不到就留着兜底值，不猜 */ });
+
+  fetch('./data/search.json', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (s) {
+      if (!s || !s.items) return;
+      set('entries', String(s.items.length));
+      var by = {};
+      s.items.forEach(function (it) { by[it.kind] = (by[it.kind] || 0) + 1; });
+      var parts = ORDER.filter(function (k) { return by[k]; }).map(function (k) { return KIND_ZH[k] + ' ' + by[k]; });
+      set('entryBreakdown', parts.join(' · '));
+      if (s.generatedAt) set('snapshot', String(s.generatedAt).slice(0, 10));
+    })
+    .catch(function () { /* 同上 */ });
 })();
 </script>
 </body>

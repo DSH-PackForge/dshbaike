@@ -125,6 +125,14 @@ const ENUMS = {
   dataSource: ['curated', 'awesome', 'market', 'launchers', 'specs'],
   /** 分区条目的来源徽章（docs/02 §1.3） */
   sourceBadge: ['awesome', 'market', 'launchers', 'specs', 'curated'],
+  /** 规范文件状态：historical 是「被新版取代但仍可读」，不是 deprecated（那份还有效、只是旧） */
+  specStatus: ['current', 'historical', 'draft', 'deprecated'],
+  /** 配方落点层：写进 profile 目录里的 patch 文件算 userspace */
+  targetLayer: ['project', 'userspace', 'machine'],
+  /** 配方形态 */
+  recipeKind: ['config', 'snippet', 'instructions'],
+  /** 形态：client 用 desktop/tui/web/cli/ide，tool 用 cli/app/library/service */
+  form: ['desktop', 'tui', 'web', 'cli', 'ide', 'app', 'library', 'service'],
 };
 
 /** 只有形如「实测 / 未核实」的口径词才算声明过适用性（规则 11 / 16） */
@@ -139,6 +147,8 @@ const ZONE_KEYS = new Set([
   'title',
   'desc',
   'dataSource',
+  'kinds',
+  'sections',
   'howto',
   'itemFields',
   'sources',
@@ -151,6 +161,7 @@ const ZONE_KEYS = new Set([
 const ITEM_KEYS = new Set([
   'name',
   'blurb',
+  'section',
   'source',
   'links',
   'entry',
@@ -194,6 +205,8 @@ function main(argv) {
     checkRegistry(ctx, reporter);
     checkEntries(ctx, reporter, null);
     checkZones(ctx, reporter, null);
+    checkZoneKinds(ctx, reporter);
+    checkZoneSections(ctx, reporter);
     checkSourcesConfig(ctx, reporter);
   } else {
     // 只校验给定文件：跨文件检查仍用全量数据
@@ -210,6 +223,8 @@ function main(argv) {
     checkRegistry(ctx, reporter, registryTarget || entryTargets.length > 0);
     checkEntries(ctx, reporter, entryTargets.length ? entryTargets : null);
     checkZones(ctx, reporter, zoneTargets.length ? zoneTargets : null);
+    checkZoneKinds(ctx, reporter);
+    checkZoneSections(ctx, reporter);
     checkSourcesConfig(ctx, reporter);
   }
 
@@ -1019,6 +1034,133 @@ function checkZone(ctx, reporter, zone) {
 /* ------------------------------------------------------------------ */
 
 const SOURCE_CONFIG_KEYS = new Set(['slug', 'url', 'zones', 'zone', 'adapter', 'note', 'status', 'snapshot', 'sourceKind', 'name']);
+
+/** 跨分区类型：不属于任何一层，因此不写进分区的 kinds（docs/12 §1） */
+const CROSS_ZONE_KINDS = new Set(['concept', 'tutorial', 'source']);
+
+/**
+ * 规则 25：二级分区（docs/06 §2.0.1）。
+ * 一级分区回答「这是哪一层」，二级分区回答「同一层里属于哪一类」——
+ * 两者混在一起时，读者分不清「去源头」还是「读条目」。
+ */
+function checkZoneSections(ctx, reporter) {
+  for (const zone of ctx.zones) {
+    const sections = zone.data?.sections;
+    const items = Array.isArray(zone.data?.items) ? zone.data.items : [];
+    const at = (key) => lineOf(zone.lines, key) ?? lineOf(zone.lines, 'sections') ?? 1;
+
+    if (isMissing(sections)) {
+      // 没声明 sections：条目就不该写 section（写了说明数据里有个悬空的归属）
+      for (const [i, item] of items.entries()) {
+        if (!item || typeof item !== 'object' || isMissing(item.section)) continue;
+        reporter.error(
+          zone.file,
+          lineOf(zone.lines, `items.${i}.section`) ?? at('items'),
+          25,
+          `items[${i}]（${item.name ?? '?'}）写了 section，但本分区没有声明 sections`,
+          '要么在分区头部加 sections: [...]，要么去掉这个键',
+        );
+      }
+      continue;
+    }
+    if (!Array.isArray(sections)) {
+      reporter.error(zone.file, at('sections'), 25, '`sections` 必须是序列');
+      continue;
+    }
+
+    const ids = new Map();
+    for (const [i, section] of sections.entries()) {
+      if (!section || typeof section !== 'object') {
+        reporter.error(zone.file, at('sections'), 25, `sections[${i}] 不是对象`);
+        continue;
+      }
+      const id = isMissing(section.id) ? null : String(section.id).trim();
+      const line = lineOf(zone.lines, `sections.${i}.id`) ?? at('sections');
+      if (!id) {
+        reporter.error(zone.file, line, 25, `sections[${i}] 缺少 id`);
+        continue;
+      }
+      if (!/^[a-z][a-z0-9-]*$/.test(id)) {
+        reporter.error(zone.file, line, 25, `二级分区 id \`${id}\` 只允许小写字母、数字与连字符（它会进 URL 锚点 #sec-${id}）`);
+      }
+      if (ids.has(id)) {
+        reporter.error(zone.file, line, 25, `二级分区 id \`${id}\` 重复（另一个在 sections[${ids.get(id)}]）`);
+        continue;
+      }
+      ids.set(id, i);
+      if (isMissing(section.title)) reporter.error(zone.file, line, 25, `sections[${i}]（${id}）缺少 title`);
+    }
+
+    if (ids.size === 0) continue;
+
+    for (const [i, item] of items.entries()) {
+      if (!item || typeof item !== 'object') continue;
+      const raw = item.section;
+      const itemLine = lineOf(zone.lines, `items.${i}.section`) ?? lineOf(zone.lines, `items.${i}.name`) ?? at('items');
+      if (isMissing(raw)) {
+        reporter.warn(
+          zone.file,
+          itemLine,
+          25,
+          `items[${i}]（${item.name ?? '?'}）没有 section：它不会出现在任何二级分区里`,
+          `补 section: <${[...ids.keys()].join(' | ')}>`,
+        );
+        continue;
+      }
+      const id = String(raw).trim();
+      if (!ids.has(id)) {
+        reporter.error(
+          zone.file,
+          itemLine,
+          25,
+          `items[${i}]（${item.name ?? '?'}）的 section \`${id}\` 不是本分区声明的二级分区`,
+          `可用：${[...ids.keys()].join(' / ')}`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * 规则 24：分区类型必须恰好被一个分区声明（docs/12 §2）。
+ * 早先 kind→分区是构建期用正则从分区名里猜的：猜错过（concept 被算成「规范与协议」），
+ * 而且新增类型时会静默没有归属。这条护栏让「一种类型一个分区」成为可校验的事实。
+ */
+function checkZoneKinds(ctx, reporter) {
+  const declaredBy = new Map();
+  for (const zone of ctx.zones) {
+    const declared = zone.data?.kinds;
+    if (isMissing(declared)) continue;
+    const list = Array.isArray(declared) ? declared : [declared];
+    const line = lineOf(zone.lines, 'kinds');
+    for (const raw of list) {
+      const kind = String(raw).trim();
+      if (!ENTRY_KINDS.includes(kind)) {
+        reporter.error(zone.file, line, 24, `分区声明的 kinds 里有未知类型 \`${kind}\``, `合法类型：${ENTRY_KINDS.join(', ')}`);
+        continue;
+      }
+      if (CROSS_ZONE_KINDS.has(kind)) {
+        reporter.error(zone.file, line, 24, `跨分区类型 \`${kind}\` 不该写进分区 kinds`, 'concept / tutorial / source 不绑分区');
+        continue;
+      }
+      if (declaredBy.has(kind)) {
+        reporter.error(zone.file, line, 24, `类型 \`${kind}\` 已被分区 \`${declaredBy.get(kind)}\` 声明`, '一个分区类型只能属于一个分区');
+        continue;
+      }
+      declaredBy.set(kind, zone.zone);
+    }
+  }
+  for (const kind of ENTRY_KINDS) {
+    if (CROSS_ZONE_KINDS.has(kind) || declaredBy.has(kind)) continue;
+    reporter.warn(
+      null,
+      null,
+      24,
+      `词条类型 \`${kind}\` 没有被任何分区声明`,
+      `在 data/zones/<分区>.yml 里加 kinds: [${kind}]，否则它的词条没有所属分区`,
+    );
+  }
+}
 
 function checkSourcesConfig(ctx, reporter) {
   const zoneNames = new Set(ctx.zones.map((z) => z.zone));

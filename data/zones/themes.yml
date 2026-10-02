@@ -3,17 +3,27 @@ zone: themes
 title: 主题与皮肤
 desc: 换掉 DSH 的样子：主题引擎、配色令牌、壁纸与图标包。主题改的是同一个界面里的样子；换掉界面本身属于「界面与客户端」。
 dataSource: curated
+kinds: [theme]
+sections:
+  - id: packs
+    title: 主题包
+    desc: 换出来的一整套外观：配色、壁纸、图标
+  - id: loaders
+    title: 主题加载器
+    desc: 把主题加载进界面的那个机制或插件——先有它，主题包才有地方生效
 howto: 两种落法：① 装成插件（dsh plugin --profile <name> add <包名>），由它自己往设置页挂一块界面；② 不装插件，直接改 profile 的 cordis.patch.yml 里的设计令牌。后者见「patch 层与层序」概念，也是整合包作者最常用的一招。
 itemFields: []
 items:
   - name: 官方主题插件
+    section: loaders
     blurb: DSH 自带的主题插件，管亮 / 暗 / 跟随系统三态与宿主启动前的调色板引导，样式走 --dsw-* 令牌。第三方皮肤最终大多落在它这套令牌上。
     source: curated
-    entry: null
+    entry: theme/1
     tags: ["主题与外观"]
     links:
       github: deepseek-ai/deepseek-harness
   - name: dsh-myskin
+    section: packs
     blurb: 皮肤类插件，市场账里被「丝滑的DSH」用到（依赖版本 0.3.8）。它的用法是把整套设计令牌（--dsw-alias-* / --dsw-specific-*）写进 profile 的 patch 层，是「patch 层配置大户」的活样板。仓库与许可未核实。
     source: curated
     entry: null
@@ -21,6 +31,7 @@ items:
     links:
       npm: dsh-myskin
   - name: dsh-wallpaper-engine
+    section: packs
     blurb: 把本机 Wallpaper Engine 的壁纸变成 DSH 网页界面的背景：Video 动态播放、Web 以 iframe 加载、Scene 提取主纹理作静态帧，另有 iOS 液态玻璃设置窗。注意源站标了前置要求（DSH 与侧边栏插件的最低版本），装前先看清。
     source: curated
     entry: null
@@ -29,6 +40,7 @@ items:
       github: elysia395/dsh-wallpaper-engine
       awesome: https://awesome-dsh-plugin.com/zh/p/elysia395/dsh-wallpaper-engine/
   - name: 图标包（占位 · 欢迎补充）
+    section: packs
     blurb: 替换 DSH 界面里的图标资源。本轮没有可指名的实现：已知的第三方外观类项目都做成插件（走客户端半端挂载），独立图标包尚未成规模，欢迎提 PR 补一条。
     source: curated
     entry: null

@@ -4,10 +4,19 @@ zone: toolchain
 title: 工具链
 desc: 打包、安装、市场索引与调试工具。这一层的共同点是「在 DSH 之外运行」：它们读写包、写索引、或替你检查一份包合不合规。
 dataSource: curated
+kinds: [tool]
+sections:
+  - id: pack
+    title: 打包与安装
+    desc: 把包做出来、装进去的工具
+  - id: index
+    title: 索引与发现
+    desc: 读市场索引、查插件目录的工具与站点
 howto: 多数是命令行工具，装在 DSH 之外；只有做成插件的（如 dsh-pack-plugin）才走 dsh plugin add。用过之后仍建议用 dsh --dump-config 对一遍真实装配结果，别只信工具的预览。
 itemFields: [form, language]
 items:
   - name: dsh-packforge-app
+    section: pack
     blurb: 一个 monorepo 两种宿主：Electron 图形客户端与 DSH 客户端插件，共用一个 core 引擎；core 不直接 import node:fs / node:crypto，I/O 全走 Host 接口注入，因此能脱离 DSH 单独测试。包成分表的解析器就在这里。
     form: gui
     language: javascript
@@ -18,15 +27,17 @@ items:
     links:
       github: DSH-PackForge/dsh-packforge-app
   - name: dspack CLI
+    section: pack
     blurb: dsh-packforge-app 里的命令行入口：导出 / 浏览 / 安装 .dspack。适合塞进脚本与 CI；图形界面覆盖不到的场景（批量导出、批量校验）靠它。
     form: cli
     language: javascript
     source: curated
-    entry: null
+    entry: tool/1
     tags: ["插件市场与管理"]
     links:
       github: DSH-PackForge/dsh-packforge-app
   - name: 市场索引生成（dsh-pack-market 仓库）
+    section: index
     blurb: 把 GitHub Release 上的 .dspack 汇总成公开数据接口：索引里只放 downloadUrl / sha256 / size 指针与元数据，完整 manifest 与 README 按 packs/<owner>.<repo>/ 懒加载；下载量另有 stats.json。索引无变化就跳过提交。
     form: cli
     language: javascript
@@ -36,6 +47,7 @@ items:
     links:
       github: DSH-PackForge/dsh-pack-market
   - name: dsh-pack-plugin（包管理插件）
+    section: pack
     blurb: 唯一做进 DSH 里的那一件：在 DSH 界面里导出 / 安装 / 切 profile / 逛市场。它与独立工具的分工是「装机之后日常用」对「装机之前批量做」。
     form: plugin
     language: javascript
@@ -45,6 +57,7 @@ items:
     links:
       github: DSH-PackForge/dsh-pack-plugin
   - name: awesome-dsh-plugin（插件发现工具）
+    section: index
     blurb: 别人家的工具：要按分类 / Star / 下载量找插件就去它那里，本站刻意不做全量插件入库。它同时维护 dsh-market 与 dsh-find-plugin 两个站内检索入口。
     form: web
     language: unknown
@@ -54,6 +67,7 @@ items:
     links:
       awesome: https://awesome-dsh-plugin.com/zh/
   - name: dshbase.com（中文指南站）
+    section: index
     blurb: 别人家的工具：中文入门、教程与排错内容的去处。收录量与维护状态未核实，登记它主要是为了让读者知道「本站不写入门」时该去哪。
     form: web
     language: unknown

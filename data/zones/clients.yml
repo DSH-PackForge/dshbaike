@@ -5,21 +5,31 @@ zone: clients
 title: 界面与客户端
 desc: 你从哪、以什么界面使用 DSH：官方 Web UI、各类桌面端、终端界面（TUI）、无界面 CLI 与 headless 跑法。「启动器」管的是装上与起得来，这里管的是用起来是什么样。
 dataSource: curated
+kinds: [client]
+sections:
+  - id: official
+    title: 官方客户端
+    desc: 官方自带的形态：浏览器界面、桌面端、裸 CLI 与 headless 跑法
+  - id: third-party
+    title: 第三方客户端
+    desc: 社区做的壳与终端界面。本轮还没有具名实现，占位条目欢迎补充
 howto: 起法写在 blurb 里：官方 Web UI 是 dsh web（等价于 --profile web），无启动器直用就是裸 dsh 命令行，headless 跑法是 --profile headless。第三方形态请以各自仓库的说明为准。
 itemFields: [form, shippedBy, profile, platforms]
 items:
   - name: 官方 Web UI
-    blurb: 浏览器里的完整界面，用 dsh web 启动（等价于 --profile web，是 dsh 的硬编码别名）。真实入口图由 window.__DSH_BOOT__ 下发。
+    section: official
+    blurb: 浏览器里的完整界面，用 dsh web 启动（等价于 --profile web，是 dsh 的硬编码别名）。入口图由引导脚本注入（`window.__DSH_BOOT__` 这一口径来自前一轮核实，写词条时在 @deepseek-ai/* 里检索未命中，**待复核**）。
     form: web
     shippedBy: official
     profile: web
     platforms: [browser]
     source: curated
-    entry: null
+    entry: client/1
     tags: ["UI 增强"]
     links:
       github: deepseek-ai/deepseek-harness
   - name: 官方桌面端
+    section: official
     blurb: DeepSeek Harness 官方桌面端。它既是客户端形态，也在启动器注册表里以 official-desktop 认领 ID。它的界面形态与平台清单在本机可读副本里查不到，标未核实。
     form: desktop
     shippedBy: official
@@ -28,6 +38,7 @@ items:
     links:
       github: deepseek-ai/deepseek-harness
   - name: 裸 dsh 命令行
+    section: official
     blurb: 不依赖任何启动器，直接用 dsh 命令行：dsh --profile <name> 启动某个 profile，dsh --version 自报版本。卸载启动器之后唯一还能用的入口。
     form: cli
     shippedBy: official
@@ -38,6 +49,7 @@ items:
     links:
       github: deepseek-ai/deepseek-harness
   - name: headless 跑法
+    section: official
     blurb: 无界面的单次任务形态：dsh --profile headless "跑一遍测试"，回答一次就退出；没有浏览器、没有桌面壳，适合脚本与 CI。
     form: headless
     shippedBy: official
@@ -49,6 +61,7 @@ items:
     links:
       github: deepseek-ai/deepseek-harness
   - name: 第三方桌面端（占位 · 欢迎补充）
+    section: third-party
     blurb: 第三方重写的 DSH 桌面壳或前端。这类形态会拿到本机权限，请只看有公开仓库、可审源码的实现。本条目尚未指名任何项目，欢迎提 PR 补一条有仓库的。
     form: desktop
     shippedBy: third-party
@@ -59,6 +72,7 @@ items:
     links:
       github: https://github.com/topics/dsh-plugin
   - name: 第三方 TUI 客户端（占位 · 欢迎补充）
+    section: third-party
     blurb: 终端里的原生界面，低带宽与 SSH 场景友好。DSH 侧已知有 tui 这一 profile 形态（见普通 profile 的用法：dsh --profile tui），但本轮没有核实的第三方 TUI 客户端可指名。
     form: tui
     shippedBy: third-party

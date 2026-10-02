@@ -376,17 +376,32 @@ class Parser {
     const style = header[0];
     const chomp = /-/.test(header) ? 'strip' : /\+/.test(header) ? 'keep' : 'clip';
     const explicit = /(\d)/.exec(header);
-    const collected = [];
     let blockIndent = explicit ? indent + Number(explicit[1]) : null;
-    while (!this.eof()) {
-      const line = this.peek();
-      if (line.indent <= indent) break;
-      this.next();
-      if (blockIndent == null) blockIndent = line.indent;
-      collected.push(line);
+
+    // 关键：词法阶段会把空行丢掉（构造里的 `if (!stripped.trim()) continue;`），
+    // 所以块标量必须回到 rawLines 上按行号读——否则 Markdown 里「段落 → 表格/列表」
+    // 之间的空行会被吞掉，表格被并进上一段（踩过：分区综述的表格渲染成一串竖线）。
+    const indentOf = (s) => s.length - s.replace(/^ +/, '').length;
+    const collected = [];
+    let lastLineNo = keyLine.line;
+    for (let i = keyLine.line; i < this.rawLines.length; i += 1) {
+      const stripped = stripComment(this.rawLines[i]).replace(/\s+$/, '');
+      if (stripped.trim() === '') {
+        collected.push('');
+        lastLineNo = i + 1;
+        continue;
+      }
+      const ind = indentOf(stripped);
+      if (ind <= indent) break; // 块到此结束
+      if (blockIndent == null) blockIndent = ind;
+      collected.push(stripped.slice(blockIndent));
+      lastLineNo = i + 1;
     }
+    // 词法游标同步到块之后的第一行
+    while (!this.eof() && this.peek().line <= lastLineNo) this.next();
+
     if (blockIndent == null) blockIndent = indent + 1;
-    const texts = collected.map((l) => (l.content.length >= blockIndent ? l.raw.slice(blockIndent) : ''));
+    const texts = collected;
     let text;
     if (style === '|') {
       text = texts.join('\n');

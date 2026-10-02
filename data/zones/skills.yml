@@ -3,10 +3,19 @@ zone: skills
 title: 技能包
 desc: 以 SKILL.md 为单位的可加载能力，通常随包分发或由本机安装态决定。这里收的是「有公开来源、能被别人装上」的技能与技能合集。
 dataSource: curated
+kinds: [skill]
+sections:
+  - id: packs
+    title: 技能包
+    desc: 单个可加载的能力，以 SKILL.md 为单位
+  - id: collections
+    title: 技能集与来源
+    desc: 成套分发的技能，以及它们从哪来
 howto: 技能落在四个地方：项目内 .dsh/skills 或 .agents/skills、用户级 $DSH_HOME/skills 或 ~/.agents/skills（按 rank 小者优先）；装整包时通常由包的安装流程写进 $DSH_HOME/skills。写完放对目录即被模型看见，不需要构建。放错目录是「技能存在但不生效」的第一大原因。
 itemFields: []
 items:
   - name: cad-ppt-skills（autocad-draw + pptx-editor）
+    section: packs
     blurb: 两个 Windows 原生技能：autocad-draw 用 COM 驱动本机 AutoCAD 出图 / 改图 / 导出校验；pptx-editor 生成 / 编辑 / 预览 PPT，内置 7 套主题 × 11 种版式的宣传风排版引擎。首次使用要跑各自的 install.ps1 建 .venv。
     source: curated
     entry: null
@@ -15,6 +24,7 @@ items:
       github: LQH-A-A-O/cad-ppt-skills
       market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/LQH-A-A-O.cad-ppt-skills
   - name: dsh-bcut-edit
+    section: packs
     blurb: 用代码做视频剪辑：直接读写必剪（Bcut）的 .bjson 草稿工程（多轨道 / 转场 / 字幕 / 配乐），或用 ffmpeg 渲染成品 mp4——同一份剪辑方案喂两个后端。需本机已装必剪 3.10.x。
     source: curated
     entry: null
@@ -23,6 +33,7 @@ items:
       github: LQH-A-A-O/dsh-bcut-edit
       market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/LQH-A-A-O.dsh-bcut-edit
   - name: dsh-simple-drawing
+    section: packs
     blurb: 四条作画路线：参考图提取成「多边形骨架 + 内孔 + 调色板」再重画、MakeHuman 网格做七头身立绘、轴对齐方块拼角色、平涂图转像素画。依赖 numpy / pillow / opencv-python-headless。
     source: curated
     entry: null
@@ -31,13 +42,15 @@ items:
       github: LQH-A-A-O/dsh-simple-drawing
       market: https://dsh-packforge.github.io/dsh-pack-market/#/pack/LQH-A-A-O.dsh-simple-drawing
   - name: publish-to-github
-    blurb: 把 DSH 整合包发布到 GitHub 供 dsh-pack-market 自动收录的一套技能：建 public 仓库、打 dsh-pack 话题、发正式 Release（.dspack 加 .sha256 侧车）、逐项校验。它与本机安装的技能目录同名，具体来源与收录状态未核实。
+    section: packs
+    blurb: 把 DSH 整合包发布到 GitHub 供 dsh-pack-market 自动收录的一套技能：建 public 仓库、打 dsh-pack 话题、发正式 Release（.dspack 加 .sha256 侧车）、逐项校验。实测它在本机**不是**文件系统技能（不在 $DSH_HOME/skills 下），而是由 @dsh-packforge/dsh-pack-plugin 以 provider `dspack` 注册进来的；仓库侧与插件内各有一份 SKILL.md，两份内容并不一致（尺寸与摘要都不同）。
     source: curated
-    entry: null
+    entry: skill/1
     tags: ["技能包"]
     links:
       github: https://github.com/DSH-PackForge/DSH-PackForge/tree/main/skills/publish-to-github
   - name: dsh 官方技能集（本机安装态）
+    section: collections
     blurb: 与 DSH 配套的一批 SKILL.md（插件开发、客户端半端、i18n、发布、预设编写、文档同步、代码评审、排障…）。实测本机 $DSH_HOME/skills 下有 20 个目录，其中 19 个以 dsh- 前缀命名；这批技能的分发渠道与版本未核实。
     source: curated
     entry: null

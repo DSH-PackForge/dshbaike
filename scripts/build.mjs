@@ -337,24 +337,30 @@ function loadModel() {
 }
 
 /** kind → 默认分区（docs/10 §4 的 `zone` 字段） */
+/**
+ * kind → 所属分区（docs/12 §2）。
+ * **分区显式声明优先**：`data/zones/<id>.yml` 里的 `kinds: [theme]` 是权威来源。
+ * 早先用正则从分区名/标题里猜，猜错过（`concept` 被猜成「规范与协议」），
+ * 新增分区时还会静默失效。跨分区类型（concept / tutorial / source）不写进任何分区。
+ */
 function zoneForKinds(zones) {
-  const text = (zone) => `${zone.zone} ${zone.data?.title ?? ''} ${(zone.data?.items ?? []).map((i) => i?.entry ?? '').join(' ')}`;
-  const pick = (kind, hint) => {
-    const hit = zones.find((zone) => (zone.data?.items ?? []).some((item) => parseEntryId(item?.entry)?.kind === kind));
-    if (hit) return hit;
-    const hinted = zones.find((zone) => hint.test(zone.zone) || hint.test(String(zone.data?.title ?? '')));
-    if (hinted) return hinted;
-    const byName = text;
-    void byName;
-    return null;
-  };
   const map = new Map();
-  map.set('plugin', pick('plugin', /plugin|插件/i));
-  map.set('pack', pick('pack', /pack|整合包/i));
-  map.set('launcher', pick('launcher', /launcher|启动器/i));
-  map.set('source', pick('source', /source|源/i));
-  map.set('concept', pick('concept', /concept|概念|规范/i));
-  map.set('tutorial', pick('tutorial', /tutorial|教程|工具/i));
+  for (const zone of zones) {
+    const declared = zone.data?.kinds;
+    if (!Array.isArray(declared)) continue;
+    for (const raw of declared) {
+      const kind = String(raw).trim();
+      if (!kind || map.has(kind)) continue;
+      map.set(kind, zone);
+    }
+  }
+  const byEntryKind = (kind) =>
+    zones.find((zone) => (zone.data?.items ?? []).some((item) => parseEntryId(item?.entry)?.kind === kind)) ?? null;
+  const byTitle = (re) => zones.find((zone) => re.test(zone.zone) || re.test(String(zone.data?.title ?? ''))) ?? null;
+  // 兜底：跨分区类型不绑分区（一条源覆盖多个分区，本身不属于任何一层）
+  if (!map.has('concept')) map.set('concept', byEntryKind('concept') ?? byTitle(/concept|概念/i));
+  if (!map.has('tutorial')) map.set('tutorial', byEntryKind('tutorial') ?? byTitle(/教程|ops/i));
+  if (!map.has('source')) map.set('source', null);
   return map;
 }
 
@@ -713,6 +719,7 @@ function buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt) {
     return {
       name: item?.name ?? null,
       blurb: item?.blurb ?? null,
+      section: isMissing(item?.section) ? null : String(item.section).trim(),
       source: item?.source ?? null,
       links: sortObjectKeys(item?.links ?? {}),
       entry: parsed?.id ?? null,
@@ -764,6 +771,19 @@ function buildZoneOutput(model, zone, entryOutputs, reverse, generatedAt) {
     desc: data.desc ?? null,
     howto: data.howto ?? null,
     dataSource: data.dataSource ?? 'curated',
+    // 这个分区收哪些词条类型（docs/12 §2）：前端据此把「本分区能长出哪些详情」讲清楚
+    kinds: sortStrings(data.kinds ?? []),
+    // 二级分区（docs/06 §2.0.1）：intro 是编辑综述，构建期就渲染成 HTML，
+    // 前端不必为了它再带一个 Markdown 渲染器（也不让未转义的 HTML 从数据侧溜进来）。
+    // **保持声明顺序**：这里不排序——分区作者写「主题包 → 主题加载器」就是他要的顺序，
+    // 按 id 排会变成「加载器 → 主题包」。确定性由源文件顺序保证，不靠排序。
+    sections: (Array.isArray(data.sections) ? data.sections : []).map((s) => ({
+      id: s?.id ?? null,
+      title: s?.title ?? null,
+      desc: s?.desc ?? null,
+      intro: s?.intro ?? null,
+      introHtml: isMissing(s?.intro) ? null : renderMarkdown(String(s.intro), { base: BASE, hasEntry: false }).html,
+    })),
     itemFields,
     sources: sortBy([...sourceMap.values()], (s) => String(s.id ?? '')),
     items,

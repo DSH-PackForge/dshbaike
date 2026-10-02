@@ -221,7 +221,30 @@ export function parseEntryId(value) {
   return { kind: m[1], n: Number(m[2]), id: `${m[1]}/${m[2]}` };
 }
 
-export const ENTRY_KINDS = ['concept', 'plugin', 'tutorial', 'pack', 'launcher', 'source'];
+/**
+ * 词条类型（docs/12 §1）：**一个分区一种类型** + 三个跨分区类型。
+ * 顺序即 UI 展示顺序（分区按装配位置从界面到规范，跨分区的排最后）。
+ * 新增类型必须同时改：本表、data/registry.yml 的 counters、data/taxonomy.yml、
+ * scripts/lib/fields.mjs 的字段契约、web/pedia.js 的 KIND_ZH / KIND_ORDER、docs/02 §3。
+ */
+export const ENTRY_KINDS = [
+  // 分区类型（与 data/zones/*.yml 的 kinds 一一对应）
+  'client',
+  'launcher',
+  'plugin',
+  'theme',
+  'asset',
+  'skill',
+  'preset',
+  'recipe',
+  'pack',
+  'tool',
+  'spec',
+  // 跨分区：阅读材料与外部渠道
+  'concept',
+  'tutorial',
+  'source',
+];
 
 export function isEntryKind(kind) {
   return ENTRY_KINDS.includes(kind);

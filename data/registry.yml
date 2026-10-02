@@ -1,12 +1,20 @@
 # 编号契约（docs/02 §2）：各 kind 独立计数、断号不回填、删除留墓碑、永不复用。
-# 只有 scripts/new.mjs 会改 counters；本文件是 M1 首版的人工落地。
+# 只有 scripts/new.mjs 会改 counters。顺序对齐 docs/12 §1 的「一个分区一种类型」。
 version: 1
 counters:
-  concept: 4
+  client: 1
+  launcher: 1
   plugin: 3
+  theme: 1
+  asset: 1
+  skill: 1
+  preset: 1
+  recipe: 1
+  pack: 1
+  tool: 1
+  spec: 1
+  concept: 4
   tutorial: 3
-  pack: 0
-  launcher: 0
   source: 2
 entries:
   - n: 1
@@ -67,5 +75,55 @@ entries:
   - n: 2
     kind: source
     title: dsh-pack-market
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: client
+    title: '官方 Web UI'
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: launcher
+    title: 'DSHL · DeepSeek Harness Launcher'
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: theme
+    title: 官方主题插件
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: asset
+    title: 官方中文界面词条
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: skill
+    title: publish-to-github
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: preset
+    title: minimal
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: recipe
+    title: '禁用一个内置 UI 组件'
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: pack
+    title: '丝滑的DSH（smoother-deepseek-harness）'
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: tool
+    title: 'dspack CLI'
+    createdAt: 2026-10-02
+    status: published
+  - n: 1
+    kind: spec
+    title: 'manifest v5（当前）'
     createdAt: 2026-10-02
     status: published

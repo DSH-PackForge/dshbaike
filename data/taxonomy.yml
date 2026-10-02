@@ -123,3 +123,94 @@ tree:
         label:
           zh: 参与与维护
         desc: 领号、写词条、提 PR 与评审约定。
+  # ---- M2：为「一个分区一种词条类型」补的分类根（docs/12 §4）----
+  - id: interface
+    label:
+      zh: 界面与入口
+      en: Interfaces
+    desc: 你从哪、用什么界面使用 DSH。管的是「装上与起得来」。
+    children:
+      - id: interface.desktop
+        label:
+          zh: 桌面端
+        desc: 原生窗口形态的客户端：托盘、快捷键、系统集成。
+      - id: interface.tui
+        label:
+          zh: 终端界面
+        desc: 在终端里画的界面（TUI），以及无界面 CLI 的交互形态。
+      - id: interface.web
+        label:
+          zh: 浏览器界面
+        desc: 浏览器里的界面（如官方 Web UI）与其托管方式。
+  - id: launch
+    label:
+      zh: 启动与装载
+      en: Launching
+    desc: DSH 怎么被起来、被谁拉起来，以及启动期的兼容。
+    children:
+      - id: launch.wrapper
+        label:
+          zh: 启动包装器
+        desc: 包一层再启动的做法：注入环境、钉版本、透传参数。
+      - id: launch.desktop
+        label:
+          zh: 桌面启动器
+        desc: 带图形界面的启动与管理入口。
+      - id: launch.cli
+        label:
+          zh: 命令行入口
+        desc: 直接用命令行起来或切换 profile 的方式。
+  - id: appearance
+    label:
+      zh: 外观与素材
+      en: Appearance and assets
+    desc: 它看起来、读起来像不像中文用户的东西：主题、素材与本地化。
+    children:
+      - id: appearance.theme
+        label:
+          zh: 主题与配色
+        desc: 换掉界面样式与配色方案的做法。
+      - id: appearance.asset
+        label:
+          zh: 素材
+        desc: 图标、字体、壁纸一类可替换的静态资源。
+      - id: appearance.locale
+        label:
+          zh: 本地化与文案
+        desc: 界面词条与语言切换，以及第三方插件的中文化。
+  - id: capability
+    label:
+      zh: 能力与配置
+      en: Capabilities and config
+    desc: 不装插件也能改行为：技能、预设与人设、可粘贴的配方。
+    children:
+      - id: capability.skill
+        label:
+          zh: 技能包
+        desc: 以 SKILL.md 为单位的可加载能力，以及它的发现根。
+      - id: capability.preset
+        label:
+          zh: 预设与人设
+        desc: agent preset 与角色设定：决定这个智能体是什么、怎么说话。
+      - id: capability.recipe
+        label:
+          zh: 指令与配方
+        desc: 一小段可粘贴的配置或指令模板，改一个明确的行为。
+  - id: tooling
+    label:
+      zh: 工具与实践
+      en: Tooling
+    desc: 在 DSH 之外运行的那些东西：打包、安装、索引与调试。
+    children:
+      - id: tooling.pack
+        label:
+          zh: 打包与发布
+        desc: 把插件或整合包打出来、发出去的工具。
+      - id: tooling.install
+        label:
+          zh: 安装与校验
+        desc: 装包、校验产物完整性的工具与流程。
+      - id: tooling.index
+        label:
+          zh: 索引与调试
+        desc: 读市场索引、排查启动与插件加载问题的工具。

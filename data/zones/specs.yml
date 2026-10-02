@@ -4,6 +4,14 @@ zone: specs
 title: 规范与协议
 desc: manifest、pack-structure、index、publishing、launcher-registry 等契约文档。谁说了算的问题在这一层结束：有争议时以规范仓库的文件为准，而不是以某个实现或某个包的现状为准。
 dataSource: specs
+kinds: [spec]
+sections:
+  - id: current
+    title: 现行规范
+    desc: 现在照它做就对的那几份
+  - id: history
+    title: 历史版本
+    desc: 旧版本仍然可读：读它是为了理解字段怎么长出来的
 howto: 读的顺序建议按版本读：manifest 从 v1 到 v5 看字段是怎么长出来的；pack-structure v3 是当前 .dspack 容器契约；index/index.md 是市场索引 schemaVersion 2；launcher-registry.md 与发布流程各一份。要改规范就向该仓库提 PR，别在实现里私自分叉。
 itemFields: [specVersion, specStatus, fileName]
 sources:
@@ -15,16 +23,18 @@ sources:
     snapshot: 2026-10-01
 items:
   - name: manifest v5（当前）
+    section: current
     blurb: 现行清单契约：type 分 profile / dshhome，bundles 与 dependencies 钉死坐标版本，patch 是包自带的一层；r2 追加 vendored、dshVersions、launchers 三组可选字段。
     specVersion: 5
     specStatus: current
     fileName: specs/manifest/v5.md
     source: specs
-    entry: null
+    entry: spec/1
     tags: ["工具与能力"]
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/manifest/v5.md
   - name: manifest v1–v4（历史版本）
+    section: history
     blurb: 四个历史版本，保留用来读旧包：市场里实测仍有包声明 manifestVersion 4（更好的侧边栏）。读旧包时按它声明的版本去读对应文件，别拿 v5 的规则去判它。
     specVersion: 1
     specStatus: historical
@@ -34,6 +44,7 @@ items:
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/manifest/v1.md
   - name: pack-structure v3（当前）
+    section: current
     blurb: .dspack 容器契约：标准 ZIP，根放 dspack.json 标记与 manifest.json；profile 形态把机器文件放根、其余放 overrides/、home 级内容放 home/。含安装端判定规则与安全规则。
     specVersion: 3
     specStatus: current
@@ -44,6 +55,7 @@ items:
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/pack-structure/v3.md
   - name: pack-structure v1–v2（历史版本）
+    section: history
     blurb: 容器契约的历史版本，用于读旧包与追踪字段演进。
     specVersion: 1
     specStatus: historical
@@ -53,6 +65,7 @@ items:
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/pack-structure/v1.md
   - name: index/index.md（市场索引 schemaVersion 2）
+    section: current
     blurb: 市场索引契约：index.json 只放 downloadUrl / sha256 / size 指针与元数据，完整 manifest 与 README 按 packs/<owner>.<repo>/ 懒加载。它是本站整合包分区的上游。
     specVersion: 2
     specStatus: current
@@ -62,6 +75,7 @@ items:
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/index/index.md
   - name: publishing/v1.md（发布流程）
+    section: current
     blurb: 把包发布出去并被市场收录的契约：仓库可见性、话题、Release 与侧车校验文件的约定。
     specVersion: 1
     specStatus: current
@@ -72,6 +86,7 @@ items:
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/publishing/v1.md
   - name: launcher-registry.md（启动器认领表）
+    section: current
     blurb: 5 条 canonical ID 的认领表，以及版本比较规则：逐段数值比较、缺段视为 0、不做预发布语义；不满足 minVersion 只提示不硬拒。机器可读版是 launchers.json。
     specVersion: 1
     specStatus: current
@@ -83,6 +98,7 @@ items:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/blob/main/specs/launcher-registry.md
       url: https://dsh-packforge.github.io/dsh-pack-market/launchers.json
   - name: workspace-config/v1.md（.dshpkcfg）
+    section: current
     blurb: 导出工作区本地快照的契约：单个 UTF-8 JSON 对象、2 空格缩进 + 结尾换行、只认白名单字段，空字符串表示未填写。它对应实现里的 .dshpkcfg 文件。
     specVersion: 1
     specStatus: current

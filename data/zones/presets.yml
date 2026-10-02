@@ -3,19 +3,29 @@ zone: presets
 title: 预设与人设
 desc: 改 DSH 的行为与语气：agent preset（一个会话用哪些插件行）与 persona / 角色设定。预设决定「这个智能体是什么」，人设决定「它怎么说话」。
 dataSource: curated
+kinds: [preset]
+sections:
+  - id: builtin
+    title: 内置预设
+    desc: 出厂就有的那几个：从最小可用到完整形态
+  - id: custom
+    title: 自定义与人设
+    desc: 自己写的、或随整合包分发的那条路
 howto: 预设是一个目录：$DSH_HOME/.agent-presets/<id>/ 里放 agent.cordis.yml（必需的自组合清单）与可选的 preset.yml（只放显示文本）。id 即目录名，只允许小写字母、数字与连字符；先扫描到的根赢同名 id。改完不用重启：发现每次调用都重读根。
 itemFields: [presetId, shippedBy]
 items:
   - name: minimal
+    section: builtin
     blurb: DSH 出厂自带的四个预设之一：最小可用组合，只挂最必要的行。适合排查「是不是某个插件行搞坏了启动」。
     presetId: minimal
     shippedBy: official
     source: curated
-    entry: null
+    entry: preset/1
     tags: ["工具与能力"]
     links:
       github: deepseek-ai/deepseek-harness
   - name: standard
+    section: builtin
     blurb: 出厂预设之一：标准组合，日常对话的默认档。
     presetId: standard
     shippedBy: official
@@ -25,6 +35,7 @@ items:
     links:
       github: deepseek-ai/deepseek-harness
   - name: code
+    section: builtin
     blurb: 出厂预设之一：编码向组合。
     presetId: code
     shippedBy: official
@@ -34,6 +45,7 @@ items:
     links:
       github: deepseek-ai/deepseek-harness
   - name: cordis
+    section: builtin
     blurb: 出厂预设之一：元框架向组合，作者可以在会话里改自己的插件树；它的目录里还带两个技能（插件开发、编辑 cordis composition）。
     presetId: cordis
     shippedBy: official
@@ -43,6 +55,7 @@ items:
     links:
       github: deepseek-ai/deepseek-harness
   - name: 自定义预设（随包分发的另一条路）
+    section: custom
     blurb: 整合包也能带预设：dshhome 形态的包会把整机 home 内容（profiles、presets、skills、instructions、defaultProfile）一起搬走。本轮 8 个市场包全是 profile 形态，没有一个真实 dshhome 样本，所以这条路只有契约、没有实例。
     presetId: "package-supplied"
     shippedBy: third-party

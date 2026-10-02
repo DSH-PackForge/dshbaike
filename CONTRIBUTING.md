@@ -33,6 +33,9 @@ node scripts/new.mjs tutorial "为什么 DSH 升级后插件会失效"
 node scripts/validate.mjs      # 必须 0 errors
 node scripts/build.mjs         # 产出 web/data/** 与分页
 
+# 3.5 写完准备发布：一条命令同时改文件与 registry 的状态（别手改，容易只改一处）
+node scripts/status.mjs tutorial/6 published
+
 # 4. 本地看效果
 node scripts/build.mjs && node scripts/dev-server.mjs   # → http://127.0.0.1:8811/
 #    词条列表：http://127.0.0.1:8811/#/browse/all
@@ -44,26 +47,45 @@ node scripts/build.mjs --base=/dshbaike/ && node scripts/dev-server.mjs 8812 --p
 
 **不要手改 `data/registry.yml` 的计数器**，也不要跳号或复用已删除的号——校验器会拒绝。
 
-> **`draft` 是宽容状态**：骨架默认 `status: draft`，此时「缺分类 / 分类不在树里」这类问题只提示不拦截，方便你先写完再收口；改成 `published` 后才会被卡。改完记得把 `registry.yml` 里那条的 `status` 一起改（两处必须一致，校验器会查）。
+> **`draft` 是宽容状态**：骨架默认 `status: draft`，此时「缺分类 / 分类不在树里」这类问题只提示不拦截，方便你先写完再收口；改成 `published` 后才会被卡。**改状态用 `node scripts/status.mjs <kind>/<n> published`**——它会同时改词条文件与 `registry.yml`（校验规则 2 要求两处一致，手改常漏一处）。
 >
-> **删除留墓碑**：把词条的 `status` 改成 `deleted`（文件与 registry 两处），页面会继续存在并显示「本词条已撤下」，但会从搜索索引与计数里移除——**号永不复用**。
+> **删除留墓碑**：`node scripts/status.mjs <kind>/<n> deleted`，页面会继续存在并显示「本词条已撤下」，但会从搜索索引与计数里移除——**号永不复用**。
 >
 > **合并与发布**：改 `data/**`、`web/**`、`scripts/**` 的 PR 会跑 CI（`validate.mjs` + 两次构建比对，确认构建确定性）；CI 绿了维护者才合并。合并进 `main` 之后，`.github/workflows/pages.yml` 会自动构建并发布——**构建失败就不会发布**，所以站点不会停在半坏的状态。
 
 ---
 
-## 六类词条
+## 十四类词条：一个分区一种
+
+**每个分区都有自己的词条类型**（见 [12](docs/12-m2-kinds.md)），所以每个分区的条目都能长出百科详情，而不只是外链卡片。
+
+### 分区类型（十一种）
+
+| 类型 | 位置 | 归属分区 | 写什么 |
+| --- | --- | --- | --- |
+| `client` | `data/client/<n>.md` | 界面与客户端 | 用什么界面使用 DSH（`form`: 桌面 / 终端 / 浏览器 / CLI） |
+| `launcher` | `data/launcher/<n>.md` | 启动器 | canonical ID、血缘、平台、支持的 manifest 版本 |
+| `plugin` | `data/plugin/<n>.md` | 插件 | 插件**聚合页**：定位 / 关系 / 兼容 / 坑 + 外部源指针。**不整篇复制上游 README** |
+| `theme` | `data/theme/<n>.md` | 主题与皮肤 | 它改了界面的哪几部分（`targets`）、怎么装、跟其它外观类冲突吗 |
+| `asset` | `data/asset/<n>.md` | 素材与本地化 | 字体 / 图标 / 壁纸 / 界面文案（`assetType`、`locale`） |
+| `skill` | `data/skill/<n>.md` | 技能包 | 以 SKILL.md 为单位的能力：在哪个发现根生效（`roots`）、关键文件 |
+| `preset` | `data/preset/<n>.md` | 预设与人设 | agent preset / 人设：`presetKind` + `files` + 权限档位 |
+| `recipe` | `data/recipe/<n>.md` | 指令与配方 | 一小段可粘贴的配置或指令模板：`snippet` + `why` + 落点层 |
+| `pack` | `data/pack/<n>.md` | 整合包 | 包成分由采集注入，人写的部分是「适合谁」（`fitFor`） |
+| `tool` | `data/tool/<n>.md` | 工具链 | 在 DSH 之外运行的工具：形态、语言、提供什么、需要什么 |
+| `spec` | `data/spec/<n>.md` | 规范与协议 | 规范文件一页：版本、状态、仓库内路径。**有争议时以它为准** |
+
+### 跨分区类型（三种）
 
 | 类型 | 位置 | 写什么 |
 | --- | --- | --- |
 | `concept` | `data/concept/<n>.md` | 机制级概念（patch 层序、profile、slot…）。**必须能指到权威出处**（`spec`：代码路径或规范 URL） |
-| `plugin` | `data/plugin/<n>.md` | 插件**聚合页**：人工写的定位 / 关系 / 兼容 / 坑 + 外部源指针。**不整篇复制上游 README** |
 | `tutorial` | `data/tutorial/<n>.md` | 教程。自写用 `origin: original`；外部教程做**索引卡**（`origin: external` + 我们的适用性判断，不转载正文） |
-| `pack` | `data/pack/<n>.md` | 整合包词条。包成分由采集注入，人写的部分是「适合谁」 |
-| `launcher` | `data/launcher/<n>.md` | 启动器词条（canonical ID、血缘、平台） |
 | `source` | `data/source/<n>.md` | 资源源：外部站/渠道一页（收录什么、提供哪些字段、怎么投稿、与我们的关系） |
 
-**插件只在满足收录门槛时才建词条**（被本教程引用 / 被整合包使用 / 有人认领，见 [02 §1.2](docs/02-data-contract.md)）——我们不与 `awesome-dsh-plugin.com`、`dshbase.com` 比收录量，那两家的全量列表才是「去哪发现」的答案。
+**插件只在满足收录门槛时才建词条**（被教程引用 / 被整合包使用 / 有人认领，见 [02 §1.2](docs/02-data-contract.md)）——我们不与 `awesome-dsh-plugin.com`、`dshbase.com` 比收录量，那两家的全量列表才是「去哪发现」的答案。
+
+**分区文件要声明自己收哪种类型**（`data/zones/<分区>.yml` 里的 `kinds: [theme]`）：构建期据此把词条归到分区，校验规则 24 要求「一种类型恰好属于一个分区」。
 
 ---
 

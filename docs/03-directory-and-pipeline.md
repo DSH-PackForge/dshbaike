@@ -27,8 +27,16 @@ dshbaike/                       # 仓库名；本地工作副本可能仍是 dsh
 │   ├── concept/<n>.md          # 概念词条（MC百科式自增数字，永不复用）
 │   ├── plugin/<n>.md           # 插件词条（聚合页：外部源指针 + 人工写的关系/兼容/定位）
 │   ├── tutorial/<n>.md         # 教程词条（自写 + 外部教程索引卡）
-│   ├── pack/<n>.md             # 整合包词条
+│   ├── client/<n>.md           # 客户端词条（界面与客户端分区）
 │   ├── launcher/<n>.md         # 启动器词条
+│   ├── theme/<n>.md            # 主题与皮肤词条
+│   ├── asset/<n>.md            # 素材与本地化词条
+│   ├── skill/<n>.md            # 技能包词条
+│   ├── preset/<n>.md           # 预设与人设词条
+│   ├── recipe/<n>.md           # 指令与配方词条
+│   ├── pack/<n>.md             # 整合包词条
+│   ├── tool/<n>.md             # 工具（工具链分区）
+│   ├── spec/<n>.md             # 规范文件词条
 │   ├── source/<n>.md           # 资源源词条（外部插件源/渠道：awesome、dshbase、npm…）
 │   ├── zones/<zone>.yml        # ★ 分区层数据（十一个一级分区：界面与客户端/插件/整合包/启动器/主题/…，不编号）
 │   ├── entities.yml            # ★ 多源实体归并：keys（repo:/npm:）→ 词条 id，refs 由采集写

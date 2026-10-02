@@ -1567,6 +1567,79 @@ a.card__name:hover {
   line-height: 1.65;
 }
 
+/* 二级分区（docs/06 §2.0.1）：一级分区回答「这是哪一层」，二级回答「同一层里属于哪一类」 */
+.subsection {
+  margin: 28px 0 0;
+  scroll-margin-top: 72px; /* 锚点跳转时别被吸顶元素盖住 */
+}
+
+.subsec__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  border-bottom: 2px solid var(--border-strong);
+  padding-bottom: 8px;
+}
+
+.subsec__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+}
+
+.subsec__count {
+  font: 600 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: var(--text-faint);
+}
+
+.subsec__anchor {
+  margin-left: auto;
+  color: var(--text-faint);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.subsec__anchor:hover {
+  color: var(--link);
+}
+
+.subsec__desc {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* 编辑综述（板块页语域）：左侧一条品牌色，与卡片清开 */
+.subsec__intro {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  background: var(--bg-subtle);
+  border-left: 4px solid var(--brand);
+  font-size: 13.5px;
+  line-height: 1.75;
+}
+
+.subsec__intro > :first-child { margin-top: 0; }
+.subsec__intro > :last-child { margin-bottom: 0; }
+.subsec__intro p { margin: 0 0 8px; }
+.subsec__intro ul,
+.subsec__intro ol { margin: 0 0 8px; padding-left: 20px; }
+
+.subsec__intro table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.subsec__intro th,
+.subsec__intro td {
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  text-align: left;
+}
+
+.subsection .cards { margin-top: 12px; }
+
 .source {
   display: grid;
   grid-template-columns: 1fr auto;
