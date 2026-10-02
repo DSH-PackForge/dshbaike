@@ -131,7 +131,6 @@ node scripts/linkcheck.mjs [--write]         # 可选：HEAD 检查外链，写 
 | `web/index.html` | C（手写，不参与生成） | 首页；JS 读 `registry/taxonomy/zones/search` 渲染 |
 | `web/entry.template.html` | C | 词条页外壳，构建期为每条词条生成一份 |
 | `web/zone.template.html` | C | 分区页外壳，构建期为每个分区生成一份 |
-| `web/graph.template.html` | C | 生态全景图页外壳，构建期生成一份 `web/graph.html`（整张 SVG 在构建期画好写进正文） |
 
 **占位符只有三个**（构建期字符串替换，别用模板引擎）：
 
@@ -150,8 +149,9 @@ node scripts/linkcheck.mjs [--write]         # 可选：HEAD 检查外链，写 
 <script>window.__PEDIA__ = {"base":"/","page":"entry","kind":"plugin","n":12,"title":"dsh-loader"};</script>
 ```
 
-`page` ∈ `entry | zone | index | static | graph`。前端**只依赖 `window.__PEDIA__` 与 `base`**，不解析 URL 猜页面（除了 hash 路由的分区/筛选状态）。
-注意 `static`（维度索引页）与 `graph`（生态全景图）的正文是**构建期写好的**：boot() 不移除它、也不重渲染正文，只补站点外壳与交互。
+`page` ∈ `entry | zone | index | static`。前端**只依赖 `window.__PEDIA__` 与 `base`**，不解析 URL 猜页面（除了 hash 路由的分区/筛选状态）。
+注意 `static`（维度索引页）的正文是**构建期写好的**：boot() 不移除它、也不重渲染正文，只补站点外壳与交互。
+`web/mesh/`（全量插件生态图）是**第三方应用原样副本**，不走这套外壳——它自带 `index.html`/`styles.css`/`src/`。
 
 **生成路径**：`web/<kind>/<n>.html`（如 `web/plugin/12.html`）、`web/<zone>.html`（如 `web/plugins.html`）、首页仍为 `web/index.html`。
 

@@ -1,8 +1,8 @@
 /**
  * graph.mjs —— 生态全景图（docs/01 §路由、docs/02 §产物 `graph.json`）。
  *
- * 这份文件是 `graph.json` 与全景页 `graph.html` 的**唯一**来源：
- * 先把图算成数据（可机读、可被下游消费），再把它渲染成 SVG（构建期画好，无 JS 也能看）。
+ * 这份文件只产出**数据**（graph.json，可机读、可被下游消费）。
+ * 页面不由本项目渲染：全量生态图用第三方项目 vendor/dsh-plugin-mesh。
  *
  * 三条铁律，和整站一致：
  *   1. **确定性**：不写随机数、节点与边全部排序 → 同一份数据逐字节一致（构建期比对写盘）。
@@ -14,30 +14,24 @@
 import { compareIds } from './util.mjs';
 
 /**
- * 边的样式分组。`group` 决定怎么画，`type` 保留具体语义（例如 relations 下面还分
- * requires / recommends / conflicts / replaces / integrates）。
+ * 边的分组与语义。`group` 是我们自己的归类（下游按它上色即可），
+ * `type` 保留具体语义（relations 下面还分 requires / recommends / conflicts / replaces / integrates）。
+ * 页面不再由本项目渲染（全量生态图用 vendor/dsh-plugin-mesh），所以这里只留数据含义、不留画法。
  */
 export const EDGE_GROUPS = {
-  relations: { zh: '关系', color: '#c98ac9', dash: null, arrow: true, defaultOn: true },
-  prereq: { zh: '前置', color: '#b09ae8', dash: null, arrow: true, defaultOn: true },
-  related: { zh: '相关', color: '#8bbf5e', dash: null, arrow: false, defaultOn: true },
-  tutorial: { zh: '教程引用', color: '#f0a42a', dash: '6 4', arrow: false, defaultOn: true },
-  pack: { zh: '整合包引用', color: '#5aa8e8', dash: '2 4', arrow: false, defaultOn: true },
-  references: { zh: '正文提到（派生）', color: '#9aa5b1', dash: '1 5', arrow: false, defaultOn: false },
+  relations: { zh: '关系' },
+  prereq: { zh: '前置' },
+  related: { zh: '相关' },
+  tutorial: { zh: '教程引用' },
+  pack: { zh: '整合包引用' },
+  references: { zh: '正文提到（派生）' },
 };
 
 /** relations 的五种语义 → 同属 relations 组 */
 const RELATION_TYPES = new Set(['requires', 'recommends', 'conflicts', 'replaces', 'integrates']);
 
-/** 跨分区类型：不属于任何一层，画在内圈 */
-const INNER_COLORS = { concept: '#7fd3c8', tutorial: '#f0a42a', source: '#5aa8e8' };
-
+/** 画布尺寸：只作为数据里的一个提示字段（下游可视化用），本站不再画它 */
 const SIZE = 1240;
-const CX = SIZE / 2;
-const CY = SIZE / 2;
-const R_INNER = 150;
-const R0 = 232;
-const R1 = 452;
 
 /**
  * 从构建期模型算出图数据。
@@ -133,137 +127,4 @@ export function buildEcosystemGraph({ model, entryOutputs, reverse = null, gener
     edges,
     counts: { nodes: nodes.length, edges: edges.length, byType },
   };
-}
-
-/* ------------------------------------------------------------------ 渲染 */
-
-const esc = (s) =>
-  String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-
-const px = (r, a) => CX + Math.cos(a) * r;
-const py = (r, a) => CY + Math.sin(a) * r;
-
-/** 分区色：按臂序号排成一圈色环（与 dsh-plugin-mesh 的做法同源，但这里位置由分区语义决定） */
-function zoneColor(index, total) {
-  return `hsl(${Math.round((200 + index * (360 / Math.max(1, total))) % 360)} 62% 62%)`;
-}
-
-/**
- * 把图渲染成构建期就画好的 SVG。交互（切换派生边、hover 高亮邻居）由 pedia.js 渐进增强。
- */
-export function renderGraphSvg(graph) {
-  const pos = new Map();
-  const parts = [];
-  const centerNode = graph.nodes.find((n) => n.id === graph.center);
-  if (centerNode) pos.set(centerNode.id, { x: CX, y: CY, r: 0, color: '#3fd0bd' });
-
-  // 外圈：分区为臂（角度按 registry 的 zoneOrder，臂内按 id 排序，交错量确定）
-  const arms = graph.zones;
-  const colorOf = new Map();
-  arms.forEach((zone, zi) => {
-    colorOf.set(zone.id, zoneColor(zi, arms.length));
-    const a0 = (zi / arms.length) * Math.PI * 2 - Math.PI / 2;
-    const members = graph.nodes.filter((n) => n.zone === zone.id && n.id !== graph.center);
-    members.forEach((n, i) => {
-      const t = members.length === 1 ? 0.62 : i / (members.length - 1);
-      const r = R0 + (R1 - R0) * t;
-      const zig = (i % 2 === 0 ? 1 : -1) * (Math.PI / arms.length) * 0.26 * (1 - t * 0.5);
-      pos.set(n.id, { x: px(r, a0 + zig), y: py(r, a0 + zig), r: t, color: colorOf.get(zone.id) });
-    });
-  });
-
-  // 内圈：跨分区类型（concept / tutorial / source）
-  const inner = graph.nodes.filter((n) => n.band === 'inner' && n.id !== graph.center);
-  inner.forEach((n, i) => {
-    const a = (i / Math.max(1, inner.length)) * Math.PI * 2 - Math.PI / 2;
-    pos.set(n.id, { x: px(R_INNER, a), y: py(R_INNER, a), r: -1, color: INNER_COLORS[n.kind] ?? '#9aa5b1' });
-  });
-
-  // 箭头标记
-  parts.push('<defs>');
-  for (const [key, def] of Object.entries(EDGE_GROUPS)) {
-    if (!def.arrow) continue;
-    const refs = key === 'relations'
-      ? ['relations', ...[...RELATION_TYPES].map((t) => `rel-${t}`)]
-      : [key];
-    for (const id of refs) {
-      parts.push(
-        `<marker id="arw-${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
-          `<path d="M 0 0 L 10 5 L 0 10 z" fill="${def.color}"/></marker>`
-      );
-    }
-  }
-  parts.push('</defs>');
-
-  // 臂底 + 臂名（标签画在画布内）
-  arms.forEach((zone, zi) => {
-    const a0 = (zi / arms.length) * Math.PI * 2 - Math.PI / 2;
-    const half = Math.PI / arms.length;
-    const P = (r, a) => `${px(r, a).toFixed(1)} ${py(r, a).toFixed(1)}`;
-    parts.push(
-      `<path class="graph__arm" d="M ${P(R_INNER + 26, a0 - half * 0.86)} L ${P(R1 + 34, a0 - half * 0.86)} ` +
-        `A ${R1 + 34} ${R1 + 34} 0 0 1 ${P(R1 + 34, a0 + half * 0.86)} L ${P(R_INNER + 26, a0 + half * 0.86)} Z"/>`
-    );
-    const lr = R1 + 62;
-    const lx = px(lr, a0);
-    const ly = py(lr, a0);
-    const cos = Math.cos(a0);
-    const anchor = Math.abs(cos) < 0.3 ? 'middle' : cos > 0 ? 'start' : 'end';
-    parts.push(
-      `<text class="graph__armlabel" x="${lx.toFixed(0)}" y="${ly.toFixed(0)}" text-anchor="${anchor}" ` +
-        `fill="${colorOf.get(zone.id)}">${esc(zone.title)} <tspan class="graph__armcount">${zone.count}</tspan></text>`
-    );
-  });
-
-  // 边
-  for (const e of graph.edges) {
-    const a = pos.get(e.from);
-    const b = pos.get(e.to);
-    if (!a || !b) continue;
-    const def = EDGE_GROUPS[e.group] ?? EDGE_GROUPS.references;
-    const dash = def.dash ? ` stroke-dasharray="${def.dash}"` : '';
-    const markerId = e.group === 'relations' ? `rel-${e.type}` : e.group;
-    const arrow = def.arrow ? ` marker-end="url(#arw-${markerId})"` : '';
-    parts.push(
-      `<line class="graph__edge graph__edge--${esc(e.group)}" data-from="${esc(e.from)}" data-to="${esc(e.to)}" ` +
-        `x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" ` +
-        `stroke="${def.color}" stroke-width="1.2"${dash}${arrow}><title>${esc(`${e.type}（${e.why}）`)}</title></line>`
-    );
-  }
-
-  // 节点：方块。用 <a> 包住 → 无 JS 也能点进词条；<title> 自带悬停提示。
-  // 颜色分工：**填充**是分区色（内联，确定性色环）；**描边与圆心色**交给 CSS 的令牌——
-  // 站点有明暗主题与三套主题色（accent.css），硬编码会跟不上。
-  for (const n of graph.nodes) {
-    const p = pos.get(n.id);
-    if (!p) continue;
-    const isCenter = n.id === graph.center;
-    const size = isCenter ? 26 : n.completeness >= 95 ? 14 : n.completeness >= 88 ? 11 : 8;
-    const zoneLabel = n.zone ? arms.find((z) => z.id === n.zone)?.title ?? n.zone : '跨分区';
-    const tip = `${n.title}（${n.id}）· ${isCenter ? '圆心 · ' : ''}${zoneLabel}${
-      n.completeness != null ? ` · 完整度 ${n.completeness}%` : ''
-    }${n.status === 'draft' ? ' · 草稿' : ''}`;
-    parts.push(
-      `<a class="graph__node${isCenter ? ' graph__node--center' : ''}" href="${esc(`${n.kind}/${n.n}.html`)}" data-id="${esc(n.id)}">` +
-        `<title>${esc(tip)}</title>` +
-        `<rect x="${(p.x - size / 2).toFixed(1)}" y="${(p.y - size / 2).toFixed(1)}" width="${size}" height="${size}" ` +
-        `fill="${isCenter ? 'currentColor' : p.color}"/>` +
-        '</a>'
-    );
-  }
-  if (centerNode) {
-    parts.push(
-      `<text class="graph__centerlabel" x="${CX}" y="${(CY + 42).toFixed(0)}" text-anchor="middle">${esc(centerNode.title)}</text>`
-    );
-  }
-
-  return (
-    `<svg class="graph__svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="100%" height="auto" ` +
-    `role="img" aria-label="DSH 百科生态全景图：${graph.counts.nodes} 个词条、${graph.counts.edges} 条关系" ` +
-    `data-nodes="${graph.counts.nodes}" data-edges="${graph.counts.edges}">${parts.join('')}</svg>`
-  );
 }

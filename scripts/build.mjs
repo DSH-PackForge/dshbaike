@@ -181,9 +181,34 @@ function main(argv) {
   /* ---- registry / search / taxonomy / entities / reverse / plugins ---- */
   push(writes, nextManifest, path.posix.join('data', 'registry.json'), toJson(registryJson));
 
-  /* ---- 生态全景图（docs/02 §产物 graph.json；页面 graph.html 在下面一起写）----
-     图的算法在 scripts/lib/graph.mjs：那份数据同时喂给 graph.json（可机读）与
-     全景页的 SVG（构建期画好）。这里只算一次，避免两个产物各算各的、慢慢漂移。 */
+  /* ---- 第三方全量插件生态图（vendor/dsh-plugin-mesh，MIT）：原样拷进 web/mesh/ ----
+     我们的 graph.json 是「人工核实过的关系」（31 条词条），这张图是「全量生态」
+     （2625 个仓库、机器按 topic 采集）——两种东西，评审决定全景图用它那张。
+     这里只做拷贝：文件与上游逐字节一致，改它就去改上游或换新副本（见该目录 README.md）。 */
+  const vendorDir = fromRoot('vendor', 'dsh-plugin-mesh');
+  if (exists(vendorDir)) {
+    const walkVendor = (dir, rel) => {
+      for (const name of fs.readdirSync(dir).sort()) {
+        const abs = path.join(dir, name);
+        const next = rel ? `${rel}/${name}` : name;
+        if (fs.statSync(abs).isDirectory()) {
+          walkVendor(abs, next);
+          continue;
+        }
+        // README.md 是给我们自己看的，不进站点产物
+        if (next === 'README.md') continue;
+        push(writes, nextManifest, path.posix.join('mesh', next), readText(abs));
+        counts.meshFiles = (counts.meshFiles ?? 0) + 1;
+      }
+    };
+    walkVendor(vendorDir, '');
+  } else {
+    problems.push('vendor/dsh-plugin-mesh 不存在：生态全景图（web/mesh/）不会生成');
+  }
+
+  /* ---- 我们自己的关系数据（docs/02 §产物 graph.json）----
+     只产出数据、不画图：全量生态图用第三方那张（上面已拷进 web/mesh/）。
+     这份数据留给将来的「以某条词条为圆心的邻域星图」以及下游消费。 */
   const graph = buildEcosystemGraph({ model, entryOutputs, reverse, generatedAt });
   counts.graphNodes = graph.counts.nodes;
   counts.graphEdges = graph.counts.edges;

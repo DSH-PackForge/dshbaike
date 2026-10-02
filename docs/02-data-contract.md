@@ -393,7 +393,7 @@ plugins:                    # 插件引用块，见 §5
 | `reverse/plugins.json` | **插件 → 引用它的教程**（按 `npm`/`repo` 归并）+ **插件 → 使用它的整合包** | 插件词条页的「出现在哪 / 谁在用」，以及教程页的「还出现在」 |
 | `plugins/index.json` | 插件词条的轻量索引（n / 名称 / 定位 / 分类 / 外部源指针 / 快照时间） | 插件索引页（筛选与跳转，数据规模 = 词条数，不是生态全量） |
 | `zones/<zone>.json` | 分区页数据：标题 / 定义 / `howto` / `itemFields` 白名单 / 条目卡片（含 `entry` 链接与红链标记 / 标签 / 风险徽章 / 专属字段 / 完整度小标） | 十二个一级分区页 |
-| `graph.json` | 生态全景图的数据（docs/01 §路由）：`center` / `size` / `zones` / `nodes`（含 `band`：外圈分区臂或内圈跨分区）/ `edges` / `counts`。边字段 `from` / `to` / `type` / `group` / **`why`**；`type` ∈ `requires`/`recommends`/`conflicts`/`replaces`/`integrates` / `prereq` / `related` / `tutorial` / `pack` / `references`（最后三类是构建期派生）。页面 `graph.html` 与它**同源**：同一份数据渲染 | 生态全景图页 `graph.html` |
+| `graph.json` | **我们自己的**关系数据（docs/01 §路由）：`center` / `size` / `zones` / `nodes`（含 `band`）/ `edges` / `counts`。边字段 `from` / `to` / `type` / `group` / **`why`**；`type` ∈ `requires`/`recommends`/`conflicts`/`replaces`/`integrates` / `prereq` / `related` / `tutorial` / `pack` / `references`（后三类构建期派生）。**本站不再据此渲染页面**——全量生态图用第三方那张（`web/mesh/`），这份数据留给将来的「邻域星图」与下游消费 | 数据接口（暂无页面） |
 | `search.json` | id / kind / title / aliases / tags / summary | 搜索 |
 
 ---

@@ -1,0 +1,52 @@
+name: 全量生态图数据快照
+
+# 为什么要这个：本站的 `web/mesh/` 是第三方项目 dsh-plugin-mesh（MIT）的原样副本，
+# 它的**代码**由我们整套更新（见 vendor/dsh-plugin-mesh/README.md），
+# 它的**数据**由上游采集器每小时自己更新。我们只做一件事：每天抓一份快照进来，
+# 这样 dshbaike.com/mesh/ 上是 HTTPS、且带明确快照时间的数据，而不是去依赖一个裸 IP。
+#
+# 内容没变就不提交（上游可能整天没变化），所以这个工作流大多数日子什么都不做。
+
+on:
+  schedule:
+    # 每天 03:17 UTC（避开整点，GitHub 的定时任务在整点最挤）
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 取仓库
+        uses: actions/checkout@v4
+
+      - name: 抓上游数据并自检
+        run: |
+          set -euo pipefail
+          URL="https://raw.githubusercontent.com/WTStarMark/dsh-plugin-mesh/main/data/mesh.json"
+          curl -fsSL --max-time 180 "$URL" -o /tmp/mesh.json
+          # 自检：必须是 JSON，且带 meta.generatedAt 与 nodes 数组——不然宁可不更新
+          node -e "
+            const m = require('/tmp/mesh.json');
+            if (!m.meta || !m.meta.generatedAt) { console.error('上游数据缺少 meta.generatedAt'); process.exit(1); }
+            if (!Array.isArray(m.nodes) || !m.nodes.length) { console.error('上游数据没有 nodes'); process.exit(1); }
+            console.log('上游快照 ' + m.meta.generatedAt + '：节点 ' + m.nodes.length + ' 边 ' + (m.edges || []).length);
+          "
+          cp /tmp/mesh.json vendor/dsh-plugin-mesh/data/mesh.json
+
+      - name: 变了才提交
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- vendor/dsh-plugin-mesh/data/mesh.json; then
+            echo '数据与仓库里那份一致，跳过提交。'
+            exit 0
+          fi
+          GEN=$(node -e "console.log(require('./vendor/dsh-plugin-mesh/data/mesh.json').meta.generatedAt)")
+          git config user.name 'dshbaike-bot'
+          git config user.email 'dshbaike-bot@users.noreply.github.com'
+          git add vendor/dsh-plugin-mesh/data/mesh.json
+          git commit -m "chore(vendor): 刷新全量生态图快照（上游 generatedAt=${GEN}）"
+          git push
