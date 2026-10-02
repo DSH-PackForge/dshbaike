@@ -1,0 +1,65 @@
+name: 站点改进 / 百科自身的问题
+description: 反馈百科这个站点本身要改的地方（导航、搜索、样式、渲染、贡献流程、想新增的分区或词条类型）
+title: "[站点改进] "
+labels: ["站点改进"]
+assignees: ["hxh230802"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **这张表是给「百科本身」用的，不是给某条词条的内容用的。**
+
+        | 你想说的 | 该走哪 |
+        | --- | --- |
+        | 某条词条里的事实错了 / 过时了 | 词条页右上角 **「改一句话」「改字段」**（机器代改），或 **「纠错」**（只报告） |
+        | 某个分区缺一条资源 | 分区页 **「补充一条」** |
+        | **站点本身**：导航绕、搜索不好用、样式错乱、链接点不动、表单别扭、想加一种词条类型…… | **就是这里** |
+
+        这类问题需要判断和设计（甚至要动信息架构与代码），所以**由人来处理**，
+        不进「机器人代改」那条通道。写清「哪里、现在怎样、你期望怎样」就够。
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 类别
+      options:
+        - 信息架构 / 导航（分区划分、页面层级、找不到东西）
+        - 页面与样式（排版、配色、暗色、移动端、可读性）
+        - 搜索（搜不到、结果排序、关键词）
+        - 渲染或链接错误（公式/表格坏了、外链 404、锚点跳错）
+        - 贡献流程（表单字段、机器人行为、审核体验）
+        - 内容范围与类型（想新增分区、新增词条类型、收录边界）
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: 哪里
+      description: 页面地址或名字，例如 `https://dsh-packforge.github.io/dshbaike/#/plugins` 或「插件分区页」。
+      placeholder: 插件分区页 / 词条页右侧的缺口清单
+    validations:
+      required: true
+
+  - type: textarea
+    id: now
+    attributes:
+      label: 现在是什么样
+      description: 具体一点——你点了什么、看到什么。有截图更好（直接拖进来）。
+    validations:
+      required: true
+
+  - type: textarea
+    id: want
+    attributes:
+      label: 你期望怎样
+      description: 不必写成方案，说清「怎样才算好用」就行。
+    validations:
+      required: true
+
+  - type: textarea
+    id: more
+    attributes:
+      label: 补充（可选）
+      description: 你试过什么、别的站点怎么做的、为什么现在这样让你卡住了。

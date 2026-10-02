@@ -1,6 +1,7 @@
 name: 改一个字段
 description: 补或改词条头部的一个字段（分类、标签、别名、更新日期、安装命令…），机器人替你改并开 PR
 title: "[改一个字段] "
+labels: ["内容变更"]
 body:
   - type: markdown
     attributes:

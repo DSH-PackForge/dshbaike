@@ -1023,7 +1023,16 @@
       )),
       el('p', { class: 'footer__line' }, [
         document.createTextNode('发现交给 awesome，入门交给 dshbase，解释交给我们。 · '),
-        el('a', { href: SITE.contributing, rel: 'noopener noreferrer external', target: '_blank', text: '贡献指南（领号流程）' })
+        el('a', { href: SITE.contributing, rel: 'noopener noreferrer external', target: '_blank', text: '贡献指南（领号流程）' }),
+        document.createTextNode(' · '),
+        // Issue 分两类（docs/14 §1.2）：内容变更走词条页上的表单，百科自身的问题走这张表
+        el('a', {
+          href: issueForm('meta.yml', { title: '[站点改进] ' }),
+          rel: 'noopener noreferrer external',
+          target: '_blank',
+          text: '反馈百科本身的问题',
+          title: '导航、搜索、样式、渲染、贡献流程、想新增的分区或词条类型——这些由人来处理和设计，不走机器人代改'
+        })
       ])
     ]));
   }

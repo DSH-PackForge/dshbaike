@@ -1,6 +1,7 @@
 name: 新增词条
 description: 申请新增一条词条；编号与骨架由自动化处理，你不需要装任何东西
 title: "[新增词条] "
+labels: ["内容变更"]
 body:
   - type: markdown
     attributes:

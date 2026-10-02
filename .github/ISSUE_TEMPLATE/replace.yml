@@ -1,6 +1,7 @@
 name: 改正文里的一句话
 description: 正文里有句话说错了/过时了？填原文与改法，机器人会替你把这一处改掉并开 PR
 title: "[改正文里的一句话] "
+labels: ["内容变更"]
 body:
   - type: markdown
     attributes:

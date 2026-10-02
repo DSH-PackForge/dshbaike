@@ -1,6 +1,7 @@
 name: 我来维护这一条
 description: 认领某条词条的维护（只加一个用户名，机器会自动改文件并开 PR）
 title: "[认领维护] "
+labels: ["内容变更"]
 body:
   - type: markdown
     attributes:

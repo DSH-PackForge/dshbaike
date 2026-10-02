@@ -1,6 +1,7 @@
 name: 补充分区条目
 description: 给某个分区加一条资源（名称 + 一句话 + 外链），机器人写进 YAML 并开 PR
 title: "[补充分区条目] "
+labels: ["内容变更"]
 body:
   - type: markdown
     attributes:

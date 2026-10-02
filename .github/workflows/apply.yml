@@ -29,8 +29,16 @@ concurrency:
 
 jobs:
   # ---- 第一道闸（a）：提交后立刻干跑并回帖，等维护者 /approve -------------------
+  # 只处理**内容变更**类的四张表单（前缀与 scripts/lib/ops.mjs 里的操作标题一一对应，
+  # 由 scripts/check-workflows.mjs 强制一致）。像「站点改进」那种关于百科本身的 Issue
+  # 由人来处理，机器人**不插话**——它插话只会变成噪音。
   check:
-    if: github.event_name == 'issues' && startsWith(github.event.issue.title, '[')
+    if: >
+      github.event_name == 'issues' &&
+      (startsWith(github.event.issue.title, '[认领维护]') ||
+       startsWith(github.event.issue.title, '[改一个字段]') ||
+       startsWith(github.event.issue.title, '[改正文里的一句话]') ||
+       startsWith(github.event.issue.title, '[补充分区条目]'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +105,11 @@ jobs:
     if: >
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request == null &&
-      startsWith(github.event.comment.body, '/approve')
+      startsWith(github.event.comment.body, '/approve') &&
+      (startsWith(github.event.issue.title, '[认领维护]') ||
+       startsWith(github.event.issue.title, '[改一个字段]') ||
+       startsWith(github.event.issue.title, '[改正文里的一句话]') ||
+       startsWith(github.event.issue.title, '[补充分区条目]'))
     runs-on: ubuntu-latest
     outputs:
       allowed: ${{ steps.gate.outputs.allowed }}
