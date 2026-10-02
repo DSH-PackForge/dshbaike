@@ -14,11 +14,24 @@ body:
         
         **「GitHub 用户名」是必填的**——署名要用它（提交作者会写成这个名字），机器人会核实账号存在；填错直接拒绝。
 
+        ---
+
+        **认领之后怎么改自己的词条**（不用学 Markdown，也不用本地跑脚本）：
+
+        1. 回到词条页，右上角那排按钮就是入口：**改一个字段**（如平台、安装命令、许可证）、
+           **改一句话**、**纠错**——点进去编号会自动带上；
+        2. **附出处**：上游链接、规范路径、代码位置，有出处维护者才敢合；
+        3. 单值与列表字段（`platforms`、`tags`、`install`…）机器人能直接改；
+           **嵌套结构**（`compat`、`relations`、`providedBy`）它改不了，会明确告诉你，
+           那种情况请 fork 后提 PR；
+        4. 流程是**两道闸**：机器人动手前要 **`/approve`**——认领之后**这一条你自己就能批**
+           （不需要仓库权限）；但**合并**永远由仓库维护者点。机器人从不自己合并。
+
   - type: input
     id: entry
     attributes:
       label: 词条 id
-      description: 形如 plugin/1 或 concept/2。从词条页点「我来维护」进来时标题里已带编号，可留空。
+      description: 形如 launcher/9、plugin/1、concept/2——哪个类型都行。从词条页点「我来维护」进来时标题里已带编号，可留空。
       placeholder: plugin/1
     validations:
       required: false

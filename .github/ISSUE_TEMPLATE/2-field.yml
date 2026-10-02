@@ -18,7 +18,7 @@ body:
     id: entry
     attributes:
       label: 词条 id
-      description: 形如 plugin/1 或 concept/2。从词条页点进来时标题里已带编号，可留空。
+      description: 形如 launcher/9、plugin/1、concept/2——哪个类型都行。从词条页点进来时标题里已带编号，可留空。
       placeholder: plugin/1
     validations:
       required: false
