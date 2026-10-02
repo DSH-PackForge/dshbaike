@@ -2940,7 +2940,10 @@
     var bits = [];
     if (tag && tag !== '*') bits.push('tag=' + encodeURIComponent(tag));
     if (q) bits.push('q=' + encodeURIComponent(q));
-    var next = bits.length ? '#' + bits.join('&') : location.pathname + location.search;
+    // 注意：不能只传 `'#tag=…'`。页面里有 `<base href="/">`，浏览器会拿它去解析这个片段 URL，
+    // 于是地址栏会变成 `/#tag=…`（根路径 = 首页），筛选其实生效了、URL 却是错的，
+    // 复制出去的链接会把人带到首页。所以这里用 location.pathname 拼绝对路径。
+    var next = location.pathname + location.search + (bits.length ? '#' + bits.join('&') : '');
     history.replaceState(null, '', next);
   }
 
