@@ -2,26 +2,12 @@
 # canonical ID 才让整合包能声明支持谁（manifest v5 §13 的 launchers 字段）。
 zone: launchers
 title: 启动器
-desc: .dspack 的安装端，也是「怎么装上并起得来」那一步的承载者。事实源是规范仓库的 launcher-registry.md 与它的机器可读版 launchers.json，当前共 5 条已认领 ID。
+desc: 怎么把 DSH 装上、怎么起得来——图形启动器、包装器与命令行入口都在这一层。装包、切 profile、多版本并存这些事，各家做法不同，所以这里按「启动器项目」列，而不是只列认领过 ID 的那几个。
 kinds: [launcher]
 sections:
   - id: launchers
     title: 启动器
-    desc: 替你起 DSH 的那一层：包装器、图形入口与它们认领的 canonical ID
-    intro: |
-      **「有个启动器仓库」和「认领了 canonical ID」是两件事。** 这一区把两者都列出来，
-      但状态不同，看卡片上有没有 `launcherId`：
-
-      | 状态 | 意味着什么 |
-      | --- | --- |
-      | **已认领 ID**（卡片写了 `launcherId`，如 `dshl`） | 整合包可以在 manifest 的 `launchers` 字段里**声明支持它**；安装端判定规则见 pack-structure/v3.md §9.1 |
-      | **未认领**（卡片没有 `launcherId`） | 它是个能下载、能用的启动器，但整合包**暂时声明不了它**——只能靠 README 让人手装 |
-
-      能把本站的整合包直接装进 profile 的启动器，卡片上带 **`支持 .dspack`** 标签。
-
-      当前认领表里共 **5 个 ID**（`dshl` / `hdsl` / `dsh-packforge-app` / `official-desktop` / `dsh-cli`，
-      快照 2026-10-02）；下面列出的启动器项目多于 5 个，**差额就是还没认领的那几个**。
-      认领方式与安装端判定规则见本分区 howto。
+    desc: 替你起 DSH 的那一层：图形启动器、包装器与命令行入口
   - id: bare
     title: 无启动器起步
     desc: 不装任何启动器时的起点
