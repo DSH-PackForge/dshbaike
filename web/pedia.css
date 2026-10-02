@@ -1630,6 +1630,72 @@ a.card__name:hover {
 
 .subsection .cards { margin-top: 12px; }
 
+/* 分区扩展的首屏块（docs/13）：基础格式之外的「这一类最该先看到的东西」 */
+.lead {
+  margin: 0 0 18px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--brand);
+  border-radius: var(--r-box);
+  background: var(--bg-subtle);
+  padding: 12px 14px;
+}
+
+.lead__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.lead__kind {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.lead__label {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+
+.lead__code {
+  margin: 0;
+}
+
+.lead__notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.lead__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 14px;
+}
+
+.lead__fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lead__k {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+.lead__v {
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+
 /* --------------------------------------------------------------------------
    18. 提示条（草稿 / 归档 / 墓碑；docs/08 §1 原则 5、6）
    -------------------------------------------------------------------------- */

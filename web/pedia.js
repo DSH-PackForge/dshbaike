@@ -1387,7 +1387,7 @@
       statusNotice(entry, id),
       el('div', { class: 'entry-grid' }, [
         renderNav(toc, entry, zone),
-        el('div', { class: 'entry-grid__main' }, [tabs, backlinksBlock(entry)]),
+        el('div', { class: 'entry-grid__main' }, [leadBlock(entry), tabs, backlinksBlock(entry)]),
         el('div', { class: 'entry-grid__aside' }, aside)
       ]),
       dataFootnote(entry, id)
@@ -1400,6 +1400,66 @@
     bindTabs(main);
     bindCopyButtons(main);
     bindToc(main);
+  }
+
+  /**
+   * 分区扩展的首屏块（docs/13）：基础格式之外，「这一类最该先看到的东西」。
+   * 配方 → 可复制的片段；规范 → 版本与状态；整合包 → 包形态与下载量。
+   * **数据缺了就整块不渲染**——不编、不留空壳。
+   */
+  function leadBlock(entry) {
+    var lead = entry.presentation && entry.presentation.lead;
+    if (!lead) return null;
+    var meta = entry.meta || {};
+    var head = el('div', { class: 'lead__head' }, [
+      el('span', { class: 'lead__kind', text: kindZh(entry.kind) }),
+      el('span', { class: 'lead__label', text: lead.label || { code: '可直接粘贴', facts: '要点' }[lead.type] || '要点' })
+    ]);
+
+    if (lead.type === 'code') {
+      var text = meta[lead.field];
+      if (!isPresent(text)) return null;
+      var block = el('div', { class: 'codeblock lead__code' }, [
+        el('button', { type: 'button', class: 'codeblock__copy', 'data-copy': '1', text: '复制' }),
+        el('pre', { class: 'codeblock__pre' }, el('code', { text: String(text).replace(/\s+$/, '') }))
+      ]);
+      var notes = asArray(lead.note).map(function (k) {
+        if (!isPresent(meta[k])) return null;
+        return el('span', { class: 'lead__note' }, [
+          document.createTextNode((FIELD_ZH[k] || k) + '：'),
+          el('b', { text: leadValue(meta[k]) })
+        ]);
+      }).filter(Boolean);
+      return el('section', { class: 'lead', 'aria-label': lead.label || '要点' },
+        [head, block].concat(notes.length ? [el('div', { class: 'lead__notes' }, notes)] : []));
+    }
+
+    if (lead.type === 'facts') {
+      var facts = asArray(lead.fields).map(function (k) {
+        if (!isPresent(meta[k])) return null;
+        return el('div', { class: 'lead__fact' }, [
+          el('span', { class: 'lead__k', text: FIELD_ZH[k] || k }),
+          el('span', { class: 'lead__v', text: leadValue(meta[k]) })
+        ]);
+      }).filter(Boolean);
+      if (!facts.length) return null;
+      return el('section', { class: 'lead', 'aria-label': '要点' }, [head, el('div', { class: 'lead__facts' }, facts)]);
+    }
+
+    return null;
+  }
+
+  /** 把任意字段值压成一行可读文本（对象只展开一层，够用且不猜语义） */
+  function leadValue(v) {
+    if (Array.isArray(v)) return v.map(leadValue).join('、');
+    if (v && typeof v === 'object') {
+      return Object.keys(v).map(function (k) {
+        var x = v[k];
+        if (x === null || x === undefined || x === '') return null;
+        return k + ' ' + (typeof x === 'object' ? leadValue(x) : String(x));
+      }).filter(Boolean).join(' · ');
+    }
+    return String(v);
   }
 
   function anchorExists(root, anchor) {
@@ -1717,8 +1777,14 @@
     var known = {};
     Object.keys(FIELD_ZH).forEach(function (k) { known[k] = FIELD_ZH[k]; });
 
-    var groups = FIELD_GROUPS.map(function (g) {
-      var rows = g.keys.filter(function (k) {
+    // 字段组按 kind 走展示契约（docs/13）：基础格式给出默认四组，
+    // 分区扩展可以改顺序/取舍/加专属组（例如 spec 的「版本与状态」、pack 的「包成分」）。
+    // 产物里没有 presentation 时退回默认——旧产物或单页调试也不会白屏。
+    var declared = (entry.presentation && asArray(entry.presentation.groups).length)
+      ? entry.presentation.groups
+      : FIELD_GROUPS;
+    var groups = declared.map(function (g) {
+      var rows = asArray(g.keys).filter(function (k) {
         return k !== 'status' && k !== 'updatedAt' ? isPresent(meta[k]) || (k === 'install' && isPresent(meta.install)) : isPresent(meta[k]);
       }).map(function (k) {
         return infoRow(known[k] || k, k, meta[k], sources[k], entry, kind);
@@ -1834,9 +1900,13 @@
 
   function providedValue(info) {
     if (!isPlainObject(info)) return document.createTextNode(String(info));
+    // 嵌套对象要展开，不能 String() 成 `[object Object]`（pack 的 providedBy 里就带 fields 对象）
     var bits = Object.keys(info).filter(function (k) {
       return k !== 'at' && k !== 'href' && isPresent(info[k]);
-    }).map(function (k) { return k + ' ' + info[k]; });
+    }).map(function (k) {
+      var v = info[k];
+      return k + ' ' + (isPlainObject(v) || Array.isArray(v) ? leadValue(v) : String(v));
+    });
     var node = el('span', {}, bits.length ? document.createTextNode(bits.join(' · ')) : missing());
     if (isPresent(info.href)) {
       node.appendChild(document.createTextNode(' '));

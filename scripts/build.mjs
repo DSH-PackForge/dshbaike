@@ -29,6 +29,7 @@ import {
 } from './lib/data.mjs';
 import { splitFrontMatter } from './lib/frontmatter.mjs';
 import { computeCompleteness, EXPECTED_FIELDS, FIELD_SOURCE, OPTIONAL_FIELDS } from './lib/fields.mjs';
+import { presentationFor } from './lib/presentation.mjs';
 import { renderMarkdown } from './lib/markdown.mjs';
 import { ENTRY_KINDS } from './lib/registry.mjs';
 import {
@@ -546,6 +547,9 @@ function buildEntryOutput(model, entry, reverse, generatedAt) {
     relations,
     backlinks: sortBy(backlinkIds, (x) => x).map((target) => ({ id: target, title: titleOf(model, target) })),
     zone: zone ? { id: zone.zone, title: zone.data?.title ?? null } : null,
+    // 展示契约（docs/13）：基础格式由前端统一渲染，这里只给它「这个类型的扩展」
+    // ——首屏块（lead）与信息表字段组的取舍/顺序。前端缺这个字段时会退回默认布局。
+    presentation: presentationFor(kind),
     snapshot,
   };
   if (kind === 'plugin') {
