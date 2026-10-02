@@ -441,6 +441,21 @@
 
   var LINK_ICON = ' ↗';
 
+  /**
+   * rail 里的品牌标记：与 favicon 同一套几何（墨绿瓷砖 + 白文档 + 两条文字线 + 琥珀高亮行），
+   * 但手写成 6 个 rect —— 比内联整张 16×16 网格小两个数量级。
+   * 由 scripts/logo.mjs 的 MARK 网格换算而来，改标识时两边一起改。
+   */
+  var BRAND_MARK_SVG =
+    '<svg viewBox="0 0 16 16" width="18" height="18" shape-rendering="crispEdges" focusable="false">' +
+    '<rect x="1" y="1" width="14" height="14" fill="#8fe3d8"/>' +
+    '<rect x="2" y="2" width="12" height="12" fill="#12796f"/>' +
+    '<rect x="4" y="4" width="8" height="8" fill="#ffffff"/>' +
+    '<rect x="5" y="6" width="6" height="1" fill="#0b4f49"/>' +
+    '<rect x="5" y="8" width="6" height="1" fill="#0b4f49"/>' +
+    '<rect x="5" y="10" width="4" height="1" fill="#f0a42a"/>' +
+    '</svg>';
+
   /* ------------------------------------------------------------ 数据加载 */
 
   function normalizeBase(raw) {
@@ -906,6 +921,8 @@
 
     var inner = el('div', { class: 'masthead__inner' }, [
       el('a', { class: 'brand', href: BASE, 'aria-label': SITE.name + ' 首页' }, [
+        // 站点标识（几何取自 scripts/logo.mjs 的 16×16 网格；svg 是装饰，名字才是语义）
+        el('span', { class: 'brand__mark', 'aria-hidden': 'true', html: BRAND_MARK_SVG }),
         el('span', { class: 'brand__name', text: SITE.name })
       ]),
       el('nav', { class: 'zones', 'aria-label': '一级分区' }, list),

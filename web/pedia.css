@@ -343,7 +343,9 @@ html.rail-collapsed .masthead {
 
 /* 站名：侧栏最上面，比原顶栏字号大一档 */
 .brand {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   flex: 0 0 auto;
   padding: 0 6px 10px;
   color: var(--text);
@@ -353,6 +355,20 @@ html.rail-collapsed .masthead {
 
 .brand:hover {
   text-decoration: none;
+}
+
+/* 品牌标记：固定尺寸，不要被 flex 压缩 */
+.brand__mark {
+  flex: none;
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.brand__mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .brand__name {
