@@ -32,6 +32,16 @@
    → 维护者只点一次「Merge」
 ```
 
+> **一处组织策略限制（实测）**：本组织在策略里禁止 GitHub Actions 创建 PR
+> （`Write permissions for workflows are disabled by the organization`），
+> 所以 `gh pr create` 会报 `GitHub Actions is not permitted to create or approve pull requests`。
+> workflow 因此带了**回退**：建不了 PR 就把分支推好，并在 Issue 里给出
+> `https://github.com/<repo>/pull/new/<branch>`——**只差人点一下**。
+> 想完全自动，需要组织管理员在 `Settings → Actions → General → Workflow permissions`
+> 打开「允许 GitHub Actions 创建并批准 PR」。
+> （另一条路是存一个 PAT 当 secret；**本仓库没有这么做**：把能代表用户身份的长期凭据放进仓库，
+> 收益只是一个点击，不值得。）
+
 **为什么不让贡献者直接编辑文件**：认领的收益是「以后能 @ 到人」，成本不该是
 「学会 YAML 缩进 + 提 PR」。把成本压到一次表单，愿意认领的人才会真的出现。
 
@@ -59,7 +69,7 @@
 
 | 能力 | 状态 |
 | --- | --- |
-| 认领维护（`maintainers`）全自动 | ✅ 表单 + Action + `scripts/claim.mjs`（本地可测：5 种 YAML 写法、幂等、非法输入都覆盖） |
+| 认领维护（`maintainers`）全自动 | ✅ 表单 + Action + `scripts/claim.mjs`（本地可测：5 种 YAML 写法、幂等、非法输入都覆盖）。**实测**：Issue #3 → 分支只有 `maintainers` 一处 +1/−1 → 回帖给出「一键开 PR」链接，运行结论 success。建 PR 那一步受组织策略限制，需人点一下（见 §2 的说明） |
 | 其它字段「去编辑」直达编辑器 | ✅ 缺口清单里每项一个动作 |
 | 机械字段的可复制片段 | ✅ `updatedAt`（今天是唯一能确定的值） |
 | `updatedAt` 也全自动 | ⏳ 未做：它需要「我确实核实过」的语义，值得单独一张表单（`verify.yml`），等有需求再加 |
