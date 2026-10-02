@@ -143,5 +143,31 @@ if (noLabel.length) {
   process.stdout.write(`  OK   ${templates.length} 张表单都带 labels（内容变更 / 站点改进）\n`);
 }
 
+// ⑤ 机器人**不得**批准 PR —— 「人类是唯一批准人」这条不变式的机器化检查。
+//
+// 背景：仓库设置里的 "Allow GitHub Actions to create and approve pull requests" 必须**开着**，
+// 否则 `GITHUB_TOKEN` 连 PR 都建不了（创建与批准共用这一个开关；实测踩过：关掉之后机器人的
+// `gh pr create` 直接失败、掉进 mode=manual）。既然开关只能开着，「不批准」就只能靠这条约定
+// 加上本检查守住。
+//
+// 为什么重要：PR 上挂着 auto-merge，所以只要哪个 workflow 给自己提的 PR 点一次批准，
+// 就等于**自动合并**，第二道闸（人工 review）当场失效。`--admin` 更直接（绕过保护规则），
+// 一并禁止。
+const approvers = files.filter((p) => {
+  const src = fs.readFileSync(p, 'utf8');
+  return (
+    /gh\s+pr\s+review[^\n]*--approve/.test(src) ||
+    /gh\s+pr\s+merge[^\n]*--admin/.test(src) ||
+    /addPullRequestReview/i.test(src)
+  );
+});
+if (approvers.length === 0) {
+  process.stdout.write('  OK   没有 workflow 在批准 PR（人类是唯一批准人，auto-merge 才安全）\n');
+} else {
+  ok = false;
+  process.stdout.write('  FAIL 有 workflow 会批准/强合 PR —— 配合 auto-merge 等于机器人自己合并：\n');
+  approvers.forEach((p) => process.stdout.write(`         ${path.basename(p)}\n`));
+}
+
 process.stdout.write(ok ? `\n全部检查通过。\n` : `\n有问题——**推送前必须修**（workflow 语法错误时 GitHub 只会静默不运行）。\n`);
 process.exit(ok ? 0 : 1);
