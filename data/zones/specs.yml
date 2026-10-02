@@ -9,17 +9,17 @@
 #   · spec/2 = 规范仓库总览（六份现行规范 + 历史版本都在这一条里）
 zone: specs
 title: 规范与协议
-desc: DSH 全生态的规范与协议——这里的「规范」是宽口径的：凡是生态里「大家照着做」的约定都算。有官方定义的形态与协议（profile、插件 bundle、技能包、preset、半端划分）；有生态各方共同维护的互操作约定（整合包清单 manifest、.dspack 容器 pack-structure、市场索引 index、发布流程 publishing、启动器注册表）；也有跨应用协议（MCP）与工程规范。谁说了算分层次：官方的不由社区改，实现方的只管自己那一族——有争议时以对应出处的文件为准，而不是以某个实现或某个包的现状为准。
+desc: DSH 全生态的规范与协议——这里的「规范」是宽口径的：凡是生态里「大家照着做」的约定都算。有官方定义的形态与协议（profile、插件 bundle、技能包、preset、半端划分）；有生态各方共同维护的互操作约定——整合包这一族（manifest、.dspack 容器、市场索引、发布流程、启动器注册表）与社区互操作协议（插件元协议、运行环境元协议）；也有跨应用协议（MCP）与工程规范。谁说了算分层次：官方的不由社区改，社区的只约束自愿采纳者，实现方的只管自己那一族——有争议时以对应出处的文件为准，而不是以某个实现或某个包的现状为准。
 kinds: [spec]
 sections:
   - id: current
     title: 现行规范
-    desc: 现在照它做就对的那几份。目前收的是文件型规范（整合包这一族）；DSH 本体那一侧的契约按概念词条写在各自分区里；生态里其它来源的规范（社区协议、工程规范等）尚未收录。
+    desc: 现在照它做就对的那几份。目前收了文件型规范两族：整合包这一族（manifest / pack-structure / index / publishing / launcher-registry / workspace-config）与社区互操作协议；DSH 本体那一侧的契约按概念词条写在各自分区里。
   - id: history
     title: 历史版本
     desc: 旧版本仍然可读：读它是为了理解字段怎么长出来的
     collapsed: true
-howto: 按问题找出处：问「一个包能声明什么」看 manifest；问「.dspack 怎么装、文件落到哪」看 pack-structure；问「怎么才会被市场收录」看 publishing；问「启动器 canonical ID 与版本怎么判」看 launcher-registry；问「profile / patch 层 / DSH_HOME 是什么」看 DSH 本体那一侧——本站把这部分按概念词条写。要改规范就向对应的仓库提 PR，别在实现里私自分叉。
+howto: 按问题找出处：问「一个包能声明什么」看 manifest；问「.dspack 怎么装、文件落到哪」看 pack-structure；问「怎么才会被市场收录」看 publishing；问「启动器 canonical ID 与版本怎么判」看 launcher-registry；问「插件之间怎么互相告知版本与兼容需求」看社区的 dsh-std；问「一台机器上多个整合包怎么共存」看 dsh-distribution；问「profile / patch 层 / DSH_HOME 是什么」看 DSH 本体那一侧——本站把这部分按概念词条写。要改规范就向对应的仓库提 PR，别在实现里私自分叉。
 itemFields: [specVersion, specStatus, fileName]
 items:
   - name: DSH-PackForge 规范仓库
@@ -33,6 +33,17 @@ items:
     tags: ["生态地基", "规范"]
     links:
       spec: https://github.com/DSH-PackForge/DSH-PackForge/tree/main/specs
+  - name: DSH 社区生态互操作规范（dsh-ecosystem-spec）
+    section: current
+    blurb: 社区版互操作协议：由 dsh-TUI 与 DSH-Desktop-EAC 团队联合发起，收录插件元协议 dsh-std（插件如何告诉别人自己的版本、适配的 DSH 版本与兼容性需求）与运行环境元协议 dsh-distribution（多个整合包或独立运行时如何共存、互相通讯并隔离）及相关子协议，另有 registry、governance 与工程规范。项目自我说明为「并非官方标准」，只约束自愿采纳者。70 star（快照 2026-10-02）。
+    specVersion: null
+    specStatus: current
+    fileName: README.md
+    source: specs
+    entry: null
+    tags: ["生态地基", "规范"]
+    links:
+      spec: https://github.com/T-Auto/dsh-ecosystem-spec
   - name: 历史版本（manifest v1–v4、pack-structure v1–v2）
     section: history
     blurb: 六份现行规范都有前身，保留在仓库里可读。读它们不是为了守着旧写法，而是为了两件事：读旧包（市场里实测仍有包声明 manifestVersion 4，甚至 .tgz 时代的包）与理解字段怎么长出来的（v5 的 type/dshhome、v3 的 home/ 都是前面几版长出问题的答案）。
