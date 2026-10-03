@@ -1051,7 +1051,14 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     // 所以两边都读一次——上一版只读顶层，结果属性块只剩「最后更新」。
     const meta = output.meta ?? {};
     const pick = (k) => meta[k] ?? output[k];
-    const rolesText = Array.isArray(pick('roles')) ? pick('roles').join('、') : typeof pick('roles') === 'string' ? pick('roles') : null;
+    // roles 可能是「字符串」或「字符串数组」——其它形态（对象数组）一律不渲染，
+    // 绝不出现 [object Object]（上一版就是这么漏出来的）。
+    const rolesRaw = pick('roles');
+    const rolesText = typeof rolesRaw === 'string'
+      ? rolesRaw
+      : Array.isArray(rolesRaw) && rolesRaw.every((r) => typeof r === 'string')
+        ? rolesRaw.join('、')
+        : null;
     if (pick('role')) attrPairs.push(['角色', String(pick('role'))]);
     else if (rolesText) attrPairs.push(['角色', rolesText]);
     if (pick('layer')) attrPairs.push(['层级', String(pick('layer'))]);
