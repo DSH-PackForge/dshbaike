@@ -1011,7 +1011,12 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
 
   const metaRows = Object.entries(output.meta ?? {})
     .map(([k, v]) => [k, formatMetaValue(v)])
-    .filter(([, v]) => v !== null && v !== undefined && v !== '');
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    // 兜底：formatMetaValue 没吃住的嵌套形态曾漏出 `[object Object]`——那是**爬虫与
+    // 关掉 JS 的访客**唯一能看到的版本，宁可不显示这一行，也不能显示错值。
+    // （JS 侧按 pedia.js 的规则正确展开，所以带 JS 的访客不受影响。
+    //   长期做法是让预渲染也做同样的展开，见待办。）
+    .filter(([, v]) => !String(v).includes('[object Object]'));
   if (metaRows.length) {
     L.push('<h2>信息表</h2>');
     L.push('<dl>');
