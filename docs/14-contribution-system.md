@@ -291,3 +291,18 @@ B 类不能——「导航怎么改」没有机械解，只有设计判断。把
 | **上线时机** | 骨架是 `draft`：**不合并就永远不上线**，两道闸照旧（`/approve` → PR review → 合并） |
 
 彩排：`bash scripts/test-new-entry.sh`（15 项，含幂等与「表单不全就拒绝」，整棵工作树拷到临时目录跑，不碰真仓库的编号）。
+
+## 附：让作者只给一个仓库地址（工具已就绪，机器人化待做）
+
+评审提出的目标：作者想说「这个插件是我做的，收一下」，不该被迫学我们的 schema。
+
+**已经有的**：`scripts/import-project.mjs`（人和机器人共用）——给一个 owner/repo，它把机器读得到的全部填好：
+
+- GitHub API → star / fork / 许可证 / 语言 / 版本 / 快照日期（写进 `providedBy.github`）；
+- `package.json` → npm 包名、版本、bin（据此给 install 命令）；
+- README → **优先简体中文版**，整篇照搬（去 HTML/徽章/图片、去它自己的目录与 H1、相对链接转绝对）；
+- 复用 `registry.allocate()` 领号，产出 `status: draft`；只把需要人判断的 `category` 与 `positioning` 留 TODO；
+- 清洗后变空的小节会**告警**（例如 README 用 HTML 表格写「维护团队」时会被丢掉）。
+
+**还差的（下一件事）**：一个能联网的机器人 op（现在 ops 是纯函数、离线可测），让作者开 Issue 只填仓库地址就自动生成 PR。
+注意仓库护栏：`scripts/check-workflows.mjs` 要求**每张表单都有对应的 op 与前缀**，否则作者提交后会被静默漏掉——所以表单要等 op 一起上。
