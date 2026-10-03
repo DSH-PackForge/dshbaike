@@ -1320,8 +1320,12 @@
     var idx = {};
     src.forEach(function (z) {
       if (!z || !isPresent(z.id)) return;
+      var zTitle = z.title || (zoneFallback(z.id) || {}).label || z.id;
       idx[z.id] = {
-        title: z.title || (zoneFallback(z.id) || {}).label || z.id,
+        title: zTitle,
+        // label 与 title 同值：zones/index.json 里叫 title，而多处在读 .label
+        //（面包屑、「属于：」、分区下拉），只给 title 就会渲染出空的格子。
+        label: zTitle,
         desc: z.desc || (zoneFallback(z.id) || {}).desc || '',
         count: isPresent(z.count) ? z.count : isPresent(z.items) ? asArray(z.items).length : null
       };
@@ -1491,7 +1495,10 @@
     // 以前这里用 `|| 'plugins'` 兜底，于是这类词条被当成「插件区」——侧栏高亮、面包屑、
     // 「属于：」与「相关」框全都指向插件区。看 source/3 的截图才发现。
     var zoneId = entry.zone && isPresent(entry.zone.id) ? entry.zone.id : KIND_ZONE[kind];
-    var zone = zoneId ? { id: zoneId, title: zoneMeta(zoneId).label } : null;
+    // 词条产物自己带 zone.title（构建期写好的），优先用它；没有才回落查索引
+    var zone = zoneId
+      ? { id: zoneId, title: (entry.zone && entry.zone.title) || zoneMeta(zoneId).label || zoneMeta(zoneId).title }
+      : null;
     var main = $('#main');
     clear(main);
 
@@ -1624,20 +1631,52 @@
       el('li', {}, el('a', { href: BASE, text: '首页' }))
     ];
     // 跨分区类型没有所属分区，这一格就不出现——不编一个假的分区出来
+    var zoneTitle = '';
     if (zone && zone.id) {
-      items.push(el('li', {}, el('a', { href: zoneUrl(zone.id), text: zone.title || zoneMeta(zone.id).label })));
+      zoneTitle = zone.title || zoneMeta(zone.id).label;
+      items.push(el('li', {}, el('a', { href: zoneUrl(zone.id), text: zoneTitle })));
     }
+    // 分类这一格：中文名与分区标题**相同**时不重复
+    // （例：spec 词条的 ecosystem.spec 中文名就是「规范与协议」，与分区一字不差）
     var cats = asArray(entry.meta && entry.meta.category);
     if (cats.length) {
-      items.push(el('li', {}, el('span', { text: catLabel(cats[0]) })));
+      var catName = catLabel(cats[0]);
+      if (catName && catName !== zoneTitle) {
+        items.push(el('li', {}, el('span', { text: catName })));
+      }
     }
     items.push(el('li', {}, el('span', { text: entry.title || String(entry.id || ''), 'aria-current': 'page' })));
     return el('nav', { class: 'crumbs', 'aria-label': '面包屑' }, el('ol', {}, items));
   }
 
+  /* 分类 id → 中文名。来源是构建产物 `data/taxonomy.json`（buildTaxonomyOutput）。
+     以前这里直接把 id 的最后一段当名字，于是面包屑上出现 mobile / spec / web 这类英文 slug
+     （评审发现的：launch.mobile 明明是「移动端启动器」）。现在查表，查不到再退回最后一段——
+     这样即使 taxonomy 没取到，也不会把面包屑变成空白。 */
+  var CAT_LABELS = {};
+
+  function indexTaxonomy(model) {
+    var out = {};
+    var walk = function (nodes) {
+      asArray(nodes).forEach(function (node) {
+        if (!node) return;
+        if (isPresent(node.id)) {
+          var label = node.label && (node.label.zh || node.label.en);
+          if (isPresent(label)) out[String(node.id)] = String(label);
+        }
+        if (node.children) walk(node.children);
+      });
+    };
+    walk(model && model.tree);
+    CAT_LABELS = out;
+    return out;
+  }
+
   function catLabel(id) {
     if (!isPresent(id)) return '未分类';
-    var parts = String(id).split('.');
+    var key = String(id);
+    if (CAT_LABELS[key]) return CAT_LABELS[key];
+    var parts = key.split('.');
     return parts[parts.length - 1];
   }
 
@@ -3517,11 +3556,14 @@
     // 顶栏与页脚都要用 registry / zones/index，所以先取数据再渲染外壳。
     var pre = Promise.all([
       DATA.soft('registry.json'),
-      DATA.soft('zones/index.json')
+      DATA.soft('zones/index.json'),
+      // 分类中文名（面包屑、词条页的「属于 / 分类」展示要用）：11 KB，与上面两项并行取
+      DATA.soft('taxonomy.json')
     ]).then(function (r) {
       GLOBAL.registry = r[0];
       GLOBAL.entryIndex = buildEntryIndex(r[0]);
       registerZoneIndex(r[1]);
+      indexTaxonomy(r[2]);
       renderFooter();
     });
 
