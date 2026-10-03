@@ -1636,15 +1636,10 @@
       zoneTitle = zone.title || zoneMeta(zone.id).label;
       items.push(el('li', {}, el('a', { href: zoneUrl(zone.id), text: zoneTitle })));
     }
-    // 分类这一格：中文名与分区标题**相同**时不重复
-    // （例：spec 词条的 ecosystem.spec 中文名就是「规范与协议」，与分区一字不差）
-    var cats = asArray(entry.meta && entry.meta.category);
-    if (cats.length) {
-      var catName = catLabel(cats[0]);
-      if (catName && catName !== zoneTitle) {
-        items.push(el('li', {}, el('span', { text: catName })));
-      }
-    }
+    // 分类**不进面包屑**：它是编辑视角的 taxonomy（分类表自己写着「不是插件目录分类」），
+    // 而且没有对应页面——摆在这里就是给读者一个点不动的格子（评审问过：为什么点不了）。
+    // 读者逛的维度是分区与标签；分类的完整信息在词条页的「数据」页里。
+    // （之前这里还因为 label/title 字段名不一致渲染出过空的 <li>。）
     items.push(el('li', {}, el('span', { text: entry.title || String(entry.id || ''), 'aria-current': 'page' })));
     return el('nav', { class: 'crumbs', 'aria-label': '面包屑' }, el('ol', {}, items));
   }
@@ -2098,7 +2093,11 @@
       case 'role':
         return document.createTextNode(ROLE_ZH[value] || String(value));
       case 'category':
-        return document.createTextNode(asArray(value).join(' · '));
+        // 别只丢 plugin.capability 给读者：中文名在前，原 id 放括号里（核对时用得上）
+        return document.createTextNode(asArray(value).map(function (c) {
+          var zh = catLabel(c);
+          return zh && zh !== String(c) ? zh + '（' + c + '）' : String(c);
+        }).join(' · '));
       case 'dshVersion':
       case 'dshVersions':
         return document.createTextNode(asArray(value).join(' · '));
