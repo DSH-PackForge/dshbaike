@@ -1591,9 +1591,33 @@ function renderMaintainersPage(template, entryOutputs) {
   });
 }
 
+/**
+ * 各类词条的「搜索意图词」：写进 `<title>`，命中「怎么装 / 是什么 / 踩坑」这类查询。
+ * 学 MC百科的标题写法——他们把**缩写 + 中文名 + 英文原名**全占在标题里
+ * （实测：`[JEI]JEI物品管理器 (Just Enough Items)` 对「JEI 怎么用」排名第一），
+ * 用户怎么搜都更容易命中。
+ */
+const ENTRY_INTENT = {
+  plugin: '是什么、怎么装、兼容与踩坑',
+  pack: '怎么装、包含什么、兼容性',
+  launcher: '怎么装、怎么用、兼容性',
+  tutorial: '步骤与要点',
+  concept: '是什么、为什么',
+  mcp: '是什么、怎么接',
+  spec: '是什么、怎么遵守',
+  source: '数据来源与口径',
+};
+const ENTRY_INTENT_FALLBACK = '是什么、怎么用';
+
 function renderEntryPage(template, output, entryOutputs, indexes = []) {
-  const title = `${output.title ?? output.id} | DSH百科`;
-  const desc = output.summary ?? '';
+  // 标题三合一：中文名 + 英文原名 + 意图词。别名不塞进标题（太长会被截断），
+  // 放到描述开头——既帮助匹配，又保持标题干净。
+  const name = output.title ?? output.id;
+  const en = output.titleEn ? `（${output.titleEn}）` : '';
+  const intent = ENTRY_INTENT[output.kind] ?? ENTRY_INTENT_FALLBACK;
+  const title = `${name}${en}：${intent} | DSH百科`;
+  const aliasBit = Array.isArray(output.aliases) && output.aliases.length ? `别名：${output.aliases.join('、')}。` : '';
+  const desc = `${aliasBit}${output.summary ?? ''}`.trim();
   return applyTemplate(template, {
     title,
     desc,
