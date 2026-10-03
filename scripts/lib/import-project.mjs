@@ -161,6 +161,8 @@ export async function planProjectImport(options) {
   const body = bodyParts.join('\n');
 
   let text = skeleton(kind, entryTitle, now, { summary, body });
+  // tags 是空的时候，把「该填什么」写在那一行上（骨架只给了空数组）
+  text = text.replace(/^tags: \[\]\s*$/m, 'tags: []                # TODO 至少两个（喂给标签长尾页）');
 
   const extra = [];
   extra.push('# ---- 以下字段由 scripts/lib/import-project.mjs 从上游自动填入（快照 ' + now + '）');
@@ -169,6 +171,14 @@ export async function planProjectImport(options) {
   if (pkg && pkg.bin && typeof pkg.bin === 'object' && Object.keys(pkg.bin).length) {
     extra.push('install: npm install -g ' + npmName);
   }
+  // 机器读不到、必须由人定的字段，**在这一坨里**留好位置（不是只写注释，也不是另开清单）：
+  //   · 自由文本 → 直接给占位值，填的时候替换掉就行；
+  //   · 枚举（role / entryGate 等）→ 只能留注释，因为非法值会让校验报错（骨架里已有）。
+  extra.push('positioning: TODO 用生态语境说清它解决什么问题（别照抄上游 description）');
+  extra.push('compat:');
+  extra.push('  dsh: ["TODO 支持哪些 DSH 版本（查不到就写「未核实」，别猜）"]');
+  extra.push('  runtime: []          # cli | desktop | web 等，按实测填');
+  extra.push('  platforms: []        # 实测过的平台；没测就留空');
   extra.push('entryGate: maintainer');
   extra.push('entryGateNote: ' + quote(user
     ? '由项目作者 @' + user + ' 在收录表单里申请收录（走「有维护者认领」这一条门槛）。'
