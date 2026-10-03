@@ -1559,6 +1559,7 @@
    * 顺序按 ATTR_ORDER，未列出的排在其后、按字段名排序 —— 将来新增字段会自动出现，不会再被漏掉。
    */
   var ATTR_SKIP = ['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy',
+    'cover', 'coverAlt', 'coverCredit', 'coverLink',
     'usedInPacks', 'referencedByTutorials', 'backlinks', 'titleEn', 'aliases', 'tags', 'summary',
     'status', 'kind', 'slug', 'screenshots', 'archivedNote'];
   var ATTR_ORDER = ['role', 'shortName', 'canonicalId', 'layer', 'category', 'fitFor', 'difficulty', 'platforms', 'runtime',
@@ -1637,16 +1638,25 @@
     };
     var parts = [];
 
-    // 封面（作者自定义：图放仓库 covers/ 下，构建期拷进 web/covers/；不热链）
+    // 封面（作者自定义，也允许自定义链接）：covers/xxx.png 或 https 外链，
+    // 有 coverLink 就包一层链接（点了去哪儿由作者定）
     if (isPresent(meta.cover)) {
+      var coverRaw = String(meta.cover).replace(/^\.\//, '');
+      var coverImg = el('img', {
+        src: /^https?:\/\//i.test(coverRaw) ? coverRaw : coverRaw,
+        alt: isPresent(meta.coverAlt) ? String(meta.coverAlt) : displayName(entry),
+        loading: 'lazy',
+        decoding: 'async'
+      });
       parts.push(
         el('figure', { class: 'entry-cover' }, [
-          el('img', {
-            src: String(meta.cover).replace(/^\.\//, ''),
-            alt: isPresent(meta.coverAlt) ? String(meta.coverAlt) : displayName(entry),
-            loading: 'lazy',
-            decoding: 'async'
-          })
+          isPresent(meta.coverLink)
+            ? el('a', {
+                href: String(meta.coverLink),
+                rel: 'noopener noreferrer external',
+                target: '_blank'
+              }, [coverImg])
+            : coverImg
         ])
       );
       if (isPresent(meta.coverCredit)) {

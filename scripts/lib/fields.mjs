@@ -25,12 +25,15 @@ export const OPTIONAL_FIELDS = {
     // 与词的 id（plugin/2，馆内坐标、号不复用）不是一回事，两者都要有。
     'shortName',
     'canonicalId',
-    // 封面（评审：人家都有封面，我们啥都没有；而且**要能让作者自定义**）。
-    // cover 指向仓库内 `covers/` 下的图片（不热链），构建期原样拷进 web/covers/；
-    // 没给封面时不报错——页面用自动生成的卡片兜底（见 build.mjs）。
+    // 封面（评审：人家都有封面；而且**要能让作者自定义**、也**允许自定义链接**）。
+    // cover 两种写法都支持：
+    //   ① 仓库内 `covers/xxx.png` —— 构建期原样拷进 web/covers/（走我们的缓存、可审计）
+    //   ② `https://…` 外链 —— 原样引用（作者把图放自己站/GitHub 上，不必往仓库塞二进制）
+    // coverLink 可选：点了封面去哪儿（默认不可点）。
     'cover',
     'coverAlt',
     'coverCredit',
+    'coverLink',
     'updatedAt',
     'screenshots',
     'slug',

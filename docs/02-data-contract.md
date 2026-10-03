@@ -254,6 +254,10 @@ plugins:                    # 插件引用块，见 §5
 | `shortName` | string | 否 | **简称**（≤ 16 字），用来在标题与卡片上省地方：`dsh-pack` / `DSHL` / `HDSL`。**与 `title` 相同就不要写**（渲染时也会自动不显示，避免 `[dsh-TUI]dsh-TUI` 这种重复） |
 | `canonicalId` | string | 否 | **全局唯一名**——生态里认的那个标识：插件 `owner.repo` 或 `@scope/name`、启动器注册表 ID、整合包市场坐标。**全局不得重复**（规则 25 会用 Map 跨词条查重）；与馆内坐标 `id`（`plugin/2`，号不复用）不是一回事。与 `launcherId` / `marketId` 的关系：后两者是各自领域里的同一概念，保留 |
 | `authors` | object[] | 否 | **上游作者/团队**：`{ name, role }`，`role` ∈ `开发团队` \| `作者` \| `维护者` \| `贡献者` \| `吉祥物` \| `发布方`。只对**第三方项目类**（plugin / pack / launcher / tool / source …）有意义；`concept` / `tutorial` / `recipe` 是本馆原创，用了会报错。与 `maintainers` 语义不同，**不可混用**；核不实的写「未核实」，不猜 |
+| `cover` | string | 否 | **封面图**，两种写法都行：① 仓库内 `covers/xxx.png`（构建期原样拷进 `web/covers/`，推荐——走我们的缓存、可审计）；② `https://…` 外链（作者自己托管的图，原样引用）。只收 png / jpg / webp，**禁 SVG**（会当 `og:image` 给第三方平台看，SVG 能带脚本）；入库存放时 > 300KB 只给警告。有封面时 `og:image` 自动换成它 |
+| `coverAlt` | string | 否 | 封面替代文字（无障碍与读屏），缺省时用词条显示名 |
+| `coverCredit` | string | 否 | 封面署名（谁做的图），会显示在封面下方 |
+| `coverLink` | string | 否 | 点击封面跳转的链接（`https://…`）；不写就不可点 |
 | `updatedAt` | string | 否 | 人工核实的日期（`YYYY-MM-DD`） |
 | `screenshots` | string[] | 否 | 相对 `data/assets/` 的图片路径 |
 

@@ -1043,12 +1043,19 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
   L.push('<div class="prerender" data-prerender="entry">');
   L.push('<article class="prose">');
   L.push(`<h1>${escapeHtml(displayName(output))}</h1>`);
-  // 封面（评审：人家有封面，而且要让作者自定义）。有 cover 就放在最上面；
-  // 没有时先留空（自动生成的兜底卡片在下一步做）。og:image 在 renderEntryPage 里换成它。
+  // 封面（评审：人家有封面；作者可自定义，也允许自定义链接）。
+  // 两种写法都支持：仓库内 covers/xxx.png（构建期已拷进 web/covers/）或 https 外链。
   if (output.meta?.cover) {
-    const src = String(output.meta.cover).replace(/^\.\//, '');
+    const raw = String(output.meta.cover).replace(/^\.\//, '');
+    const src = /^https?:\/\//i.test(raw) ? raw : raw; // 外链原样用；本地相对路径靠 <base> 解析
     const alt = output.meta.coverAlt ? String(output.meta.coverAlt) : displayName(output);
-    L.push(`<figure class="entry-cover"><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async"></figure>`);
+    const img = `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async">`;
+    // coverLink：点了封面去哪儿（有才可点）
+    const link = output.meta.coverLink ? String(output.meta.coverLink) : '';
+    const inner = link
+      ? `<a href="${escapeHtml(link)}" rel="noopener noreferrer external" target="_blank">${img}</a>`
+      : img;
+    L.push(`<figure class="entry-cover">${inner}</figure>`);
     if (output.meta.coverCredit) {
       L.push(`<figcaption class="entry-cover__credit faint">${escapeHtml(String(output.meta.coverCredit))}</figcaption>`);
     }
@@ -1123,6 +1130,7 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     // 规则与 JS 侧 entryTopBlock 保持一致：简单值（字符串/数字/布尔/字符串数组）一律摆出，
     // 只排除已经有自己位置的字段；插件页额外排除 marketId 与 supportedManifest（已决定取消）。
     const ATTR_SKIP = new Set(['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy',
+      'cover', 'coverAlt', 'coverCredit', 'coverLink',
       'usedInPacks', 'referencedByTutorials', 'backlinks', 'titleEn', 'aliases', 'tags', 'summary',
       'status', 'kind', 'slug', 'screenshots', 'archivedNote']);
     if (output.kind === 'plugin') { ATTR_SKIP.add('marketId'); ATTR_SKIP.add('supportedManifest'); }
@@ -1917,7 +1925,9 @@ function injectJsonLd(html, json) {
  */
 function withOgImage(html, cover) {
   if (!cover) return html;
-  const url = `${SITE_URL}/${String(cover).replace(/^\.\//, '')}`;
+  const raw = String(cover).replace(/^\.\//, '');
+  // 外链本来就是绝对地址（og:image 要求绝对 URL）；本地图才需要补站点前缀
+  const url = /^https?:\/\//i.test(raw) ? raw : `${SITE_URL}/${raw}`;
   return String(html)
     .replace(/(<meta property="og:image" content=")[^"]*(">)/, `$1${url}$2`)
     .replace('</head>', `<meta name="twitter:card" content="summary_large_image"></head>`);

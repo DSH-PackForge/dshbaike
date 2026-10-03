@@ -779,31 +779,47 @@ function checkEntry(ctx, reporter, entry) {
     }
   }
 
-  // ---- 规则 26：cover（封面，作者可自定义）----
-  // 评审：人家都有封面，而且封面要能让作者自己给。所以：必须放在仓库内 `covers/` 下
-  // ——不热链（外链会烂、也不好审计）；只收 png/jpg/jpeg/webp，**禁 SVG**（SVG 能带脚本，
-  // 而这张图会同时当 og:image 给第三方平台看）；建议 ≤ 300KB（超了只警告，不拦）。
+  // ---- 规则 26：cover（封面，作者可自定义，也允许自定义链接）----
+  // 评审：封面要能让作者自己给。**两种写法都支持**：
+  //   ① 仓库内 `covers/xxx.png` —— 构建期拷进 web/covers/（走我们缓存、可审计）
+  //   ② `https://…` 外链 —— 作者自己托管的图（我们查不到它是否存在，所以只做形态校验）
+  // 共同要求：png/jpg/jpeg/webp、**禁 SVG**（会当 og:image 给第三方平台看，SVG 能带脚本）；
+  // 外链**必须 https**（http 图片在 https 页面上是混合内容，会被浏览器拦）。
   if (!isMissing(data.cover)) {
     const cov = String(data.cover).trim();
-    const rel = cov.replace(/^\.\//, '').split('\\').join('/');
-    if (!/^covers\/[A-Za-z0-9._/-]+$/.test(rel) || rel.includes('..')) {
-      reporter.error(file, R('cover'), 26, `cover 必须指向仓库内 covers/ 下的文件：\`${cov}\``, '不要把图放别处，也不要写外链（外链会烂、也无法审计）');
-    } else if (!/\.(png|jpe?g|webp)$/i.test(rel)) {
-      reporter.error(file, R('cover'), 26, `cover 只支持 png / jpg / webp：\`${cov}\``, '禁 SVG：它会被当 og:image 给第三方平台看，而 SVG 能带脚本');
+    if (/^https?:\/\//i.test(cov)) {
+      if (!/^https:\/\//i.test(cov)) {
+        reporter.error(file, R('cover'), 26, `外链封面必须是 https：\`${cov}\``, 'http 图片在 https 页面上是混合内容，会被浏览器拦掉');
+      } else if (!/\.(png|jpe?g|webp)(\?|#|$)/i.test(cov)) {
+        reporter.warn(file, R('cover'), 26, `外链封面看不出是 png/jpg/webp：\`${cov}\``, '确保这个地址直接返回图片（不是网页），否则 og:image 会失效');
+      }
     } else {
-      const abs = fromRoot(rel);
-      if (!exists(abs)) {
-        reporter.error(file, R('cover'), 26, `cover 指向的文件不存在：\`${rel}\``, '把图放进仓库的 covers/ 目录（构建期会拷进 web/covers/）');
+      const rel = cov.replace(/^\.\//, '').split('\\').join('/');
+      if (!/^covers\/[A-Za-z0-9._/-]+$/.test(rel) || rel.includes('..')) {
+        reporter.error(file, R('cover'), 26, `cover 要么是仓库内 covers/ 下的文件，要么是 https 外链：\`${cov}\``, '本地图放 covers/（构建期会拷进 web/covers/）；作者自己托管的图请写 https 绝对地址');
+      } else if (!/\.(png|jpe?g|webp)$/i.test(rel)) {
+        reporter.error(file, R('cover'), 26, `cover 只支持 png / jpg / webp：\`${cov}\``, '禁 SVG：它会被当 og:image 给第三方平台看，而 SVG 能带脚本');
       } else {
-        const kb = fs.statSync(abs).size / 1024;
-        if (kb > 300) {
-          reporter.warn(file, R('cover'), 26, `封面 ${Math.round(kb)}KB，偏大（建议 ≤ 300KB）`, '本站不裁不压（零依赖），请作者自己压到合适尺寸再提');
+        const abs = fromRoot(rel);
+        if (!exists(abs)) {
+          reporter.error(file, R('cover'), 26, `cover 指向的文件不存在：\`${rel}\``, '把图放进仓库的 covers/ 目录（构建期会拷进 web/covers/）');
+        } else {
+          const kb = fs.statSync(abs).size / 1024;
+          if (kb > 300) {
+            reporter.warn(file, R('cover'), 26, `封面 ${Math.round(kb)}KB，偏大（建议 ≤ 300KB）`, '本站不裁不压（零依赖），请作者自己压到合适尺寸再提');
+          }
         }
       }
     }
   }
   if (!isMissing(data.coverAlt) && !String(data.coverAlt).trim()) {
-    reporter.error(file, R('coverAlt'), 26, 'coverAlt 不能是空白（要么写clear的替代文字，要么删掉这个字段）');
+    reporter.error(file, R('coverAlt'), 26, 'coverAlt 不能是空白（要么写清替代文字，要么删掉这个字段）');
+  }
+  if (!isMissing(data.coverLink)) {
+    const link = String(data.coverLink).trim();
+    if (!/^https:\/\/\S+$/i.test(link)) {
+      reporter.error(file, R('coverLink'), 26, `coverLink 必须是 https 链接：\`${link}\``, '封面可点，但目标必须是 https（否则是混合内容）');
+    }
   }
 
   // ---- 字段白名单：未知字段给 warn，避免拼错字段名悄悄丢数据 ----
