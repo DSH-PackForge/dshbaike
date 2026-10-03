@@ -1028,7 +1028,12 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
   }
 
   if (output.tags?.length) {
-    L.push(`<p class="faint">标签：${output.tags.map(escapeHtml).join('、')}</p>`);
+    // 标签行渲染成 chips（学 MC百科 的「模组标签」）：插件页叫「插件标签」，
+    // 其它类型仍叫「标签」——同一个字段，按类型换称呼。
+    L.push(
+      `<p class="entry-tags"><span class="faint">${output.kind === 'plugin' ? '插件标签' : '标签'}</span> ` +
+        `${output.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join(' ')}</p>`,
+    );
     const row = indexLinkRow(output.tags, indexes, 'tag');
     if (row) L.push(row);
   }
