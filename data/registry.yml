@@ -61,12 +61,12 @@ entries:
     status: published
   - n: 2
     kind: plugin
-    title: dsh-pack-plugin
+    title: 整合包管理插件
     createdAt: 2026-10-02
     status: published
   - n: 3
     kind: plugin
-    title: dsh-TUI
+    title: 终端界面插件
     createdAt: 2026-10-03
     status: published
   - n: 1
