@@ -39,3 +39,5 @@ web/llms-full.txt
 !web/BingSiteAuth.xml
 !web/baidu_verify_*.html
 !web/google*.html
+web/covers/
+web/mesh/app/data/
