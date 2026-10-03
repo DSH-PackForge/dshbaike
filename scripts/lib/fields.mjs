@@ -25,6 +25,12 @@ export const OPTIONAL_FIELDS = {
     // 与词的 id（plugin/2，馆内坐标、号不复用）不是一回事，两者都要有。
     'shortName',
     'canonicalId',
+    // 封面（评审：人家都有封面，我们啥都没有；而且**要能让作者自定义**）。
+    // cover 指向仓库内 `covers/` 下的图片（不热链），构建期原样拷进 web/covers/；
+    // 没给封面时不报错——页面用自动生成的卡片兜底（见 build.mjs）。
+    'cover',
+    'coverAlt',
+    'coverCredit',
     'updatedAt',
     'screenshots',
     'slug',

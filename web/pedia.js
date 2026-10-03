@@ -1637,6 +1637,23 @@
     };
     var parts = [];
 
+    // 封面（作者自定义：图放仓库 covers/ 下，构建期拷进 web/covers/；不热链）
+    if (isPresent(meta.cover)) {
+      parts.push(
+        el('figure', { class: 'entry-cover' }, [
+          el('img', {
+            src: String(meta.cover).replace(/^\.\//, ''),
+            alt: isPresent(meta.coverAlt) ? String(meta.coverAlt) : displayName(entry),
+            loading: 'lazy',
+            decoding: 'async'
+          })
+        ])
+      );
+      if (isPresent(meta.coverCredit)) {
+        parts.push(el('figcaption', { class: 'entry-cover__credit faint', text: String(meta.coverCredit) }));
+      }
+    }
+
     // 标签（chips；插件页叫「插件标签」）
     var tags = asArray(entry.tags).filter(isPresent);
     if (tags.length) {

@@ -3334,6 +3334,25 @@ main :is(table, pre, .cards, .infotable, .box, .notice) :is(p, ul, ol, li, h2, h
   color: var(--text-muted, #6b7280);
 }
 
+/* 封面（作者自定义：cover: covers/xxx.png；构建期拷进 web/covers/）。
+   本站不裁不压，所以只用 CSS 约束显示尺寸，不动原图。 */
+.entry-cover {
+  margin: 0 0 12px;
+}
+
+.entry-cover img {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+}
+
+.entry-cover__credit {
+  margin: 4px 0 0;
+}
+
 /* 标题里的简称（[dsh-pack]整合包管理插件）—— 与 MC百科 的 [JEI] 同位 */
 .titlebar__short {
   color: var(--text-muted, #6b7280);

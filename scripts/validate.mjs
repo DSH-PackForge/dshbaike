@@ -779,6 +779,33 @@ function checkEntry(ctx, reporter, entry) {
     }
   }
 
+  // ---- 规则 26：cover（封面，作者可自定义）----
+  // 评审：人家都有封面，而且封面要能让作者自己给。所以：必须放在仓库内 `covers/` 下
+  // ——不热链（外链会烂、也不好审计）；只收 png/jpg/jpeg/webp，**禁 SVG**（SVG 能带脚本，
+  // 而这张图会同时当 og:image 给第三方平台看）；建议 ≤ 300KB（超了只警告，不拦）。
+  if (!isMissing(data.cover)) {
+    const cov = String(data.cover).trim();
+    const rel = cov.replace(/^\.\//, '').split('\\').join('/');
+    if (!/^covers\/[A-Za-z0-9._/-]+$/.test(rel) || rel.includes('..')) {
+      reporter.error(file, R('cover'), 26, `cover 必须指向仓库内 covers/ 下的文件：\`${cov}\``, '不要把图放别处，也不要写外链（外链会烂、也无法审计）');
+    } else if (!/\.(png|jpe?g|webp)$/i.test(rel)) {
+      reporter.error(file, R('cover'), 26, `cover 只支持 png / jpg / webp：\`${cov}\``, '禁 SVG：它会被当 og:image 给第三方平台看，而 SVG 能带脚本');
+    } else {
+      const abs = fromRoot(rel);
+      if (!exists(abs)) {
+        reporter.error(file, R('cover'), 26, `cover 指向的文件不存在：\`${rel}\``, '把图放进仓库的 covers/ 目录（构建期会拷进 web/covers/）');
+      } else {
+        const kb = fs.statSync(abs).size / 1024;
+        if (kb > 300) {
+          reporter.warn(file, R('cover'), 26, `封面 ${Math.round(kb)}KB，偏大（建议 ≤ 300KB）`, '本站不裁不压（零依赖），请作者自己压到合适尺寸再提');
+        }
+      }
+    }
+  }
+  if (!isMissing(data.coverAlt) && !String(data.coverAlt).trim()) {
+    reporter.error(file, R('coverAlt'), 26, 'coverAlt 不能是空白（要么写clear的替代文字，要么删掉这个字段）');
+  }
+
   // ---- 字段白名单：未知字段给 warn，避免拼错字段名悄悄丢数据 ----
   const expected = new Set([
     ...(EXPECTED_FIELDS[kind] ?? []),

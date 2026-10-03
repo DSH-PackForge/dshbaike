@@ -224,6 +224,32 @@ function main(argv) {
     problems.push('vendor/dsh-plugin-mesh 不存在：全量插件生态图（web/mesh/）不会生成');
   }
 
+  /* ---- 封面：作者给的图原样拷进 web/covers/（二进制，不走 push 的文本通道）----
+     评审：人家都有封面，而且**要能让作者自定义**。约定：图放仓库 `covers/` 下，
+     词条 front-matter 用 `cover: covers/xxx.png` 指过去（不热链）。本站不裁不压
+     （零依赖、没有图像库），所以尺寸与体积由作者负责——校验规则 26 会提醒。 */
+  const coversDir = fromRoot('covers');
+  let coverCount = 0;
+  if (exists(coversDir)) {
+    const copyCovers = (dir, rel) => {
+      for (const name of fs.readdirSync(dir).sort()) {
+        const abs = path.join(dir, name);
+        const next = rel ? `${rel}/${name}` : name;
+        if (fs.statSync(abs).isDirectory()) {
+          copyCovers(abs, next);
+          continue;
+        }
+        if (flags.dryRun) continue;
+        const dest = fromRoot('web', 'covers', next);
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.copyFileSync(abs, dest);
+        coverCount += 1;
+      }
+    };
+    copyCovers(coversDir, '');
+    if (coverCount) log(`封面 ${coverCount} 张：covers/ → web/covers/`);
+  }
+
   /* ---- 我们自己的关系数据（docs/02 §产物 graph.json）----
      只产出数据、不画图：全量生态图用第三方那张（上面已拷进 web/mesh/）。
      这份数据留给将来的「以某条词条为圆心的邻域星图」以及下游消费。 */
@@ -1017,6 +1043,16 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
   L.push('<div class="prerender" data-prerender="entry">');
   L.push('<article class="prose">');
   L.push(`<h1>${escapeHtml(displayName(output))}</h1>`);
+  // 封面（评审：人家有封面，而且要让作者自定义）。有 cover 就放在最上面；
+  // 没有时先留空（自动生成的兜底卡片在下一步做）。og:image 在 renderEntryPage 里换成它。
+  if (output.meta?.cover) {
+    const src = String(output.meta.cover).replace(/^\.\//, '');
+    const alt = output.meta.coverAlt ? String(output.meta.coverAlt) : displayName(output);
+    L.push(`<figure class="entry-cover"><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async"></figure>`);
+    if (output.meta.coverCredit) {
+      L.push(`<figcaption class="entry-cover__credit faint">${escapeHtml(String(output.meta.coverCredit))}</figcaption>`);
+    }
+  }
   // 英文名已经在 displayName 里（与中文名不同才拼进去），不再单独占一行
   if (output.aliases?.length) L.push(`<p class="faint">别名：${output.aliases.map(escapeHtml).join('、')}</p>`);
   if (output.summary) L.push(`<p>${escapeHtml(output.summary)}</p>`);
@@ -1875,6 +1911,18 @@ function injectJsonLd(html, json) {
   return s.includes('</head>') ? s.replace('</head>', `${tag}</head>`) : `${tag}${s}`;
 }
 
+/**
+ * 有封面就把 og:image 换成它，并补 twitter:card=summary_large_image。
+ * 社交平台**只认 png/jpg**，所以没有封面时保持站点级 og-image.png（不要拿 SVG 去当 og:image）。
+ */
+function withOgImage(html, cover) {
+  if (!cover) return html;
+  const url = `${SITE_URL}/${String(cover).replace(/^\.\//, '')}`;
+  return String(html)
+    .replace(/(<meta property="og:image" content=")[^"]*(">)/, `$1${url}$2`)
+    .replace('</head>', `<meta name="twitter:card" content="summary_large_image"></head>`);
+}
+
 function renderEntryPage(template, output, entryOutputs, indexes = []) {
   // 标题三合一：中文名 + 英文原名 + 意图词。别名不塞进标题（太长会被截断），
   // 放到描述开头——既帮助匹配，又保持标题干净。
@@ -1883,7 +1931,7 @@ function renderEntryPage(template, output, entryOutputs, indexes = []) {
   const title = `${name}：${intent} | DSH百科`;
   const aliasBit = Array.isArray(output.aliases) && output.aliases.length ? `别名：${output.aliases.join('、')}。` : '';
   const desc = `${aliasBit}${output.summary ?? ''}`.trim();
-  return injectJsonLd(applyTemplate(template, {
+  return withOgImage(injectJsonLd(applyTemplate(template, {
     title,
     desc,
     prerender: prerenderEntry(output, entryOutputs, indexes),
@@ -1891,7 +1939,7 @@ function renderEntryPage(template, output, entryOutputs, indexes = []) {
     // 草稿页也 noindex（spec/1 那种占位条目就是草稿）
     noindex: output.status === 'deleted' || output.status === 'draft',
     payload: { base: BASE, page: 'entry', kind: output.kind, n: output.n, title: output.title },
-  }), entryJsonLd(output));
+  }), entryJsonLd(output)), output.meta?.cover);
 }
 
 function renderZonePage(template, output, entryOutputs, indexes = []) {
