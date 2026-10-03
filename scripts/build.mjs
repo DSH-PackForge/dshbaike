@@ -611,7 +611,14 @@ function buildEntryOutput(model, entry, reverse, generatedAt) {
   const zone = model.zoneByKind.get(kind) ?? null;
 
   const meta = {};
-  const metaFields = [...(EXPECTED_FIELDS[kind] ?? []), ...(OPTIONAL_FIELDS[kind] ?? [])];
+  // 三处都要拼：per-kind 必填/可选 **加上公共可选字段**。
+  // 之前漏了 OPTIONAL_FIELDS.common，导致公共可选字段（authors，以及 archivedNote）
+  // 根本进不了 meta —— archivedNote 当初是"单独带一笔"绕过去的，见下面。
+  const metaFields = [
+    ...(EXPECTED_FIELDS[kind] ?? []),
+    ...(OPTIONAL_FIELDS[kind] ?? []),
+    ...(OPTIONAL_FIELDS.common ?? []),
+  ];
   for (const field of metaFields) {
     if (isMissing(data[field])) continue;
     if (['title', 'category', 'summary', 'status', 'tags', 'aliases'].includes(field)) continue;
