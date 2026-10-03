@@ -3214,3 +3214,63 @@ main :is(table, .table-wrap) {
 main :is(table, pre, .cards, .infotable, .box, .notice) :is(p, ul, ol, li, h2, h3, h4) {
   max-width: none;
 }
+
+/* 开发者 / 团队（authors）：上游作者卡片。
+   头像是 GitHub 现成地址（github.com/<login>.png），零托管成本；
+   与信息表里的「维护者」（本馆维护者，也是第一道闸批准人）不是一个概念，所以单独成块。 */
+.team {
+  margin: 0 0 18px;
+}
+
+.team__title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.team__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.team__card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+}
+
+.team__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.team__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.team__name {
+  font-weight: 600;
+}
+
+.team__role {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.85em;
+}
+
+.team__more {
+  align-self: center;
+  padding: 5px 10px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}

@@ -1525,7 +1525,7 @@
       statusNotice(entry, id),
       el('div', { class: 'entry-grid' }, [
         // 两栏：正文 + 信息栏（「相关」已并入信息栏，不再单开左侧一列——评审：太占空间）
-        el('div', { class: 'entry-grid__main' }, [leadBlock(entry), tabs, backlinksBlock(entry)]),
+        el('div', { class: 'entry-grid__main' }, [leadBlock(entry), teamBlock(entry), tabs, backlinksBlock(entry)]),
         el('div', { class: 'entry-grid__aside' }, aside)
       ]),
       dataFootnote(entry, id)
@@ -1540,6 +1540,64 @@
     bindTabs(main);
     bindCopyButtons(main);
     bindToc(main);
+  }
+
+  /**
+   * 「开发者/团队（N）」——上游那个项目是谁做的（`authors`）。
+   *
+   * 与 `maintainers` **不是一回事**：maintainers 是本馆维护者，而且同时是机器人代改
+   * 第一道闸（/approve）的批准人；authors 是上游的作者/团队。混用会把批准权限搞乱，
+   * 所以界面上也分开显示（这条由 validate 规则 23 兜着）。
+   *
+   * 头像是 GitHub 现成的 `https://github.com/<login>.png`——零托管成本；
+   * 多于 5 个折叠（学 MC百科 的「显示更多成员」）；**数据缺了整块不渲染**，不留空壳。
+   */
+  function teamBlock(entry) {
+    var authors = asArray((entry.meta || {}).authors).filter(function (a) {
+      return a && typeof a === 'object' && isPresent(a.name);
+    });
+    if (!authors.length) return null;
+    var LIMIT = 5;
+    var items = authors.map(function (a) {
+      var login = String(a.name).replace(/^@/, '');
+      // 只有像 GitHub 用户名的才去取头像（npm scope、组织全名等不强求有头像）
+      var gh = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/.test(login);
+      return el('div', { class: 'team__card' }, [
+        gh
+          ? el('img', {
+              class: 'team__avatar',
+              src: 'https://github.com/' + login + '.png?size=80',
+              alt: '',
+              loading: 'lazy',
+              width: '40',
+              height: '40',
+            })
+          : null,
+        el('span', { class: 'team__text' }, [
+          el('span', { class: 'team__name', text: String(a.name) }),
+          isPresent(a.role) ? el('span', { class: 'team__role', text: String(a.role) }) : null,
+        ]),
+      ]);
+    });
+    var shown = items.slice(0, LIMIT);
+    var rest = items.slice(LIMIT);
+    var lists = [el('div', { class: 'team__list' }, shown)];
+    if (rest.length) {
+      var more = el('div', { class: 'team__list' }, rest);
+      more.setAttribute('hidden', 'hidden');
+      var btn = el('button', { type: 'button', class: 'team__more' });
+      btn.textContent = '显示更多成员（' + rest.length + '）';
+      btn.addEventListener('click', function () {
+        var opening = more.hasAttribute('hidden');
+        if (opening) more.removeAttribute('hidden');
+        else more.setAttribute('hidden', 'hidden');
+        btn.textContent = opening ? '收起成员' : '显示更多成员（' + rest.length + '）';
+      });
+      lists.push(more, btn);
+    }
+    return el('section', { class: 'team', 'aria-label': '开发者 / 团队' }, [
+      el('h2', { class: 'team__title', text: '开发者 / 团队（' + authors.length + '）' }),
+    ].concat(lists));
   }
 
   /**

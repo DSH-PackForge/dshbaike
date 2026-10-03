@@ -1124,6 +1124,35 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
       }
       L.push('</div>');
     }
+    // 开发者 / 团队（authors）：上游作者卡片，头像用 GitHub 现成地址（零托管成本）。
+    // 放在属性块之后（学 MC百科 的顺序），并且**只列已有数据**，没有就整块不出。
+    // 与信息表里的「维护者」（本馆）不是一个概念，所以单独成块——别混。
+    const authors = (output.meta?.authors ?? []).filter((a) => a && typeof a === 'object' && a.name);
+    if (authors.length) {
+      L.push('<section class="team" aria-label="开发者 / 团队">');
+      L.push(`<h2 class="team__title">开发者 / 团队（${authors.length}）</h2>`);
+      L.push('<div class="team__list">');
+      for (const a of authors.slice(0, 5)) {
+        const login = String(a.name).replace(/^@/, '');
+        const gh = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/.test(login);
+        L.push('<div class="team__card">');
+        if (gh) {
+          L.push(
+            `<img class="team__avatar" src="https://github.com/${encodeURIComponent(login)}.png?size=80" alt="" loading="lazy" width="32" height="32">`,
+          );
+        }
+        L.push('<span class="team__text">');
+        L.push(`<span class="team__name">${escapeHtml(String(a.name))}</span>`);
+        if (a.role) L.push(`<span class="team__role">${escapeHtml(String(a.role))}</span>`);
+        L.push('</span></div>');
+      }
+      L.push('</div>');
+      if (authors.length > 5) {
+        // 预渲染是静态的，折叠按钮交给 JS；无 JS 时至少把「还有几个」说清楚
+        L.push(`<p class="faint">另有 ${authors.length - 5} 位成员（启用 JavaScript 后展开）</p>`);
+      }
+      L.push('</section>');
+    }
     const row = indexLinkRow(output.tags, indexes, 'tag');
     if (row) L.push(row);
   }
