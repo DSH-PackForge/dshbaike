@@ -1043,6 +1043,31 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     const backlinkCount = Array.isArray(output.backlinks) ? output.backlinks.length : 0;
     if (backlinkCount) adoption.push(`被 ${backlinkCount} 条词条引用`);
     if (adoption.length) L.push(`<p class="adoption">${adoption.join(' · ')}</p>`);
+    // 属性块（学 MC百科 把元数据放在最上面、一眼可扫）：
+    // 只列**已有数据**，空的一律不出（纪律：缺失显示「无数据」，不显示空壳）。
+    // 相对时间（"3 天前"）留给前端算，这里写绝对日期，避免构建期时间漂移。
+    const attrPairs = [];
+    if (output.role) attrPairs.push(['角色', String(output.role)]);
+    if (output.layer) attrPairs.push(['层级', String(output.layer)]);
+    if (output.repo) attrPairs.push(['上游', String(output.repo)]);
+    if (output.npm) attrPairs.push(['npm', String(output.npm)]);
+    if (output.runtime) attrPairs.push(['运行环境', String(output.runtime)]);
+    if (output.appliesTo) attrPairs.push(['适用版本', String(output.appliesTo)]);
+    if (typeof output.license === 'string' && output.license) attrPairs.push(['许可', output.license]);
+    if (output.updatedAt) attrPairs.push(['最后更新', String(output.updatedAt).slice(0, 10)]);
+    if (output.maintainers?.length) attrPairs.push(['维护者', output.maintainers.map((m) => `@${m}`).join('、')]);
+    if (attrPairs.length) {
+      // 用内联样式保证观感（柔和的"标签 + 值"行，可换行；主题安全靠 opacity）；
+      // 下轮再把这几条收进 pedia.css，这里先不引入外部样式依赖。
+      L.push('<div class="attrs" style="display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 14px;font-size:.92em">');
+      for (const [k, v] of attrPairs) {
+        L.push(
+          `<span class="attrs__pair"><span class="faint" style="opacity:.65;font-size:.88em">${escapeHtml(k)}</span> ` +
+            `<strong style="font-weight:600">${escapeHtml(v)}</strong></span>`,
+        );
+      }
+      L.push('</div>');
+    }
     const row = indexLinkRow(output.tags, indexes, 'tag');
     if (row) L.push(row);
   }
