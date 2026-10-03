@@ -1544,6 +1544,62 @@
   }
 
   /**
+   * 属性块要摆哪些字段 —— **数据驱动，不再手挑**。
+   *
+   * 评审："感觉你这属性里面少了很多东西"。词条 meta 里有六十多种字段，手挑必然漏
+   * （原先就漏了 category / licenseRefs / platforms / entryGate / sourceKind / support …）。
+   * 现在规则是：简单值（字符串 / 数字 / 布尔 / 字符串数组）一律摆出来，
+   * 只有**已经有自己位置**的字段排除（它们在上面或别的页签里）：
+   *   authors→开发者团队块、compat→兼容页签、install→插件安装页签、bugs→插件特性页签、
+   *   providedBy→数据来源页签、positioning→首屏定位、usedInPacks/referencedByTutorials→采用度、
+   *   以及 header 里已有的 titleEn / aliases / tags / summary。
+   * 插件页额外排除 marketId 与 supportedManifest（评审已决定取消）。
+   * 顺序按 ATTR_ORDER，未列出的排在其后、按字段名排序 —— 将来新增字段会自动出现，不会再被漏掉。
+   */
+  var ATTR_SKIP = ['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy', 'roles',
+    'usedInPacks', 'referencedByTutorials', 'backlinks', 'titleEn', 'aliases', 'tags', 'summary',
+    'status', 'kind', 'slug', 'screenshots', 'archivedNote'];
+  var ATTR_ORDER = ['role', 'layer', 'category', 'fitFor', 'difficulty', 'platforms', 'runtime',
+    'appliesTo', 'support', 'form', 'packType', 'launcherId', 'sourceKind', 'assetType', 'language',
+    'locale', 'skillKind', 'presetKind', 'recipeKind', 'targetLayer', 'spec', 'specVersion',
+    'specStatus', 'fileName', 'dshRef', 'transport', 'auth', 'license', 'licenseRefs', 'repo', 'npm',
+    'url', 'linkOut', 'marketId', 'entryGate', 'dshVersion', 'dshVersions', 'supportedManifest',
+    'prereq', 'related', 'maintainers', 'updatedAt'];
+  var ATTR_LABELS = {
+    role: '形态', layer: '层级', category: '分类', fitFor: '适合谁', difficulty: '难度',
+    platforms: '平台', runtime: '运行环境', appliesTo: '适用版本', support: '支持',
+    form: '形态', packType: '包形态', launcherId: 'canonical ID', sourceKind: '源类型',
+    assetType: '素材类型', language: '语言', locale: '语言区域', skillKind: '技能类型',
+    presetKind: '预设类型', recipeKind: '配方类型', targetLayer: '目标层', spec: '权威出处',
+    specVersion: '规格版本', specStatus: '规格状态', fileName: '仓库内路径', dshRef: 'DSH 出处',
+    transport: '传输方式', auth: '所需凭据', license: '许可', licenseRefs: '许可',
+    repo: '上游', npm: 'npm', url: '上游地址', linkOut: '默认去处', marketId: '市场坐标',
+    entryGate: '收录门槛', dshVersion: 'DSH 版本', dshVersions: 'DSH 版本',
+    supportedManifest: '支持的 manifest', prereq: '前置词条', related: '相关词条',
+    maintainers: '维护者', updatedAt: '最后更新',
+    origin: '来源', relation: '与我们的关系', zones: '覆盖分区', provides: '提供内容',
+    requires: '依赖', files: '文件', risk: '风险', targets: '目标', roots: '根目录',
+    docs: '文档', howto: '怎么用', snippet: '片段', why: '为什么', downloads: '下载量',
+    coverage: '收录量', adapter: '数据适配', external: '外部来源'
+  };
+  /** 属性块只放**短值**：长句（适合谁、支持说明、权威出处…）属于正文与信息表，塞进卡片会挤爆。
+   *  48 个字对中文已经是一行半，再长就该去正文里读。 */
+  var ATTR_MAX_LEN = 48;
+
+  /** 简单值才算"属性"：字符串 / 数字 / 布尔 / 全是简单值的数组；过长的一律不取 */
+  function attrValue(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (typeof v === 'string') return v.length <= ATTR_MAX_LEN ? v : null;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    if (Array.isArray(v)) {
+      var xs = v.map(attrValue).filter(Boolean);
+      var joined = xs.length ? xs.join('、') : null;
+      return joined && joined.length <= ATTR_MAX_LEN ? joined : null;
+    }
+    return null; // 对象与对象数组不硬塞（有专门的页签或块）
+  }
+
+  /**
    * 词条顶部信息块：标签 chips + 采用度 + 属性块。
    *
    * **为什么 JS 侧也要写一份**：`renderEntry` 开头是 `clear(main)` —— JS 会清空并重建
@@ -1552,7 +1608,6 @@
    * `.adoption` / `.attrs`），样式在 pedia.css 里共用。
    *
    * 纪律一致：**空的不渲染**（缺失显示「无数据」而不是 0，更不留空壳）。
-   * 插件页按评审决定**不放市场坐标（marketId）**，也不放 manifest（只整合包页有）。
    */
   function entryTopBlock(entry) {
     var meta = entry.meta || {};
@@ -1580,26 +1635,32 @@
     if (asArray(entry.backlinks).length) use.push('被 ' + asArray(entry.backlinks).length + ' 条词条引用');
     if (use.length) parts.push(el('p', { class: 'adoption', text: use.join(' · ') }));
 
-    // 属性块（学 MC百科 把元数据放在最上面、一眼可扫）
-    var pairs = [];
-    var roleText = pick('role');
-    if (!isPresent(roleText) && Array.isArray(pick('roles')) && pick('roles').every(function (r) { return typeof r === 'string'; })) {
-      roleText = pick('roles').join('、');
+    // 属性块：数据驱动（见 ATTR_SKIP / ATTR_ORDER / ATTR_LABELS 的说明）
+    var skip = ATTR_SKIP.slice();
+    if (entry.kind === 'plugin') skip.push('marketId', 'supportedManifest');
+    var keys = Object.keys(meta).filter(function (k) {
+      return skip.indexOf(k) === -1 && attrValue(meta[k]) !== null;
+    });
+    keys.sort(function (a, b) {
+      var ia = ATTR_ORDER.indexOf(a);
+      var ib = ATTR_ORDER.indexOf(b);
+      if (ia === -1 && ib === -1) return a < b ? -1 : 1;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+    var pairs = keys.map(function (k) {
+      return [ATTR_LABELS[k] || k, attrValue(meta[k])];
+    });
+    // 维护者与最后更新通常已在 meta 里（契约把它们算公共可选字段），只有缺了才补，
+    // 免得卡片上出现两条一模一样的「最后更新」。
+    if (keys.indexOf('maintainers') === -1) {
+      var keepM = asArray(pick('maintainers')).filter(isPresent);
+      if (keepM.length) pairs.push(['维护者', keepM.map(function (m) { return '@' + m; }).join('、')]);
     }
-    if (isPresent(roleText)) pairs.push(['角色', String(roleText)]);
-    if (isPresent(pick('layer'))) pairs.push(['层级', String(pick('layer'))]);
-    if (isPresent(pick('repo'))) pairs.push(['上游', String(pick('repo'))]);
-    if (isPresent(pick('npm'))) pairs.push(['npm', String(pick('npm'))]);
-    if (isPresent(pick('runtime'))) pairs.push(['运行环境', String(pick('runtime'))]);
-    if (isPresent(pick('appliesTo'))) pairs.push(['适用版本', String(pick('appliesTo'))]);
-    if (isPresent(pick('license'))) pairs.push(['许可', String(pick('license'))]);
-    if (isPresent(pick('updatedAt'))) pairs.push(['最后更新', String(pick('updatedAt')).slice(0, 10)]);
-    if (asArray(pick('maintainers')).length) pairs.push(['维护者', asArray(pick('maintainers')).map(function (m) { return '@' + m; }).join('、')]);
-    // 插件页不放市场坐标；整合包/工具类仍然显示
-    if (isPresent(pick('marketId')) && entry.kind !== 'plugin') pairs.push(['市场坐标', String(pick('marketId'))]);
-    if (isPresent(pick('launcherId'))) pairs.push(['canonical ID', String(pick('launcherId'))]);
-    if (isPresent(pick('url'))) pairs.push(['上游地址', String(pick('url'))]);
-    if (isPresent(pick('linkOut'))) pairs.push(['默认去处', String(pick('linkOut'))]);
+    if (keys.indexOf('updatedAt') === -1 && isPresent(pick('updatedAt'))) {
+      pairs.push(['最后更新', String(pick('updatedAt')).slice(0, 10)]);
+    }
     if (pairs.length) {
       parts.push(
         el('section', { class: 'attrs', 'aria-label': '属性' }, [el('h2', { class: 'attrs__title', text: '属性' })].concat(

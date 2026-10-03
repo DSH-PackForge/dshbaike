@@ -1083,38 +1083,69 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     // 属性块（学 MC百科 把元数据放在最上面、一眼可扫）：
     // 只列**已有数据**，空的一律不出（纪律：缺失显示「无数据」，不显示空壳）。
     // 相对时间（"3 天前"）留给前端算，这里写绝对日期，避免构建期时间漂移。
-    const attrPairs = [];
-    // 注意：front-matter 里的字段挂在 output.meta 下（updatedAt/maintainers 等少数是顶层派生字段），
-    // 所以两边都读一次——上一版只读顶层，结果属性块只剩「最后更新」。
+    // 属性块：**数据驱动，不再手挑**（评审："感觉你这属性里面少了很多东西"）。
+    // 规则与 JS 侧 entryTopBlock 保持一致：简单值（字符串/数字/布尔/字符串数组）一律摆出，
+    // 只排除已经有自己位置的字段；插件页额外排除 marketId 与 supportedManifest（已决定取消）。
+    const ATTR_SKIP = new Set(['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy', 'roles',
+      'usedInPacks', 'referencedByTutorials', 'backlinks', 'titleEn', 'aliases', 'tags', 'summary',
+      'status', 'kind', 'slug', 'screenshots', 'archivedNote']);
+    if (output.kind === 'plugin') { ATTR_SKIP.add('marketId'); ATTR_SKIP.add('supportedManifest'); }
+    const ATTR_ORDER = ['role', 'layer', 'category', 'fitFor', 'difficulty', 'platforms', 'runtime',
+      'appliesTo', 'support', 'form', 'packType', 'launcherId', 'sourceKind', 'assetType', 'language',
+      'locale', 'skillKind', 'presetKind', 'recipeKind', 'targetLayer', 'spec', 'specVersion',
+      'specStatus', 'fileName', 'dshRef', 'transport', 'auth', 'license', 'licenseRefs', 'repo', 'npm',
+      'url', 'linkOut', 'marketId', 'entryGate', 'dshVersion', 'dshVersions', 'supportedManifest',
+      'prereq', 'related', 'maintainers', 'updatedAt'];
+    const ATTR_LABELS = {
+      role: '形态', layer: '层级', category: '分类', fitFor: '适合谁', difficulty: '难度',
+      platforms: '平台', runtime: '运行环境', appliesTo: '适用版本', support: '支持',
+      form: '形态', packType: '包形态', launcherId: 'canonical ID', sourceKind: '源类型',
+      assetType: '素材类型', language: '语言', locale: '语言区域', skillKind: '技能类型',
+      presetKind: '预设类型', recipeKind: '配方类型', targetLayer: '目标层', spec: '权威出处',
+      specVersion: '规格版本', specStatus: '规格状态', fileName: '仓库内路径', dshRef: 'DSH 出处',
+      transport: '传输方式', auth: '所需凭据', license: '许可', licenseRefs: '许可',
+      repo: '上游', npm: 'npm', url: '上游地址', linkOut: '默认去处', marketId: '市场坐标',
+      entryGate: '收录门槛', dshVersion: 'DSH 版本', dshVersions: 'DSH 版本',
+      supportedManifest: '支持的 manifest', prereq: '前置词条', related: '相关词条',
+      maintainers: '维护者', updatedAt: '最后更新',
+      origin: '来源', relation: '与我们的关系', zones: '覆盖分区', provides: '提供内容',
+      requires: '依赖', files: '文件', risk: '风险', targets: '目标', roots: '根目录',
+      docs: '文档', howto: '怎么用', snippet: '片段', why: '为什么', downloads: '下载量',
+      coverage: '收录量', adapter: '数据适配', external: '外部来源',
+    };
+    // 属性块只放短值：48 个字对中文已经是一行半，再长就该去正文里读
+    const ATTR_MAX_LEN = 48;
+    const attrValue = (v) => {
+      if (v === null || v === undefined || v === '') return null;
+      if (typeof v === 'string') return v.length <= ATTR_MAX_LEN ? v : null;
+      if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+      if (Array.isArray(v)) {
+        const xs = v.map(attrValue).filter(Boolean);
+        const joined = xs.length ? xs.join('、') : null;
+        return joined && joined.length <= ATTR_MAX_LEN ? joined : null;
+      }
+      return null;
+    };
     const meta = output.meta ?? {};
-    const pick = (k) => meta[k] ?? output[k];
-    // roles 可能是「字符串」或「字符串数组」——其它形态（对象数组）一律不渲染，
-    // 绝不出现 [object Object]（上一版就是这么漏出来的）。
-    const rolesRaw = pick('roles');
-    const rolesText = typeof rolesRaw === 'string'
-      ? rolesRaw
-      : Array.isArray(rolesRaw) && rolesRaw.every((r) => typeof r === 'string')
-        ? rolesRaw.join('、')
-        : null;
-    if (pick('role')) attrPairs.push(['角色', String(pick('role'))]);
-    else if (rolesText) attrPairs.push(['角色', rolesText]);
-    if (pick('layer')) attrPairs.push(['层级', String(pick('layer'))]);
-    if (pick('repo')) attrPairs.push(['上游', String(pick('repo'))]);
-    if (pick('npm')) attrPairs.push(['npm', String(pick('npm'))]);
-    if (pick('runtime')) attrPairs.push(['运行环境', String(pick('runtime'))]);
-    if (pick('appliesTo')) attrPairs.push(['适用版本', String(pick('appliesTo'))]);
-    const lic = typeof pick('license') === 'string' && pick('license') ? pick('license') : null;
-    if (lic) attrPairs.push(['许可', lic]);
-    if (output.updatedAt) attrPairs.push(['最后更新', String(output.updatedAt).slice(0, 10)]);
-    const keep = pick('maintainers') ?? output.maintainers;
-    if (Array.isArray(keep) && keep.length) attrPairs.push(['维护者', keep.map((m) => `@${m}`).join('、')]);
-    // 来源类字段（launcher / source / pack 等类型主要靠这些）：
-    // 这里按纯文本显示；可点击的版本在下面的信息表里（那里会识别 URL）。
-    // 插件页按评审决定**不放市场坐标**（marketId 只在整合包/工具这类有意义的类型上显示）
-    if (pick('marketId') && output.kind !== 'plugin') attrPairs.push(['市场坐标', String(pick('marketId'))]);
-    if (pick('launcherId')) attrPairs.push(['canonical ID', String(pick('launcherId'))]);
-    if (pick('url')) attrPairs.push(['上游地址', String(pick('url'))]);
-    if (pick('linkOut')) attrPairs.push(['默认去处', String(pick('linkOut'))]);
+    const attrKeys = Object.keys(meta)
+      .filter((k) => !ATTR_SKIP.has(k) && attrValue(meta[k]) !== null)
+      .sort((a, b) => {
+        const ia = ATTR_ORDER.indexOf(a);
+        const ib = ATTR_ORDER.indexOf(b);
+        if (ia === -1 && ib === -1) return a < b ? -1 : 1;
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      });
+    const attrPairs = attrKeys.map((k) => [ATTR_LABELS[k] ?? k, attrValue(meta[k])]);
+    // 维护者与最后更新通常已在 meta 里，只有缺了才补（免得卡片上出现两条「最后更新」）
+    if (!attrKeys.includes('maintainers')) {
+      const keepM = attrValue(output.maintainers ?? meta.maintainers);
+      if (keepM) attrPairs.push(['维护者', keepM.split('、').map((m) => `@${m}`).join('、')]);
+    }
+    if (!attrKeys.includes('updatedAt') && output.updatedAt) {
+      attrPairs.push(['最后更新', String(output.updatedAt).slice(0, 10)]);
+    }
     if (attrPairs.length) {
       // 与 JS 侧同名结构（.attrs 卡片 + .attrs__title 标题 + .attrs__pair 键值对），
       // 样式统一放 pedia.css —— 之前这里用内联样式、也没标题，肉眼根本认不出这是「属性」。
