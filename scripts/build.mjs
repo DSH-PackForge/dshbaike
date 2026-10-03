@@ -1220,7 +1220,7 @@ function robotsTxt() {
     '',
     'User-agent: *',
     'Allow: /',
-    'Disallow: /promo.html',
+    'Disallow: /promo',
     '',
     '# AI 抓取器：与上面的 * 一致（本来就全站放行），这里只是把态度写明。',
     '# 机器可读入口：/llms.txt（站点索引）与 /llms-full.txt（全站正文纯文本转储）。',
