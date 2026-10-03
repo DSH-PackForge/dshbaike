@@ -317,6 +317,9 @@ function main(argv) {
   /* ---- SEO：sitemap.xml 与 robots.txt（P1） ---- */
   push(writes, nextManifest, 'sitemap.xml', sitemapXml(sitemapUrls(model, entryOutputs, indexes)));
   push(writes, nextManifest, 'robots.txt', robotsTxt());
+  /* ---- AI 可见度：给大模型看的两个入口（llmstxt.org 约定） ---- */
+  push(writes, nextManifest, 'llms.txt', llmsTxt(model, entryOutputs, indexes));
+  push(writes, nextManifest, 'llms-full.txt', llmsFullTxt(entryOutputs));
 
   /* ---- 写盘 ---- */
   const changed = [];
@@ -1131,37 +1134,165 @@ function sitemapXml(urls) {
   return L.join('\n');
 }
 
+/**
+ * 页面的**对外规范地址**：不带 `.html`。
+ *
+ * 为什么：Cloudflare Pages 会把 HTML 重定向到无扩展名（`/plugin/2.html` → 308 → `/plugin/2`），
+ * 所以搜索引擎眼里的最终地址是**无扩展名**那一版。canonical / og:url / sitemap 若还写 `.html`，
+ * 就等于把规范地址指向一个会重定向的 URL —— 两边打架，权重信号被削弱。
+ * 站内链接暂时仍写 `.html`（会吃一次 308，能跑通；要不要一并改另议）。
+ */
+function pageUrl(rel) {
+  const clean = String(rel ?? '').replace(/\.html$/, '');
+  if (clean === '' || clean === 'index') return `${SITE_URL}/`;
+  return `${SITE_URL}/${clean}`;
+}
+
 function robotsTxt() {
   return [
     '# DSH 百科：内容页都欢迎抓取；只挡推广页与构建产物。',
     '# 分区页与词条页都是构建期渲染好的静态 HTML，不需要执行 JavaScript。',
+    '',
     'User-agent: *',
     'Allow: /',
     'Disallow: /promo.html',
+    '',
+    '# AI 抓取器：与上面的 * 一致（本来就全站放行），这里只是把态度写明。',
+    '# 机器可读入口：/llms.txt（站点索引）与 /llms-full.txt（全站正文纯文本转储）。',
+    'User-agent: GPTBot',
+    'Allow: /',
+    'User-agent: OAI-SearchBot',
+    'Allow: /',
+    'User-agent: ChatGPT-User',
+    'Allow: /',
+    'User-agent: ClaudeBot',
+    'Allow: /',
+    'User-agent: PerplexityBot',
+    'Allow: /',
+    'User-agent: Google-Extended',
+    'Allow: /',
+    'User-agent: Applebot-Extended',
+    'Allow: /',
+    'User-agent: CCBot',
+    'Allow: /',
     '',
     `Sitemap: ${SITE_URL}/sitemap.xml`,
     '',
   ].join('\n');
 }
 
+/**
+ * `llms.txt` —— 给大模型看的站点索引（约定见 llmstxt.org）：
+ * 一行标题、一段概述、然后是分门别类的链接清单。
+ * 我们额外把**数据接口**也列出来：这个站的 JSON 就是它的"底稿"。
+ */
+function llmsTxt(model, entryOutputs, indexes = []) {
+  const L = [
+    '# DSH 百科',
+    '',
+    '> 一站式的 DeepSeek Harness 中文百科：12 个一级分区，每条词条都写明出处与快照日期。',
+    '> 全部页面都是构建期渲染好的静态 HTML，**不需要执行 JavaScript**；',
+    `> 机器可读数据在 ${SITE_URL}/data/ 下（见文末「数据接口」）。`,
+    '',
+    '## 分区',
+    '',
+  ];
+  for (const zone of model.zones) {
+    const t = zone.title ? `${zone.title}` : zone.zone;
+    const d = zone.desc ? `：${String(zone.desc).replace(/\s+/g, ' ').trim()}` : '';
+    L.push(`- [${t}](${pageUrl(`${zone.zone}.html`)}):${d}`);
+  }
+  L.push('', '## 索引页', '');
+  L.push(`- [全部词条（按标签与平台）](${pageUrl('tags.html')}): 按类型/标签/平台浏览全站词条`);
+  L.push(`- [维护者名册](${pageUrl('maintainers.html')}): 每条词条由谁维护`);
+  L.push(`- [关于本站](${pageUrl('about.html')}): 收录口径、核实方式、许可与免责`);
+  for (const index of indexes) L.push(`- [${index.name}](${pageUrl(`${index.kind}/${index.slug}.html`)}): ${index.count} 条`);
+  L.push('', '## 词条', '');
+  const entries = [...entryOutputs.values()]
+    .filter((o) => o.status !== 'deleted' && o.status !== 'draft')
+    .sort((a, b) => (String(a.id) < String(b.id) ? -1 : 1));
+  for (const o of entries) {
+    const s = o.summary ? `：${String(o.summary).replace(/\s+/g, ' ').trim()}` : '';
+    L.push(`- [${o.title ?? o.id}](${pageUrl(`${o.kind}/${o.n}.html`)}):${s}`);
+  }
+  L.push(
+    '',
+    '## 数据接口',
+    '',
+    `- [词条清单](${SITE_URL}/data/registry.json): 全站词条 id / 类型 / 标题 / 更新日期`,
+    `- [分类体系](${SITE_URL}/data/taxonomy.json): 类型、标签、平台`,
+    `- [关系图](${SITE_URL}/data/graph.json): **人工核实过的**关系（前置/相关/教程引用/整合包引用），带出处`,
+    `- [单条词条](${SITE_URL}/data/entries/<kind>-<n>.json): 例如 ${SITE_URL}/data/entries/plugin-2.json`,
+    `- [分区数据](${SITE_URL}/data/zones/<zone>.json): 例如 ${SITE_URL}/data/zones/plugins.json`,
+    '',
+    '## 全站正文',
+    '',
+    `- [llms-full.txt](${SITE_URL}/llms-full.txt): 所有词条的正文纯文本转储（便于直接阅读/引用）`,
+    '',
+    '## 出处与许可',
+    '',
+    '- 每条词条的信息表里都写明数据来源与快照日期；引用我们的数字时请一并标明快照日期。',
+    '- 本站是社区百科，不是官方文档；官方契约以 `DSH-PackForge/DSH-PackForge` 仓库为准。',
+    '',
+  );
+  return L.join('\n');
+}
+
+/** `llms-full.txt` —— 全站正文的纯文本转储（用构建期已经渲染好的 HTML 去标签） */
+function llmsFullTxt(entryOutputs) {
+  const strip = (html) =>
+    String(html ?? '')
+      .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  const entries = [...entryOutputs.values()]
+    .filter((o) => o.status !== 'deleted' && o.status !== 'draft')
+    .sort((a, b) => (String(a.id) < String(b.id) ? -1 : 1));
+  const parts = [
+    '# DSH 百科 · 全站正文转储',
+    '',
+    '> 这是 dshbaike.com 上所有词条的正文纯文本版本，便于直接检索与引用。',
+    `> 每条上方给出规范地址与更新日期；机器可读的结构化版本在 ${SITE_URL}/data/ 下。`,
+    '',
+  ];
+  for (const o of entries) {
+    parts.push('---', '', `## ${o.title ?? o.id}`, '');
+    parts.push(`- 地址：${pageUrl(`${o.kind}/${o.n}.html`)}`);
+    parts.push(`- 类型：${o.kind}/${o.n}`);
+    if (o.updatedAt) parts.push(`- 更新：${String(o.updatedAt).slice(0, 10)}`);
+    if (o.summary) parts.push('', `> ${String(o.summary).replace(/\s+/g, ' ').trim()}`);
+    const body = strip(o.html);
+    if (body) parts.push('', body);
+    parts.push('');
+  }
+  return parts.join('\n');
+}
+
 /** 所有该被收录的页面：首页 + 分区页 + 词条页（墓碑不进 sitemap） */
 function sitemapUrls(model, entryOutputs, indexes = []) {
   const list = [
     { loc: `${SITE_URL}/`, lastmod: null },
-    { loc: `${SITE_URL}/tags.html`, lastmod: null },
-    { loc: `${SITE_URL}/about.html`, lastmod: null },
-    { loc: `${SITE_URL}/maintainers.html`, lastmod: null },
+    { loc: pageUrl('tags.html'), lastmod: null },
+    { loc: pageUrl('about.html'), lastmod: null },
+    { loc: pageUrl('maintainers.html'), lastmod: null },
     // 全量插件生态图（第三方项目，构建期拷进 web/mesh/）
     { loc: `${SITE_URL}/mesh/`, lastmod: null },
   ];
-  for (const index of indexes) list.push({ loc: `${SITE_URL}/${index.kind}/${index.slug}.html`, lastmod: null });
-  for (const zone of model.zones) list.push({ loc: `${SITE_URL}/${zone.zone}.html`, lastmod: null });
+  for (const index of indexes) list.push({ loc: pageUrl(`${index.kind}/${index.slug}.html`), lastmod: null });
+  for (const zone of model.zones) list.push({ loc: pageUrl(`${zone.zone}.html`), lastmod: null });
   for (const output of entryOutputs.values()) {
     // 墓碑（deleted）与草稿（draft）都不进 sitemap：
     // 前者是"保留链接但不该被搜到"，后者是"还没写完、不该被搜索引擎当内容推荐"
     if (output.status === 'deleted' || output.status === 'draft') continue;
     list.push({
-      loc: `${SITE_URL}/${output.kind}/${output.n}.html`,
+      loc: pageUrl(`${output.kind}/${output.n}.html`),
       lastmod: output.updatedAt ?? null,
     });
   }
@@ -1321,7 +1452,7 @@ function renderIndexPage(template, index, entryOutputs, siblings = []) {
     title,
     desc,
     prerender: prerenderIndex(index, entryOutputs, siblings),
-    canonical: `${SITE_URL}/${index.kind}/${index.slug}.html`,
+    canonical: pageUrl(`${index.kind}/${index.slug}.html`),
     payload: { base: BASE, page: 'static', kind: index.kind, n: null, title: index.name },
   });
 }
@@ -1369,7 +1500,7 @@ function renderTagsHub(template, indexes) {
     title: '全部索引：按标签与平台浏览 | DSH百科',
     desc: `按标签与平台浏览 DSH 百科：${indexes.length} 个索引页，覆盖启动器、客户端、插件、整合包与教程。`,
     prerender: L.join('\n'),
-    canonical: `${SITE_URL}/tags.html`,
+    canonical: pageUrl('tags.html'),
     payload: { base: BASE, page: 'static', kind: null, n: null, title: '全部索引' },
   });
 }
@@ -1455,7 +1586,7 @@ function renderMaintainersPage(template, entryOutputs) {
     title: '维护者名册 | DSH百科',
     desc: `担任 DSH百科词条维护者的人：共 ${people.length} 位，覆盖 ${people.reduce((a, p) => a + p.entries.length, 0)} 条词条。`,
     prerender: L.join('\n'),
-    canonical: `${SITE_URL}/maintainers.html`,
+    canonical: pageUrl('maintainers.html'),
     payload: { base: BASE, page: 'static', kind: null, n: null, title: '维护者名册' },
   });
 }
@@ -1467,7 +1598,7 @@ function renderEntryPage(template, output, entryOutputs, indexes = []) {
     title,
     desc,
     prerender: prerenderEntry(output, entryOutputs, indexes),
-    canonical: `${SITE_URL}/${output.kind}/${output.n}.html`,
+    canonical: pageUrl(`${output.kind}/${output.n}.html`),
     // 草稿页也 noindex（spec/1 那种占位条目就是草稿）
     noindex: output.status === 'deleted' || output.status === 'draft',
     payload: { base: BASE, page: 'entry', kind: output.kind, n: output.n, title: output.title },
@@ -1481,7 +1612,7 @@ function renderZonePage(template, output, entryOutputs, indexes = []) {
     title,
     desc,
     prerender: prerenderZone(output, entryOutputs, indexes),
-    canonical: `${SITE_URL}/${output.id}.html`,
+    canonical: pageUrl(`${output.id}.html`),
     payload: { base: BASE, page: 'zone', zone: output.id, title: output.title },
   });
 }
