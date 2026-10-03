@@ -1034,6 +1034,15 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
       `<p class="entry-tags"><span class="faint">${output.kind === 'plugin' ? '插件标签' : '标签'}</span> ` +
         `${output.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join(' ')}</p>`,
     );
+    // 采用度（社会证明，学 MC百科 的「有 694 个整合包使用了它」）：
+    // 三个计数都是**派生**的——被哪些整合包用、被哪些教程引用、被哪些词条引用。
+    // 全为 0 时整行不输出（纪律：缺失显示「无数据」，不显示 0，更不留空行）。
+    const adoption = [];
+    if (output.usedInPacks?.length) adoption.push(`被 ${output.usedInPacks.length} 个整合包使用`);
+    if (output.referencedByTutorials?.length) adoption.push(`被 ${output.referencedByTutorials.length} 篇教程引用`);
+    const backlinkCount = Array.isArray(output.backlinks) ? output.backlinks.length : 0;
+    if (backlinkCount) adoption.push(`被 ${backlinkCount} 条词条引用`);
+    if (adoption.length) L.push(`<p class="adoption">${adoption.join(' · ')}</p>`);
     const row = indexLinkRow(output.tags, indexes, 'tag');
     if (row) L.push(row);
   }
