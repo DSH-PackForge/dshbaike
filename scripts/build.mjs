@@ -982,9 +982,32 @@ function htmlIdToPath(id, entryOutputs) {
   return { href: `${parsed.kind}/${parsed.n}.html`, title: out?.title ?? parsed.id };
 }
 
+/**
+ * 把 front-matter 里的值转成信息表能显示的一行文本。
+ *
+ * 之前数组一律 `String(v)` —— 遇到**对象数组**（`authors: [{name, role}]`）就漏出
+ * `[object Object]`，而预渲染的信息表正是**爬虫与关掉 JS 的访客**看到的那一份。
+ * 现在按 pedia.js 的精神**展开**（而不是丢弃）：
+ *   - `{ name, role }` → `名字（角色）`（authors 就长这样）；
+ *   - 其它对象 → 展开一层 `键: 值`，嵌套对象跳过（宁可少显示，也不显示 [object Object]）。
+ */
 function formatMetaValue(value) {
-  if (Array.isArray(value)) return value.map((v) => String(v)).join('、');
-  if (value && typeof value === 'object') return null;
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((v) => formatMetaValue(v))
+      .filter((v) => v !== null && v !== undefined && v !== '' && !String(v).includes('[object Object]'));
+    return parts.length ? parts.join('、') : null;
+  }
+  if (value && typeof value === 'object') {
+    const bits = [];
+    if (!isMissing(value.name)) bits.push(value.role ? `${value.name}（${value.role}）` : String(value.name));
+    for (const [k, v] of Object.entries(value)) {
+      if (k === 'name' || k === 'role') continue;
+      if (v === null || v === undefined || v === '' || typeof v === 'object') continue;
+      bits.push(`${k}: ${v}`);
+    }
+    return bits.length ? bits.join(' · ') : null;
+  }
   return String(value);
 }
 
