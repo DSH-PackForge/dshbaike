@@ -46,6 +46,7 @@ jobs:
        startsWith(github.event.issue.title, '[改一个字段]') ||
        startsWith(github.event.issue.title, '[改正文里的一句话]') ||
        startsWith(github.event.issue.title, '[补充分区条目]') ||
+       startsWith(github.event.issue.title, '[收录我的插件]') ||
        startsWith(github.event.issue.title, '[新增词条]'))
     runs-on: ubuntu-latest
     steps:
@@ -139,6 +140,7 @@ jobs:
        startsWith(github.event.issue.title, '[改一个字段]') ||
        startsWith(github.event.issue.title, '[改正文里的一句话]') ||
        startsWith(github.event.issue.title, '[补充分区条目]') ||
+       startsWith(github.event.issue.title, '[收录我的插件]') ||
        startsWith(github.event.issue.title, '[新增词条]'))
     runs-on: ubuntu-latest
     outputs:

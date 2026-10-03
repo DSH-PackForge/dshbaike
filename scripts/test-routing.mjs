@@ -32,6 +32,7 @@ const routes = [
   ['[改一个字段] concept/1', {}, 'field', 'concept/1'],
   ['[改正文里的一句话] plugin/1', {}, 'replace', 'plugin/1'],
   ['[补充分区条目] themes', {}, 'zone-item', 'themes'],
+  ['[收录我的插件] ccch1mneyyy/dsh-TUI', { 'GitHub 用户名': 'someone' }, 'import-project', 'ccch1mneyyy/dsh-TUI'],
   // 兼容历史 Issue：早期用了「内容变更 + 操作名」的合并形式，仍然认得
   ['[内容变更] 改一个字段 concept/1', {}, 'field', 'concept/1'],
   ['[内容变更] 随便什么', { 操作类型: '改一个字段' }, 'field', '随便什么'],
@@ -86,6 +87,43 @@ const body = [
 check('按标签解析出字段，未填的变成空串', parseFormBody(body), {
   操作类型: '改一个字段', '词条 id': 'plugin/1', 字段名: 'updatedAt', '出处（可选但强烈建议）': '',
 });
+
+console.log('\n== ⑤ 收录工具（离线，注入桩 fetch）==');
+// 「收录我的插件」是唯一联网的 op，所以它的核心逻辑抽在 lib 里、fetch 可注入——
+// 这一段完全不联网，测的是清洗与组装：HTML 表格被丢后必须**告警**，否则内容会静默消失。
+const { planProjectImport } = await import('./lib/import-project.mjs');
+const stubFetch = async (url) => {
+  const ok = (o) => ({ status: 200, ok: true, ...o });
+  const miss = { status: 404, ok: false, json: async () => null, text: async () => '' };
+  if (/api\.github\.com\/repos\/x\/y$/.test(url)) {
+    return ok({
+      json: async () => ({
+        full_name: 'x/y', stargazers_count: 7, forks_count: 1, language: 'TypeScript',
+        default_branch: 'main', description: '一句话简介', license: { spdx_id: 'MIT' },
+      }),
+      text: async () => '',
+    });
+  }
+  if (/package\.json$/.test(url)) {
+    const json = JSON.stringify({ name: '@x/y', version: '1.2.3', bin: { y: 'cli.js' } });
+    return ok({ json: async () => JSON.parse(json), text: async () => json });
+  }
+  if (/README_ZH\.md$/.test(url)) {
+    return ok({ text: async () => '# Y\n\n## 功能\n\n见 [文档](docs/a.md)。\n\n## 维护团队\n\n<table><tbody></tbody></table>\n' });
+  }
+  return miss;
+};
+const plan = await planProjectImport({ repoRef: 'x/y', kind: 'plugin', user: 'someone', now: '2026-10-03', fetchImpl: stubFetch });
+check('生成草稿成功', plan.ok, true);
+check('优先用简体中文 README', plan.readmeFile, 'README_ZH.md');
+check('相对链接转成仓库绝对地址', /https:\/\/github\.com\/x\/y\/blob\/main\/docs\/a\.md/.test(plan.entryText), true);
+check('产出是 draft（不合并不上线）', /^status: draft/m.test(plan.entryText), true);
+check('门槛写成 maintainer 且带理由', /^entryGate: maintainer$/m.test(plan.entryText) && /^entryGateNote: /m.test(plan.entryText), true);
+check('没有字面量反斜杠反引号', /\\`/.test(plan.entryText), false);
+check('清洗后变空的小节会告警（HTML 表格被丢掉）', plan.warnings.join(' ').includes('维护团队'), true);
+check('取不到上游时给人话、不抛异常',
+  (await planProjectImport({ repoRef: 'x/nope', fetchImpl: async () => ({ status: 404, ok: false, json: async () => null, text: async () => '' }) })).reason,
+  'upstream-unreachable');
 
 console.log(`\n== 结果：通过 ${pass} 项，失败 ${fail} 项 ==`);
 process.exit(fail ? 1 : 0);

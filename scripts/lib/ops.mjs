@@ -245,6 +245,55 @@ export const OPS = {
     },
   },
 
+  /**
+   * 收录我的插件：作者只给仓库地址，其余从上游读。
+   *
+   * 这是 ops 里**唯一允许联网**的操作——其余都是纯函数（离线可测，见 test-routing.mjs）。
+   * 逻辑本身在 lib/import-project.mjs，与 CLI 共用一份实现，避免两边漂移。
+   * 取不到上游时**不抛异常**，返回 incomplete，让机器人在 Issue 里回一句人话。
+   */
+  'import-project': {
+    id: 'import-project',
+    title: '收录我的插件',
+    summary: (v) => `从上游读 ${v.upstream}，建 draft 草稿`,
+    async apply({ form }) {
+      const who = requireUsername(form);
+      if (who.error) return who.error;
+      const user = who.username;
+
+      const repoRef = String(form['仓库地址'] ?? '').trim();
+      if (!repoRef) return { ok: false, reason: 'incomplete', message: '表单缺「仓库地址」。' };
+
+      const { planProjectImport } = await import('./import-project.mjs');
+      const plan = await planProjectImport({
+        repoRef,
+        kind: 'plugin',
+        user,
+        title: String(form['词条标题（可选）'] ?? '').trim() || null,
+        note: String(form['想额外说明什么（可选）'] ?? '').trim() || null,
+        now: todayLocal(),
+      });
+      if (!plan.ok) return plan;
+
+      const alloc = allocate({ kind: 'plugin', title: plan.title, now: todayLocal() });
+      return {
+        ok: true,
+        changed: true,
+        writes: [
+          { path: `data/plugin/${alloc.n}.md`, text: plan.entryText },
+          // allocate() 已经把编号写进 registry；同一份内容也作为 write 交出去，
+          // 好让幂等比对与提交走同一条路（与 new-entry 一致）。
+          { path: 'data/registry.yml', text: readText(REGISTRY_PATH) },
+        ],
+        id: `plugin/${alloc.n}`,
+        user,
+        credited: user,
+        summary: `从 ${plan.upstream.owner}/${plan.upstream.repo} 读上游，领号 plugin/${alloc.n}、建 draft 草稿`
+          + (plan.warnings.length ? `（⚠ ${plan.warnings.join('；')}）` : ''),
+      };
+    },
+  },
+
   /** 认领维护：把用户名加进 maintainers（唯一一处改动） */
   claim: {
     id: 'claim',

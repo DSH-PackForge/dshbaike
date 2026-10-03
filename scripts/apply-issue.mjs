@@ -184,7 +184,8 @@ async function main(argv) {
     process.stdout.write('（--offline：跳过账号存在性核实）\n');
   }
 
-  const result = found.op.apply({ target: found.target, form });
+  // await：多数 op 是同步的（await 非 Promise 无害），但「收录我的插件」要联网读上游
+  const result = await found.op.apply({ target: found.target, form });
 
   if (!result.ok) {
     process.stderr.write(`未能自动处理：${result.reason} —— ${result.message}\n`);
