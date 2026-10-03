@@ -1108,7 +1108,8 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     if (Array.isArray(keep) && keep.length) attrPairs.push(['维护者', keep.map((m) => `@${m}`).join('、')]);
     // 来源类字段（launcher / source / pack 等类型主要靠这些）：
     // 这里按纯文本显示；可点击的版本在下面的信息表里（那里会识别 URL）。
-    if (pick('marketId')) attrPairs.push(['市场坐标', String(pick('marketId'))]);
+    // 插件页按评审决定**不放市场坐标**（marketId 只在整合包/工具这类有意义的类型上显示）
+    if (pick('marketId') && output.kind !== 'plugin') attrPairs.push(['市场坐标', String(pick('marketId'))]);
     if (pick('launcherId')) attrPairs.push(['canonical ID', String(pick('launcherId'))]);
     if (pick('url')) attrPairs.push(['上游地址', String(pick('url'))]);
     if (pick('linkOut')) attrPairs.push(['默认去处', String(pick('linkOut'))]);

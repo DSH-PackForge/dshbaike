@@ -1525,7 +1525,7 @@
       statusNotice(entry, id),
       el('div', { class: 'entry-grid' }, [
         // 两栏：正文 + 信息栏（「相关」已并入信息栏，不再单开左侧一列——评审：太占空间）
-        el('div', { class: 'entry-grid__main' }, [leadBlock(entry), teamBlock(entry), tabs, backlinksBlock(entry)]),
+        el('div', { class: 'entry-grid__main' }, [leadBlock(entry), entryTopBlock(entry), teamBlock(entry), tabs, backlinksBlock(entry)]),
         el('div', { class: 'entry-grid__aside' }, aside)
       ]),
       dataFootnote(entry, id)
@@ -1540,6 +1540,77 @@
     bindTabs(main);
     bindCopyButtons(main);
     bindToc(main);
+  }
+
+  /**
+   * 词条顶部信息块：标签 chips + 采用度 + 属性块。
+   *
+   * **为什么 JS 侧也要写一份**：`renderEntry` 开头是 `clear(main)` —— JS 会清空并重建
+   * 主列，所以构建期预渲染的那一套（同样的内容）只有爬虫与无 JS 访客能看到。
+   * 界面与爬虫看到的东西必须一致，所以两边各写一份、结构同名（`.entry-tags` /
+   * `.adoption` / `.attrs`），样式在 pedia.css 里共用。
+   *
+   * 纪律一致：**空的不渲染**（缺失显示「无数据」而不是 0，更不留空壳）。
+   * 插件页按评审决定**不放市场坐标（marketId）**，也不放 manifest（只整合包页有）。
+   */
+  function entryTopBlock(entry) {
+    var meta = entry.meta || {};
+    var pick = function (k) {
+      return isPresent(meta[k]) ? meta[k] : entry[k];
+    };
+    var parts = [];
+
+    // 标签（chips；插件页叫「插件标签」）
+    var tags = asArray(entry.tags).filter(isPresent);
+    if (tags.length) {
+      parts.push(
+        el('p', { class: 'entry-tags' }, [el('span', { class: 'faint', text: entry.kind === 'plugin' ? '插件标签' : '标签' })].concat(
+          tags.map(function (t) {
+            return el('span', { class: 'tag', text: String(t) });
+          })
+        ))
+      );
+    }
+
+    // 采用度（社会证明，学 MC百科 的「有 N 个整合包使用了它」）
+    var use = [];
+    if (asArray(entry.usedInPacks).length) use.push('被 ' + asArray(entry.usedInPacks).length + ' 个整合包使用');
+    if (asArray(entry.referencedByTutorials).length) use.push('被 ' + asArray(entry.referencedByTutorials).length + ' 篇教程引用');
+    if (asArray(entry.backlinks).length) use.push('被 ' + asArray(entry.backlinks).length + ' 条词条引用');
+    if (use.length) parts.push(el('p', { class: 'adoption', text: use.join(' · ') }));
+
+    // 属性块（学 MC百科 把元数据放在最上面、一眼可扫）
+    var pairs = [];
+    var roleText = pick('role');
+    if (!isPresent(roleText) && Array.isArray(pick('roles')) && pick('roles').every(function (r) { return typeof r === 'string'; })) {
+      roleText = pick('roles').join('、');
+    }
+    if (isPresent(roleText)) pairs.push(['角色', String(roleText)]);
+    if (isPresent(pick('layer'))) pairs.push(['层级', String(pick('layer'))]);
+    if (isPresent(pick('repo'))) pairs.push(['上游', String(pick('repo'))]);
+    if (isPresent(pick('npm'))) pairs.push(['npm', String(pick('npm'))]);
+    if (isPresent(pick('runtime'))) pairs.push(['运行环境', String(pick('runtime'))]);
+    if (isPresent(pick('appliesTo'))) pairs.push(['适用版本', String(pick('appliesTo'))]);
+    if (isPresent(pick('license'))) pairs.push(['许可', String(pick('license'))]);
+    if (isPresent(pick('updatedAt'))) pairs.push(['最后更新', String(pick('updatedAt')).slice(0, 10)]);
+    if (asArray(pick('maintainers')).length) pairs.push(['维护者', asArray(pick('maintainers')).map(function (m) { return '@' + m; }).join('、')]);
+    // 插件页不放市场坐标；整合包/工具类仍然显示
+    if (isPresent(pick('marketId')) && entry.kind !== 'plugin') pairs.push(['市场坐标', String(pick('marketId'))]);
+    if (isPresent(pick('launcherId'))) pairs.push(['canonical ID', String(pick('launcherId'))]);
+    if (isPresent(pick('url'))) pairs.push(['上游地址', String(pick('url'))]);
+    if (isPresent(pick('linkOut'))) pairs.push(['默认去处', String(pick('linkOut'))]);
+    if (pairs.length) {
+      parts.push(
+        el('div', { class: 'attrs' }, pairs.map(function (p) {
+          return el('span', { class: 'attrs__pair' }, [
+            el('span', { class: 'faint', text: p[0] }),
+            el('strong', { text: p[1] })
+          ]);
+        }))
+      );
+    }
+
+    return parts.length ? el('div', { class: 'entry-top' }, parts) : null;
   }
 
   /**

@@ -3215,6 +3215,32 @@ main :is(table, pre, .cards, .infotable, .box, .notice) :is(p, ul, ol, li, h2, h
   max-width: none;
 }
 
+/* 词条顶部信息块（标签 chips / 采用度 / 属性三列）。
+   预渲染与 JS 两侧共用同一套类名——JS 会 clear(main) 重建主列，所以两边都要写、
+   样式在这里共用。预渲染那份早期带内联样式，补齐类样式后两边外观一致。 */
+.entry-top {
+  margin: 0 0 18px;
+}
+
+.attrs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 10px 0 14px;
+  font-size: 0.92em;
+}
+
+.attrs__pair .faint {
+  opacity: 0.65;
+  font-size: 0.88em;
+}
+
+.adoption {
+  margin: 6px 0 0;
+  color: var(--text-muted, #6b7280);
+  font-size: 0.92em;
+}
+
 /* 开发者 / 团队（authors）：上游作者卡片。
    头像是 GitHub 现成地址（github.com/<login>.png），零托管成本；
    与信息表里的「维护者」（本馆维护者，也是第一道闸批准人）不是一个概念，所以单独成块。 */
