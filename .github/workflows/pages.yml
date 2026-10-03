@@ -1,17 +1,22 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages（备用）
 
-# 站点是纯静态的：构建完全离线（只读 data/ 与 collected/），所以这个 workflow
+# 站点是纯静态的：构建完全离线（只读 data/ 与 vendor/），所以这个 workflow
 # 不需要任何 secrets，也不需要外部托管账号。
 #
-# 部署形态：**自定义域根路径** https://dshbaike.com/
-# （2026-10-02 绑域；此前是项目子路径 https://<org>.github.io/<repo>/，那时必须传 --base=/<repo>/）
-# 自定义域在仓库 Settings → Pages 里配（Actions 部署下不需要 CNAME 文件）。
-# 根路径部署**不要**再传 --base —— 嵌套页（launcher/1.html）靠构建期写入的
-# <base href="/"> 解析相对资源；传了子路径会导致全站资源 404。
+# **发布已经改由 Cloudflare Pages 负责**（2026-10-03 起）：项目 `dshbaike` 接在
+# `dshbaike.com` 上，构建命令 `node scripts/build.mjs`、产物目录 `web`。
+# 这个 workflow 因此**降级为备用**：只保留手动触发（`workflow_dispatch`），
+# 不再随 `main` 自动跑 —— 跑它只会把产物发布到 `https://dsh-packforge.github.io/dshbaike/`，
+# 而 `dshbaike.com` 的 DNS 已指向 Cloudflare Pages，不再经过这里。
+#
+# 保留它的理由：万一 Cloudflare 那边出问题，把域名记录指回 GitHub 的 A / AAAA
+# （`185.199.108–111.153` / `2606:50c0:8000–8003::153`）+ 手动跑一次本 workflow 即可回退。
+#
+# 部署形态：根路径。构建期**不要**传 `--base` —— 嵌套页（launcher/1.html）靠写入的
+# `<base href="/">` 解析相对资源；传了子路径会导致全站资源 404。
+# （历史上项目子路径部署时才需要 `--base=/<repo>/`。）
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

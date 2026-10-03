@@ -58,7 +58,7 @@ node scripts/build.mjs --base=/dshbaike/ && node scripts/dev-server.mjs 8812 --p
 >
 > **删除留墓碑**：`node scripts/status.mjs <kind>/<n> deleted`，页面会继续存在并显示「本词条已撤下」，但会从搜索索引与计数里移除——**号永不复用**。
 >
-> **合并与发布**：改 `data/**`、`web/**`、`scripts/**` 的 PR 会跑 CI（`validate.mjs` + 两次构建比对，确认构建确定性）；CI 绿了维护者才合并。合并进 `main` 之后，`.github/workflows/pages.yml` 会自动构建并发布——**构建失败就不会发布**，所以站点不会停在半坏的状态。
+> **合并与发布**：改 `data/**`、`web/**`、`scripts/**` 的 PR 会跑 CI（`validate.mjs` + 两次构建比对，确认构建确定性）；CI 绿了维护者才合并。合并进 `main` 之后，**Cloudflare Pages** 会自动构建并发布（走它自己的 GitHub App webhook，所以机器人合并也会触发）——**构建失败就不会发布**，站点不会停在半坏的状态。`.github/workflows/pages.yml`（GitHub Pages）已降级为备用，只能手动触发。
 
 ---
 
