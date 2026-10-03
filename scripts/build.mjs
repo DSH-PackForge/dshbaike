@@ -1047,15 +1047,23 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     // 只列**已有数据**，空的一律不出（纪律：缺失显示「无数据」，不显示空壳）。
     // 相对时间（"3 天前"）留给前端算，这里写绝对日期，避免构建期时间漂移。
     const attrPairs = [];
-    if (output.role) attrPairs.push(['角色', String(output.role)]);
-    if (output.layer) attrPairs.push(['层级', String(output.layer)]);
-    if (output.repo) attrPairs.push(['上游', String(output.repo)]);
-    if (output.npm) attrPairs.push(['npm', String(output.npm)]);
-    if (output.runtime) attrPairs.push(['运行环境', String(output.runtime)]);
-    if (output.appliesTo) attrPairs.push(['适用版本', String(output.appliesTo)]);
-    if (typeof output.license === 'string' && output.license) attrPairs.push(['许可', output.license]);
+    // 注意：front-matter 里的字段挂在 output.meta 下（updatedAt/maintainers 等少数是顶层派生字段），
+    // 所以两边都读一次——上一版只读顶层，结果属性块只剩「最后更新」。
+    const meta = output.meta ?? {};
+    const pick = (k) => meta[k] ?? output[k];
+    const rolesText = Array.isArray(pick('roles')) ? pick('roles').join('、') : typeof pick('roles') === 'string' ? pick('roles') : null;
+    if (pick('role')) attrPairs.push(['角色', String(pick('role'))]);
+    else if (rolesText) attrPairs.push(['角色', rolesText]);
+    if (pick('layer')) attrPairs.push(['层级', String(pick('layer'))]);
+    if (pick('repo')) attrPairs.push(['上游', String(pick('repo'))]);
+    if (pick('npm')) attrPairs.push(['npm', String(pick('npm'))]);
+    if (pick('runtime')) attrPairs.push(['运行环境', String(pick('runtime'))]);
+    if (pick('appliesTo')) attrPairs.push(['适用版本', String(pick('appliesTo'))]);
+    const lic = typeof pick('license') === 'string' && pick('license') ? pick('license') : null;
+    if (lic) attrPairs.push(['许可', lic]);
     if (output.updatedAt) attrPairs.push(['最后更新', String(output.updatedAt).slice(0, 10)]);
-    if (output.maintainers?.length) attrPairs.push(['维护者', output.maintainers.map((m) => `@${m}`).join('、')]);
+    const keep = pick('maintainers') ?? output.maintainers;
+    if (Array.isArray(keep) && keep.length) attrPairs.push(['维护者', keep.map((m) => `@${m}`).join('、')]);
     if (attrPairs.length) {
       // 用内联样式保证观感（柔和的"标签 + 值"行，可换行；主题安全靠 opacity）；
       // 下轮再把这几条收进 pedia.css，这里先不引入外部样式依赖。
