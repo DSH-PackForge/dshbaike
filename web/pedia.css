@@ -3271,6 +3271,69 @@ main :is(table, pre, .cards, .infotable, .box, .notice) :is(p, ul, ol, li, h2, h
   line-height: 1.6;
 }
 
+/* 「更多」页签：把兼容矩阵 / 它提供了什么 / 出现在哪些整合包 / 装它会发生什么 /
+   哪些教程用了它 / 数据来源 / 谁引用了这一条 收在一起，各自保留小标题与计数。 */
+.more__part + .more__part {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.more__title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+/* 「插件特性」页签（= bug 列表，对照 bug.mcmod.cn 的「MOD特性警示」） */
+.bugs__empty {
+  margin: 6px 0 0;
+}
+
+.bug {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-left-width: 3px;
+  border-radius: 8px;
+}
+
+.bug__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bug__title {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.bug__sev {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: var(--text-muted, #6b7280);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.bug__sev:where([data-sev='致命']) { background: #be1e2d; }
+.bug__sev:where([data-sev='严重']) { background: #b45309; }
+.bug__sev:where([data-sev='轻微']) { background: #a16207; }
+
+.bug__meta,
+.bug__note,
+.bug__links {
+  margin: 6px 0 0;
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+.bug__meta {
+  color: var(--text-muted, #6b7280);
+}
+
 /* 开发者 / 团队（authors）：上游作者卡片。
    头像是 GitHub 现成地址（github.com/<login>.png），零托管成本；
    与信息表里的「维护者」（本馆维护者，也是第一道闸批准人）不是一个概念，所以单独成块。 */

@@ -2075,7 +2075,103 @@
       build: function () { return backlinksBlock(entry); }
     });
 
+    // 插件页按评审定稿重整页签：[插件介绍] [插件安装] [插件特性] [更多]
+    // —— 介绍排第一且默认打开；安装从侧栏信息表搬到台前；"特性"就是 bug（缺陷与踩坑）；
+    // 其余（兼容矩阵 / 它提供了什么 / 出现在哪些整合包 / 装它会发生什么 / 哪些教程用了它 /
+    // 数据来源 / 谁引用了这一条）全部收进「更多」，并在其中保留各自的小标题与计数。
+    // 只对 plugin 生效：其它类型的页签维持原样。
+    if (kind === 'plugin') {
+      var bodySpec = specs.shift();
+      bodySpec.label = '插件介绍';
+      var rest = specs;
+      var installSpec = {
+        key: 'installCmd',
+        label: '插件安装',
+        count: null,
+        build: function () { return installCommandBlock(entry); }
+      };
+      var bugsSpec = {
+        key: 'bugs',
+        label: '插件特性',
+        count: asArray(meta.bugs).length || null,
+        build: function () { return bugsBlock(entry); }
+      };
+      var moreSpec = {
+        key: 'more',
+        label: '更多',
+        count: rest.reduce(function (n, s) { return n + (s.count || 0); }, 0) || null,
+        build: function () {
+          return el('div', { class: 'more' }, rest.map(function (s) {
+            var content = s.build ? s.build() : null;
+            var kids = [el('h3', { class: 'more__title', text: s.label + (s.count ? '（' + s.count + '）' : '') })];
+            if (content) kids.push(content);
+            return el('section', { class: 'more__part' }, kids);
+          }));
+        }
+      };
+      specs = [bodySpec, installSpec, bugsSpec, moreSpec];
+    }
+
     return specs;
+  }
+
+  /**
+   * 「插件安装」页签：把安装动作从侧栏信息表搬一份到台前（评审：安装要独立成页签）。
+   * 有 install 就给可复制的命令行；npm / 仓库 / 版本有就并列；都没有就说没收录，
+   * **不编造安装方式**。
+   */
+  function installCommandBlock(entry) {
+    var meta = entry.meta || {};
+    var rows = [];
+    if (isPresent(meta.install)) {
+      rows.push(el('div', { class: 'codeblock' }, [
+        el('button', { type: 'button', class: 'codeblock__copy', 'data-copy': '1', text: '复制' }),
+        el('pre', { class: 'codeblock__pre' }, el('code', { text: String(meta.install).replace(/\s+$/, '') }))
+      ]));
+    }
+    var facts = [['npm', meta.npm], ['仓库', meta.repo], ['版本', meta.version]].map(function (kv) {
+      if (!isPresent(kv[1])) return null;
+      return el('div', { class: 'lead__fact' }, [
+        el('span', { class: 'lead__k', text: kv[0] }),
+        el('span', { class: 'lead__v', text: leadValue(kv[1]) })
+      ]);
+    }).filter(Boolean);
+    if (facts.length) rows.push(el('div', { class: 'lead__facts' }, facts));
+    if (!rows.length) rows.push(el('p', { class: 'faint', text: '本站尚未收录它的安装方式。' }));
+    return el('div', {}, rows);
+  }
+
+  /**
+   * 「插件特性」页签 —— 评审明确：这里的"特性"就是**bug**（对照 bug.mcmod.cn 的「MOD特性警示」）。
+   *
+   * 每条含：分级（致命 / 严重 / 轻微）、受影响版本、状态（已确认 / 未复现 / 上游已知 /
+   * 已修复 / 未核实）、出处证据、可选上游 issue。**空态显示「暂未收录」**，不留空白、
+   * 也不把"能力"混进来（能力属于「插件介绍」）。
+   * 跨插件组合才出现的缺陷会另开独立 bug 词条并被反向引用，同一个缺陷只有一个 canonical 位置。
+   */
+  function bugsBlock(entry) {
+    var bugs = asArray((entry.meta || {}).bugs).filter(function (b) { return b && typeof b === 'object' && !Array.isArray(b); });
+    var intro = el('p', { class: 'faint', text: '本站收录已核实的插件缺陷与踩坑，供安装前避雷。' });
+    if (!bugs.length) return el('div', {}, [intro, el('p', { class: 'bugs__empty', text: '暂未收录。' })]);
+    var cards = bugs.map(function (b) {
+      var sev = isPresent(b.severity) ? String(b.severity) : null;
+      var line = [];
+      if (isPresent(b.affects)) line.push('受影响版本 ' + String(b.affects));
+      if (isPresent(b.status)) line.push(String(b.status));
+      if (isPresent(b.evidence)) line.push(String(b.evidence));
+      return el('article', { class: 'bug' }, [
+        el('div', { class: 'bug__head' }, [
+          sev ? el('span', { class: 'bug__sev', text: sev }) : null,
+          el('h4', { class: 'bug__title', text: String(b.title || '(未命名)') })
+        ]),
+        line.length ? el('p', { class: 'bug__meta', text: line.join(' · ') }) : null,
+        isPresent(b.note) ? el('p', { class: 'bug__note', text: String(b.note) }) : null,
+        isPresent(b.upstream)
+          ? el('p', { class: 'bug__links' }, [el('a', { href: String(b.upstream), rel: 'noopener noreferrer external', target: '_blank', text: '上游 issue' })])
+          : null
+      ]);
+    });
+    return el('div', {}, [intro].concat(cards));
   }
 
   function matrixLegendNote(text) {
