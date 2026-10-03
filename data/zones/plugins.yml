@@ -70,7 +70,7 @@ items:
   - name: dsh-TUI
     section: plugins
     blurb: 终端里的交互界面插件（3957 star）：像素鲸鱼宠物、启动页与首次向导、流式 Markdown 与工具卡、实时状态与流式思考、双击 Esc 回退时间、上下文进度条与 TPS 表；以 npm 全局包安装，纯插件挂载、不改官方源码。
-    entryGate: maintainer
+    entryGate: editorial
     source: curated
     entry: plugin/3
     tags: ["工具与能力", "UI 增强"]

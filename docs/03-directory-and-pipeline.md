@@ -55,7 +55,7 @@ dshbaike/                       # 仓库名；本地工作副本可能仍是 dsh
 │   ├── new.mjs                 # ★ 领号：取下一个空闲编号、写 registry、生成 front-matter 骨架
 │   ├── collect.mjs             # 采集（网络）：市场索引 + 逐包 manifest + launchers + awesome catalog 快照
 │   ├── build.mjs               # 构建（离线）：合并 → Markdown 渲染 → 反链 / 反向索引 / TOC → 写 web/data/
-│   ├── validate.mjs            # 校验：编号契约 / schema / 分类 id / 交叉链接 / 收录门槛（CI 门禁）
+│   ├── validate.mjs            # 校验：编号契约 / schema / 分类 id / 交叉链接 / 收录门槛（含 editorial 特殊途径；未满足只 warn）
 │   ├── linkcheck.mjs           # 外链与图片可达性检查（HEAD，失败降级为 warn）
 │   └── lib/                    # 共享：front-matter 解析、Markdown 渲染、taxonomy 与 registry 读写
 ├── vendor/                     # 第三方项目原样副本（**不是我们的代码**，见各目录 README.md）
@@ -283,7 +283,7 @@ npx serve web                    # 或任意静态服务器；也可直接开 we
 
 ## 10. 待确认项
 
-1. **插件收录门槛的松紧**。门槛本身已定（官方来源 / 被教程引用 / 被整合包使用 / 有 maintainer 认领，见 [02](02-data-contract.md) §1.2），待定的是**是否再加一层配额**（例如首版插件词条不超过 30 条），避免一开始就膨胀。
+1. **插件收录门槛的松紧**。门槛已放宽（见 [02](02-data-contract.md) §1.2）：四条满足其一即可，都不满足时可走特殊途径 `editorial`（写明理由），未满足也未走该途径只 warn。仍待定的是**是否再加一层配额**（例如首版插件词条不超过 30 条），避免一开始就膨胀。
 2. **热度数字的引用方式**：awesome 的 `dl`（近 30 天下载量）与 GitHub star 只在建条时抓一次，还是每次构建都刷新？前者省事但会过期，后者每次构建都要打外部网络（破坏「离线可构建」）。倾向：建条时抓 + 页面上显式标注快照日期。
 3. **周期性空提交**：`collected/` 定时刷新会产生「只有快照时间变化」的提交，是否接受（见 §8）。若不可接受，改为「快照时间只在被引用的字段变化时才更新」。
 4. **词条正文的语言策略**：中文必填、英文可选（见 [02](02-data-contract.md) §8），是否需要英文站点。

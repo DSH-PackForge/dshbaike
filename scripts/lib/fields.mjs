@@ -55,6 +55,8 @@ export const OPTIONAL_FIELDS = {
     'usedInPacks',
     'referencedByTutorials',
     'entryGate',
+    // editorial 特殊途径要求配的理由（见 docs/02 §1.2）
+    'entryGateNote',
     'catalogCat',
     'archivedNote',
     // 缺陷与踩坑（评审：这里的"特性"就是 bug）。只对 plugin 开放：

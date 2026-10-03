@@ -61,6 +61,8 @@
 
 ### 1.2 插件收录门槛（谁配得上一页）
 
+> **2026-10-03 调整（评审：这么强制的门槛应该取消一下，或者有一个特殊途径）**：门槛不再硬拦。四条机械门槛（官方来源 / 被本站教程引用 / 被已收录整合包使用 / 有 maintainer 认领）满足任一条即可；**一条都不满足时可以走特殊途径**——声明 `entryGate: editorial` 并在 `entryGateNote` 写明理由，由编辑决定收录。既没满足、也没走该途径时，校验只 **warn**（不挡 CI）。声明与实际不符（例如写了 `official` 却不是官方来源）仍是 **error**。
+
 满足**任意一条**即可建词条，不满足的只在教程里以引用块出现：
 
 1. **官方来源**（`repo` 的 owner 或 `npm` 的 scope 是官方组织，如 `deepseek-ai`）——
@@ -291,7 +293,7 @@ plugins:                    # 插件引用块，见 §5
 | `providedBy` | object | 采集（**只引用，不落库**） | 外部源事实与快照：`awesome`（stars / dl / added / 详情页 href）、`npm`（latest / publishedAt）、`github`（stars / pushedAt / license / archived）、`dshbase`（是否有中文指南） |
 | `usedInPacks` | string[] | 采集 | 反查市场 manifest 的 `bundles` / `dependencies` 得到「出现在哪些整合包」——纯自动，首版就做 |
 | `referencedByTutorials` | string[] | 构建期派生 | 提到它的教程（**所有类型都有**）：来源是教程的 `plugins` 引用块**或教程正文里的 `[[]]` 提及**；渲染进右侧「相关」框与「哪些教程用了它」页签。注意它**不影响**插件收录门槛——规则 15 只认 `plugins[].why` 那种刻意引用 |
-| `entryGate` | enum | 校验用 | 记录满足的收录门槛：`official` \| `tutorial` \| `pack` \| `maintainer`（见 §1.2） |
+| `entryGate` | enum | 校验用 | 记录收录门槛：`official` \| `tutorial` \| `pack` \| `maintainer`；四条都不满足时写 `editorial`（编辑决定），并配 `entryGateNote` 写明理由（见 §1.2） |
 | `risk` | enum[] | 风险徽章 | `desktop-control` 桌面操控 / `network` 网络访问 / `credentials` 凭据 / `build-script` 构建脚本。含义见下表 |
 
 > 三个必须遵守的边界：**① 不复制上游正文**（README 整篇搬进词条就退回成 awesome 详情页了，只做摘要 + 出处链接）；**② 热度数字一律引用外部源并标快照时间**，我们不自建统计；**③ 没有采集到的字段显示「未声明」**，不推断。
@@ -442,7 +444,7 @@ plugins:                    # 插件引用块，见 §5
 | 12 | 引用/外链可达性（构建期 HEAD 检查，失败降级为 warn 并标注「链接待核」） | warn |
 | 13 | `screenshots` 指向的图片存在；枚举字段取值合法 | error |
 | 14 | 正文长度下限（防空壳词条） | warn |
-| 15 | **插件词条必须满足收录门槛之一**（官方来源 / 被教程引用 / 被整合包使用 / 有 maintainer），且 `entryGate` 与实际相符 | error |
+| 15 | 插件词条门槛：满足其一即可；都不满足时可走特殊途径（`entryGate: editorial` + `entryGateNote`）；未满足且未走该途径只 warn。`entryGate` **声明与实际不符**仍是 error | error / warn |
 | 16 | 插件词条：`repo`/`npm` 至少一个；`relations[].target` 指向存在的 `plugin/<n>`；`compat.dsh` 每项都带「实测 / 未核实」口径；`providedBy` 的每项都带快照时间 | error |
 | 17 | 分区文件：`zone` 唯一、`desc` 与 `howto` 必填、条目 `name`/`blurb`/`links` 齐备 | error |
 | 18 | 分区条目的 `entry` 指向存在的词条（**留空即红链，是合法状态**） | error |

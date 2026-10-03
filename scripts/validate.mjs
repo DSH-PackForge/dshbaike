@@ -116,7 +116,8 @@ const ENUMS = {
   layer: ['runtime', 'plugin', 'agent', 'workspace', 'ecosystem'],
   role: ['bundle', 'client', 'bundle+client', 'theme', 'compat'],
   packType: ['profile', 'dshhome'],
-  entryGate: ['official', 'tutorial', 'pack', 'maintainer'],
+  // editorial = 四条机械门槛都不满足时的**特殊途径**：编辑明确决定收录，并必须写明理由
+  entryGate: ['official', 'tutorial', 'pack', 'maintainer', 'editorial'],
   sourceKind: ['plugin-directory', 'guide', 'market', 'registry', 'spec', 'tool', 'topic'],
   relation: ['complementary', 'overlapping', 'upstream'],
   relationType: ['requires', 'recommends', 'conflicts', 'replaces', 'integrates'],
@@ -916,28 +917,44 @@ function checkPluginEntry(ctx, reporter, entry, extras) {
     hasMaintainer ? 'maintainer' : null,
   ].filter(Boolean);
 
+  // 特殊途径（评审：这么强制的门槛应该取消一下，或者有一个特殊途径）：
+  // 四条机械门槛都不满足时，声明 `entryGate: editorial` 并在 `entryGateNote` 写明理由即可放行——
+  // 把「要不要收」交回给人，但要求留下理由。缺理由或没走这条路，只 warn，不挡 CI。
+  const isEditorial = String(data.entryGate ?? '') === 'editorial';
+  const gateNote = String(data.entryGateNote ?? '').trim();
+  const editorialOk = isEditorial && gateNote.length >= 8;
+
   const declared = data.entryGate;
   if (declared != null && !isMissing(declared)) {
     if (!ENUMS.entryGate.includes(String(declared))) {
       reporter.error(file, R('entryGate'), 15, `entryGate \`${declared}\` 不在允许值里（${ENUMS.entryGate.join(' | ')}）`);
+    } else if (declared === 'editorial') {
+      if (!editorialOk) {
+        reporter.warn(
+          file,
+          R('entryGateNote') ?? R('entryGate'),
+          15,
+          'entryGate 声明为 `editorial`（编辑决定收录），但没有写明 `entryGateNote` 理由——特殊途径要求留理由',
+        );
+      }
     } else if (!satisfied.includes(String(declared))) {
       reporter.error(
         file,
         R('entryGate'),
         15,
         `entryGate 声明为 \`${declared}\`，但实际不满足${satisfied.length ? `（实际满足：${satisfied.join(', ')}）` : '任何收录门槛'}`,
-        '门槛 = 官方组织发布 / 被本站教程引用 / 被已收录整合包使用 / 有 maintainer 认领',
+        '门槛 = 官方组织发布 / 被本站教程引用 / 被已收录整合包使用 / 有 maintainer 认领；都不满足时可走特殊途径：entryGate: editorial + entryGateNote 写明理由',
       );
     }
   }
 
-  if (satisfied.length === 0) {
-    reporter.error(
+  if (satisfied.length === 0 && !editorialOk) {
+    reporter.warn(
       file,
       R('repo') ?? null,
       15,
       `插件词条 ${id} 不满足任何收录门槛（不是官方来源、没被教程引用、没被整合包使用、没有 maintainer）`,
-      '四条门槛满足任意一条即可，见 docs/02 §1.2',
+      '四条门槛满足任意一条即可；都不满足时可走特殊途径：entryGate: editorial + entryGateNote 写明理由（见 docs/02 §1.2）',
     );
   }
   if (bodyText.length === 0) {
