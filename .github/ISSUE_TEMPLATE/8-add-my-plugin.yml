@@ -1,0 +1,53 @@
+name: 收录我的插件
+description: 你只需要给一个仓库地址——star、许可证、版本、正文（照搬你的 README）都由机器人从上游读
+title: "[收录我的插件] "
+labels: ["内容变更"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **你只需要填一个仓库地址。**
+
+        其余的机器人来读：star / fork / 许可证 / 语言 / 版本 / 快照日期（GitHub API）、
+        npm 包名与版本（package.json）、**正文（照搬你 README 的简体中文版）**。
+
+        生成出来的是一条 `status: draft` 的草稿 + 一个 PR：**合并前不会上线**，
+        你在 PR 里看一眼「是不是我、有没有写歪」就行；不满意直接说，不用自己改文件。
+
+        > 只收**你自己做的**项目；别人的项目请等作者来申请，或走「新增词条」表单并说明你与它的关系。
+  - type: input
+    id: repo
+    attributes:
+      label: 仓库地址
+      description: owner/repo 或完整 GitHub URL
+      placeholder: ccch1mneyyy/dsh-TUI
+    validations:
+      required: true
+  - type: input
+    id: username
+    attributes:
+      label: 你的 GitHub 用户名
+      description: 用于署名，同时作为这条词条的维护者（机器人会把它写进 maintainers）
+      placeholder: your-github-name
+    validations:
+      required: true
+  - type: input
+    id: entryTitle
+    attributes:
+      label: 词条标题（可选）
+      description: 不填就用仓库名
+  - type: textarea
+    id: note
+    attributes:
+      label: 想额外说明什么（可选）
+      description: |
+        比如：它解决什么问题、只你知道的限制、希望我们**不要**写的内容、和同类项目的区别。
+        不写也行——正文会照搬你的 README，不会替你编。
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        提交后：维护者用 `node scripts/import-project.mjs <你的仓库> --kind plugin --user <你>`
+        生成草稿并开 PR，编号由自动化分配。**事实与措辞都以上游为准**——我们只写能指到出处的部分，
+        查不到的会标「未核实」。

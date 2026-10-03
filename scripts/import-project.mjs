@@ -122,6 +122,23 @@ function cleanReadme(md) {
 
 const bodyFromReadme = readme ? cleanReadme(readme) : '';
 
+/* 清洗会丢掉 HTML 表格/徽章——如果某个小节因此空了，必须让跑的人知道，
+   否则会像 dsh-TUI 的「维护团队」那样：README 里的 HTML 表格被整段删掉，页面只剩空壳。 */
+if (bodyFromReadme) {
+  const secs = bodyFromReadme.split(/\n(?=##\s)/);
+  const empties = [];
+  for (const s of secs) {
+    const m = s.match(/^##\s+(.+)$/m);
+    if (!m) continue;
+    const rest = s.replace(/^##\s+.+$/m, '').trim();
+    if (rest.length < 12) empties.push(m[1].trim());
+  }
+  if (empties.length) {
+    console.log('  ⚠ 这些小节清洗后是空的（多半原本是 HTML 表格或纯图片，需要人工从 README 补回来）：');
+    for (const e of empties) console.log('      · ' + e);
+  }
+}
+
 /* ------------------------------------------------------------------ 组装词条 */
 
 const { skeleton, quote } = await import('./lib/skeleton.mjs');
