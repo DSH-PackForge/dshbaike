@@ -1198,8 +1198,9 @@ function llmsTxt(model, entryOutputs, indexes = []) {
     '',
   ];
   for (const zone of model.zones) {
-    const t = zone.title ? `${zone.title}` : zone.zone;
-    const d = zone.desc ? `：${String(zone.desc).replace(/\s+/g, ' ').trim()}` : '';
+    // 分区标题与描述挂在 `zone.data` 上（不是 `zone.title`）——之前写错，标题退化成 id 了
+    const t = zone.data?.title ?? zone.zone;
+    const d = zone.data?.desc ? `：${String(zone.data.desc).replace(/\s+/g, ' ').trim()}` : '';
     L.push(`- [${t}](${pageUrl(`${zone.zone}.html`)}):${d}`);
   }
   L.push('', '## 索引页', '');
@@ -1286,7 +1287,7 @@ function sitemapUrls(model, entryOutputs, indexes = []) {
     { loc: `${SITE_URL}/mesh/`, lastmod: null },
   ];
   for (const index of indexes) list.push({ loc: pageUrl(`${index.kind}/${index.slug}.html`), lastmod: null });
-  for (const zone of model.zones) list.push({ loc: pageUrl(`${zone.zone}.html`), lastmod: null });
+  for (const zone of model.zones) list.push({ loc: pageUrl(`${zone.zone}.html`), lastmod: zone.data?.updatedAt ?? null });
   for (const output of entryOutputs.values()) {
     // 墓碑（deleted）与草稿（draft）都不进 sitemap：
     // 前者是"保留链接但不该被搜到"，后者是"还没写完、不该被搜索引擎当内容推荐"
