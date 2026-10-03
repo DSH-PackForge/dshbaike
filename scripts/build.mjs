@@ -1076,6 +1076,12 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     if (output.updatedAt) attrPairs.push(['最后更新', String(output.updatedAt).slice(0, 10)]);
     const keep = pick('maintainers') ?? output.maintainers;
     if (Array.isArray(keep) && keep.length) attrPairs.push(['维护者', keep.map((m) => `@${m}`).join('、')]);
+    // 来源类字段（launcher / source / pack 等类型主要靠这些）：
+    // 这里按纯文本显示；可点击的版本在下面的信息表里（那里会识别 URL）。
+    if (pick('marketId')) attrPairs.push(['市场坐标', String(pick('marketId'))]);
+    if (pick('launcherId')) attrPairs.push(['canonical ID', String(pick('launcherId'))]);
+    if (pick('url')) attrPairs.push(['上游地址', String(pick('url'))]);
+    if (pick('linkOut')) attrPairs.push(['默认去处', String(pick('linkOut'))]);
     if (attrPairs.length) {
       // 用内联样式保证观感（柔和的"标签 + 值"行，可换行；主题安全靠 opacity）；
       // 下轮再把这几条收进 pedia.css，这里先不引入外部样式依赖。
