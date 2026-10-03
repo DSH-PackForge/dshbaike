@@ -1086,7 +1086,7 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     // 属性块：**数据驱动，不再手挑**（评审："感觉你这属性里面少了很多东西"）。
     // 规则与 JS 侧 entryTopBlock 保持一致：简单值（字符串/数字/布尔/字符串数组）一律摆出，
     // 只排除已经有自己位置的字段；插件页额外排除 marketId 与 supportedManifest（已决定取消）。
-    const ATTR_SKIP = new Set(['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy', 'roles',
+    const ATTR_SKIP = new Set(['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy',
       'usedInPacks', 'referencedByTutorials', 'backlinks', 'titleEn', 'aliases', 'tags', 'summary',
       'status', 'kind', 'slug', 'screenshots', 'archivedNote']);
     if (output.kind === 'plugin') { ATTR_SKIP.add('marketId'); ATTR_SKIP.add('supportedManifest'); }
@@ -1107,7 +1107,7 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
       repo: '上游', npm: 'npm', url: '上游地址', linkOut: '默认去处', marketId: '市场坐标',
       entryGate: '收录门槛', dshVersion: 'DSH 版本', dshVersions: 'DSH 版本',
       supportedManifest: '支持的 manifest', prereq: '前置词条', related: '相关词条',
-      maintainers: '维护者', updatedAt: '最后更新',
+      maintainers: '维护者', updatedAt: '最后更新', roles: '上游角色',
       origin: '来源', relation: '与我们的关系', zones: '覆盖分区', provides: '提供内容',
       requires: '依赖', files: '文件', risk: '风险', targets: '目标', roots: '根目录',
       docs: '文档', howto: '怎么用', snippet: '片段', why: '为什么', downloads: '下载量',
@@ -1115,12 +1115,28 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     };
     // 属性块只放短值：48 个字对中文已经是一行半，再长就该去正文里读
     const ATTR_MAX_LEN = 48;
-    const attrValue = (v) => {
+    // 少数**对象数组**的含义是明确的，专门认（"许可 MIT"先前就是被"只认简单值"误伤掉的）：
+    // licenseRefs → name/id；roles → role/who。
+    const attrShapeValue = (key, v) => {
+      if (!Array.isArray(v)) return null;
+      if (key === 'licenseRefs') {
+        const ls = v.map((x) => x && (x.name || x.id)).filter(Boolean);
+        return ls.length ? ls.join('、') : null;
+      }
+      if (key === 'roles') {
+        const rs = v.map((x) => x && (x.role || x.who)).filter(Boolean);
+        return rs.length ? rs.join('、') : null;
+      }
+      return null;
+    };
+    const attrValue = (key, v) => {
       if (v === null || v === undefined || v === '') return null;
       if (typeof v === 'string') return v.length <= ATTR_MAX_LEN ? v : null;
       if (typeof v === 'number' || typeof v === 'boolean') return String(v);
       if (Array.isArray(v)) {
-        const xs = v.map(attrValue).filter(Boolean);
+        const shaped = attrShapeValue(key, v);
+        if (shaped) return shaped.length <= ATTR_MAX_LEN ? shaped : null;
+        const xs = v.map((x) => attrValue(null, x)).filter(Boolean);
         const joined = xs.length ? xs.join('、') : null;
         return joined && joined.length <= ATTR_MAX_LEN ? joined : null;
       }
@@ -1128,7 +1144,7 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     };
     const meta = output.meta ?? {};
     const attrKeys = Object.keys(meta)
-      .filter((k) => !ATTR_SKIP.has(k) && attrValue(meta[k]) !== null)
+      .filter((k) => !ATTR_SKIP.has(k) && attrValue(k, meta[k]) !== null)
       .sort((a, b) => {
         const ia = ATTR_ORDER.indexOf(a);
         const ib = ATTR_ORDER.indexOf(b);
@@ -1137,7 +1153,7 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
         if (ib === -1) return -1;
         return ia - ib;
       });
-    const attrPairs = attrKeys.map((k) => [ATTR_LABELS[k] ?? k, attrValue(meta[k])]);
+    const attrPairs = attrKeys.map((k) => [ATTR_LABELS[k] ?? k, attrValue(k, meta[k])]);
     // 维护者与最后更新通常已在 meta 里，只有缺了才补（免得卡片上出现两条「最后更新」）
     if (!attrKeys.includes('maintainers')) {
       const keepM = attrValue(output.maintainers ?? meta.maintainers);

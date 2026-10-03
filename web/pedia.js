@@ -1556,7 +1556,7 @@
    * 插件页额外排除 marketId 与 supportedManifest（评审已决定取消）。
    * 顺序按 ATTR_ORDER，未列出的排在其后、按字段名排序 —— 将来新增字段会自动出现，不会再被漏掉。
    */
-  var ATTR_SKIP = ['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy', 'roles',
+  var ATTR_SKIP = ['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy',
     'usedInPacks', 'referencedByTutorials', 'backlinks', 'titleEn', 'aliases', 'tags', 'summary',
     'status', 'kind', 'slug', 'screenshots', 'archivedNote'];
   var ATTR_ORDER = ['role', 'layer', 'category', 'fitFor', 'difficulty', 'platforms', 'runtime',
@@ -1576,7 +1576,7 @@
     repo: '上游', npm: 'npm', url: '上游地址', linkOut: '默认去处', marketId: '市场坐标',
     entryGate: '收录门槛', dshVersion: 'DSH 版本', dshVersions: 'DSH 版本',
     supportedManifest: '支持的 manifest', prereq: '前置词条', related: '相关词条',
-    maintainers: '维护者', updatedAt: '最后更新',
+    maintainers: '维护者', updatedAt: '最后更新', roles: '上游角色',
     origin: '来源', relation: '与我们的关系', zones: '覆盖分区', provides: '提供内容',
     requires: '依赖', files: '文件', risk: '风险', targets: '目标', roots: '根目录',
     docs: '文档', howto: '怎么用', snippet: '片段', why: '为什么', downloads: '下载量',
@@ -1586,17 +1586,35 @@
    *  48 个字对中文已经是一行半，再长就该去正文里读。 */
   var ATTR_MAX_LEN = 48;
 
+  /** 少数**对象数组**的含义是明确的（不是随便什么对象），专门认：
+   *  licenseRefs → `name`/`id`（如 MIT）；roles → `role`/`who`（如 owner / bundle+client）。
+   *  这就是"许可 MIT"先前没出现在属性卡上的原因——它被"只认简单值"的规则误伤了。 */
+  function attrShapeValue(key, v) {
+    if (!Array.isArray(v)) return null;
+    if (key === 'licenseRefs') {
+      var ls = v.map(function (x) { return x && (x.name || x.id); }).filter(Boolean);
+      return ls.length ? ls.join('、') : null;
+    }
+    if (key === 'roles') {
+      var rs = v.map(function (x) { return x && (x.role || x.who); }).filter(Boolean);
+      return rs.length ? rs.join('、') : null;
+    }
+    return null;
+  }
+
   /** 简单值才算"属性"：字符串 / 数字 / 布尔 / 全是简单值的数组；过长的一律不取 */
-  function attrValue(v) {
+  function attrValue(key, v) {
     if (v === null || v === undefined || v === '') return null;
     if (typeof v === 'string') return v.length <= ATTR_MAX_LEN ? v : null;
     if (typeof v === 'number' || typeof v === 'boolean') return String(v);
     if (Array.isArray(v)) {
-      var xs = v.map(attrValue).filter(Boolean);
+      var shaped = attrShapeValue(key, v);
+      if (shaped) return shaped.length <= ATTR_MAX_LEN ? shaped : null;
+      var xs = v.map(function (x) { return attrValue(null, x); }).filter(Boolean);
       var joined = xs.length ? xs.join('、') : null;
       return joined && joined.length <= ATTR_MAX_LEN ? joined : null;
     }
-    return null; // 对象与对象数组不硬塞（有专门的页签或块）
+    return null; // 其它对象不硬塞（有专门的页签或块）
   }
 
   /**
@@ -1639,7 +1657,7 @@
     var skip = ATTR_SKIP.slice();
     if (entry.kind === 'plugin') skip.push('marketId', 'supportedManifest');
     var keys = Object.keys(meta).filter(function (k) {
-      return skip.indexOf(k) === -1 && attrValue(meta[k]) !== null;
+      return skip.indexOf(k) === -1 && attrValue(k, meta[k]) !== null;
     });
     keys.sort(function (a, b) {
       var ia = ATTR_ORDER.indexOf(a);
@@ -1650,7 +1668,7 @@
       return ia - ib;
     });
     var pairs = keys.map(function (k) {
-      return [ATTR_LABELS[k] || k, attrValue(meta[k])];
+      return [ATTR_LABELS[k] || k, attrValue(k, meta[k])];
     });
     // 维护者与最后更新通常已在 meta 里（契约把它们算公共可选字段），只有缺了才补，
     // 免得卡片上出现两条一模一样的「最后更新」。
