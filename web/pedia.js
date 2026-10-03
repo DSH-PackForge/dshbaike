@@ -1641,7 +1641,16 @@
     addField('DSH 版本', meta.dshVersion);
     addField('适用版本', meta.appliesTo);
 
-    var compatText = meta.compat && isPresent(meta.compat.dsh) ? String(meta.compat.dsh) : null;
+    // compat.dsh 可能是**字符串**也可能是**字符串数组**（实测 launcher/3 就是数组），
+    // 两种都认；嵌套对象才跳过（不猜语义）。
+    var compatRaw = meta.compat ? meta.compat.dsh : null;
+    var compatText = null;
+    if (Array.isArray(compatRaw)) {
+      var xs = compatRaw.filter(isPresent).map(String);
+      if (xs.length) compatText = xs.join('　·　');
+    } else if (isPresent(compatRaw) && typeof compatRaw !== 'object') {
+      compatText = String(compatRaw);
+    }
     var lines = [];
     if (declared.length) lines.push(el('p', { class: 'vers__line', text: declared.join('　·　') }));
     if (compatText) {

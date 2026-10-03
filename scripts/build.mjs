@@ -1172,13 +1172,22 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     pushVers('DSH 版本', output.meta?.dshVersions);
     pushVers('DSH 版本', output.meta?.dshVersion);
     pushVers('适用版本', output.meta?.appliesTo);
-    const compatDsh = output.meta?.compat?.dsh;
-    const hasCompatText = compatDsh !== null && compatDsh !== undefined && compatDsh !== '' && typeof compatDsh !== 'object';
+    // compat.dsh 可能是**字符串**也可能是**字符串数组**（实测 launcher/3 就是数组），
+    // 两种都认；嵌套对象才跳过（不猜语义）。
+    const compatRaw = output.meta?.compat?.dsh;
+    let compatText = null;
+    if (Array.isArray(compatRaw)) {
+      const xs = compatRaw.filter((x) => x !== null && x !== undefined && x !== '');
+      if (xs.length) compatText = xs.join('　·　');
+    } else if (compatRaw !== null && compatRaw !== undefined && compatRaw !== '' && typeof compatRaw !== 'object') {
+      compatText = String(compatRaw);
+    }
+    const hasCompatText = compatText !== null;
     L.push('<section class="vers" aria-label="支持的 DSH 版本">');
     L.push('<h2 class="vers__title">支持的 DSH 版本</h2>');
     if (versBits.length) L.push(`<p class="vers__line">${escapeHtml(versBits.join('　·　'))}</p>`);
     if (hasCompatText) {
-      L.push(`<p class="vers__line"><span class="faint">兼容声明</span>　${escapeHtml(String(compatDsh))}</p>`);
+      L.push(`<p class="vers__line"><span class="faint">兼容声明</span>　${escapeHtml(compatText)}</p>`);
     }
     if (!versBits.length && !hasCompatText) {
       L.push('<p class="vers__line faint">本站尚未收录它的 DSH 版本声明。</p>');
