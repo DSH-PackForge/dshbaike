@@ -201,6 +201,8 @@
     maintainers: '维护者',
     authors: '开发者/团队',
     bugs: '缺陷',
+    shortName: '简称',
+    canonicalId: '全局唯一名',
     difficulty: '难度',
     appliesTo: '适用版本',
     origin: '来源',
@@ -304,7 +306,7 @@
 
 
   var FIELD_GROUPS = [
-    { title: '基本信息', keys: ['positioning', 'titleEn', 'aliases', 'category', 'tags', 'role', 'layer', 'difficulty', 'origin', 'fitFor', 'packType', 'launcherId', 'sourceKind', 'form', 'targets', 'assetType', 'locale', 'skillKind', 'roots', 'presetKind', 'recipeKind', 'targetLayer', 'language', 'specVersion', 'specStatus', 'maintainers', 'authors', 'status', 'updatedAt'] },
+    { title: '基本信息', keys: ['positioning', 'titleEn', 'aliases', 'category', 'tags', 'role', 'layer', 'difficulty', 'origin', 'fitFor', 'packType', 'launcherId', 'sourceKind', 'form', 'targets', 'assetType', 'locale', 'skillKind', 'roots', 'presetKind', 'recipeKind', 'targetLayer', 'language', 'specVersion', 'specStatus', 'maintainers', 'authors', 'shortName', 'canonicalId', 'status', 'updatedAt'] },
     { title: '兼容与平台', keys: ['dshVersion', 'dshVersions', 'appliesTo', 'runtime', 'platforms', 'supportedManifest', 'launchers', 'importSupport', 'selfVersioning', 'lineage', 'permissions'] },
     { title: '安装与出处', keys: ['install', 'repo', 'npm', 'marketId', 'spec', 'url', 'linkOut', 'coverage', 'downloads', 'relation', 'howto', 'zones', 'prereq', 'related', 'files', 'dshRef', 'fileName', 'supersedes', 'requires', 'provides', 'snippet', 'why'] },
     { title: '许可证', keys: ['license', 'licenseRefs'] }
@@ -1536,7 +1538,7 @@
     // 这一行以前是 `zone.id`，null 时会抛异常，整页后半段（面包屑、页签绑定）都渲染不出来。
     renderMasthead({ currentZone: zone ? zone.id : null });
 
-    if (entry.title) document.title = String(entry.title) + ' | DSH百科';
+    if (entry.title) document.title = displayName(entry) + ' | DSH百科';
 
     bindTabs(main);
     bindCopyButtons(main);
@@ -1559,7 +1561,7 @@
   var ATTR_SKIP = ['authors', 'bugs', 'compat', 'install', 'positioning', 'providedBy',
     'usedInPacks', 'referencedByTutorials', 'backlinks', 'titleEn', 'aliases', 'tags', 'summary',
     'status', 'kind', 'slug', 'screenshots', 'archivedNote'];
-  var ATTR_ORDER = ['role', 'layer', 'category', 'fitFor', 'difficulty', 'platforms', 'runtime',
+  var ATTR_ORDER = ['role', 'shortName', 'canonicalId', 'layer', 'category', 'fitFor', 'difficulty', 'platforms', 'runtime',
     'appliesTo', 'support', 'form', 'packType', 'launcherId', 'sourceKind', 'assetType', 'language',
     'locale', 'skillKind', 'presetKind', 'recipeKind', 'targetLayer', 'spec', 'specVersion',
     'specStatus', 'fileName', 'dshRef', 'transport', 'auth', 'license', 'licenseRefs', 'repo', 'npm',
@@ -1577,6 +1579,7 @@
     entryGate: '收录门槛', dshVersion: 'DSH 版本', dshVersions: 'DSH 版本',
     supportedManifest: '支持的 manifest', prereq: '前置词条', related: '相关词条',
     maintainers: '维护者', updatedAt: '最后更新', roles: '上游角色',
+    shortName: '简称', canonicalId: '全局唯一名',
     origin: '来源', relation: '与我们的关系', zones: '覆盖分区', provides: '提供内容',
     requires: '依赖', files: '文件', risk: '风险', targets: '目标', roots: '根目录',
     docs: '文档', howto: '怎么用', snippet: '片段', why: '为什么', downloads: '下载量',
@@ -1850,6 +1853,28 @@
     return null;
   }
 
+  /**
+   * 显示名的三件套（评审：名字要和标题分开，标题是**渲染结果**）。
+   *   title      中文名（确实是技术名的就保留原名，如 $DSH_HOME）
+   *   shortName  简称（dsh-pack / dshl）
+   *   titleEn    英文名 —— **与中文名相同就不显示**（现在有 7 条是重复的，白占一行）
+   * 组合成 `[简称]中文名（英文名）`，与 MC百科 的 `[JEI]JEI物品管理器 (Just Enough Items)` 同形。
+   */
+  function displayNameParts(entry) {
+    var meta = entry.meta || {};
+    var title = String((entry.title || meta.title || entry.id || '')).trim();
+    var short = isPresent(meta.shortName) ? String(meta.shortName).trim() : '';
+    var en = isPresent(entry.titleEn) ? String(entry.titleEn).trim() : '';
+    if (en && en === title) en = ''; // 重复的英文名不显示
+    return { short: short, title: title, en: en };
+  }
+
+  /** 拼成一行显示名（用于 H1 / document.title / 分享） */
+  function displayName(entry) {
+    var p = displayNameParts(entry);
+    return (p.short ? '[' + p.short + ']' : '') + p.title + (p.en ? '（' + p.en + '）' : '');
+  }
+
   /** 把任意字段值压成一行可读文本（对象只展开一层，够用且不猜语义） */
   function leadValue(v) {
     if (Array.isArray(v)) return v.map(leadValue).join('、');
@@ -2005,10 +2030,14 @@
       })
     ]);
 
+    var nameParts = displayNameParts(entry);
     return el('header', { class: 'titlebar' }, [
       el('div', { class: 'titlebar__row' }, [
-        el('h1', { text: entry.title || String(entry.id || '') }),
-        isPresent(entry.titleEn) ? el('span', { class: 'titlebar__en', text: entry.titleEn }) : null,
+        el('h1', {}, [
+          nameParts.short ? el('span', { class: 'titlebar__short', text: '[' + nameParts.short + ']' }) : null,
+          document.createTextNode(nameParts.title)
+        ]),
+        nameParts.en ? el('span', { class: 'titlebar__en', text: nameParts.en }) : null,
         actions
       ]),
       el('div', { class: 'titlebar__badges' }, badges),

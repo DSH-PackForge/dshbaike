@@ -20,6 +20,11 @@ export const OPTIONAL_FIELDS = {
     // 只对第三方项目类（plugin / pack / launcher / tool / source …）有意义；
     // concept / tutorial / recipe 是本馆原创，用了会被 validate 报错（见 docs/02 §3.1）。
     'authors',
+    // 显示名的另外两件：简称（dsh-pack / dshl），以及**全局唯一名**——
+    // 生态里认的那个标识：插件 owner.repo 或 @scope/name、启动器注册表 ID、整合包市场坐标。
+    // 与词的 id（plugin/2，馆内坐标、号不复用）不是一回事，两者都要有。
+    'shortName',
+    'canonicalId',
     'updatedAt',
     'screenshots',
     'slug',

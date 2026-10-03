@@ -3334,6 +3334,12 @@ main :is(table, pre, .cards, .infotable, .box, .notice) :is(p, ul, ol, li, h2, h
   color: var(--text-muted, #6b7280);
 }
 
+/* 标题里的简称（[dsh-pack]整合包管理插件）—— 与 MC百科 的 [JEI] 同位 */
+.titlebar__short {
+  color: var(--text-muted, #6b7280);
+  font-weight: 600;
+}
+
 /* 开发者 / 团队（authors）：上游作者卡片。
    头像是 GitHub 现成地址（github.com/<login>.png），零托管成本；
    与信息表里的「维护者」（本馆维护者，也是第一道闸批准人）不是一个概念，所以单独成块。 */

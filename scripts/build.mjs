@@ -1016,8 +1016,8 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
   const L = [];
   L.push('<div class="prerender" data-prerender="entry">');
   L.push('<article class="prose">');
-  L.push(`<h1>${escapeHtml(output.title ?? output.id)}</h1>`);
-  if (output.titleEn) L.push(`<p class="faint">${escapeHtml(output.titleEn)}</p>`);
+  L.push(`<h1>${escapeHtml(displayName(output))}</h1>`);
+  // 英文名已经在 displayName 里（与中文名不同才拼进去），不再单独占一行
   if (output.aliases?.length) L.push(`<p class="faint">别名：${output.aliases.map(escapeHtml).join('、')}</p>`);
   if (output.summary) L.push(`<p>${escapeHtml(output.summary)}</p>`);
   // 正文：构建期已经由 markdown 渲染成 HTML（同一个字段前端也在用）
@@ -1090,7 +1090,7 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
       'usedInPacks', 'referencedByTutorials', 'backlinks', 'titleEn', 'aliases', 'tags', 'summary',
       'status', 'kind', 'slug', 'screenshots', 'archivedNote']);
     if (output.kind === 'plugin') { ATTR_SKIP.add('marketId'); ATTR_SKIP.add('supportedManifest'); }
-    const ATTR_ORDER = ['role', 'layer', 'category', 'fitFor', 'difficulty', 'platforms', 'runtime',
+    const ATTR_ORDER = ['role', 'shortName', 'canonicalId', 'layer', 'category', 'fitFor', 'difficulty', 'platforms', 'runtime',
       'appliesTo', 'support', 'form', 'packType', 'launcherId', 'sourceKind', 'assetType', 'language',
       'locale', 'skillKind', 'presetKind', 'recipeKind', 'targetLayer', 'spec', 'specVersion',
       'specStatus', 'fileName', 'dshRef', 'transport', 'auth', 'license', 'licenseRefs', 'repo', 'npm',
@@ -1108,6 +1108,7 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
       entryGate: '收录门槛', dshVersion: 'DSH 版本', dshVersions: 'DSH 版本',
       supportedManifest: '支持的 manifest', prereq: '前置词条', related: '相关词条',
       maintainers: '维护者', updatedAt: '最后更新', roles: '上游角色',
+      shortName: '简称', canonicalId: '全局唯一名',
       origin: '来源', relation: '与我们的关系', zones: '覆盖分区', provides: '提供内容',
       requires: '依赖', files: '文件', risk: '风险', targets: '目标', roots: '根目录',
       docs: '文档', howto: '怎么用', snippet: '片段', why: '为什么', downloads: '下载量',
@@ -1355,6 +1356,20 @@ function sitemapXml(urls) {
  * 就等于把规范地址指向一个会重定向的 URL —— 两边打架，权重信号被削弱。
  * 站内链接暂时仍写 `.html`（会吃一次 308，能跑通；要不要一并改另议）。
  */
+/**
+ * 显示名：`[简称]中文名（英文名）`（评审：名字与标题分开，标题是渲染结果）。
+ *   - `title` 中文名（技术名就保留原名）；`shortName` 简称；`titleEn` 英文名；
+ *   - **英文名与中文名相同就不显示**（现在有 7 条是重复的，白占一行）；
+ *   - 三件都缺时退回 id，绝不渲染空标题。
+ */
+function displayName(output) {
+  const title = String(output.title ?? output.meta?.title ?? output.id ?? '').trim();
+  const short = String(output.meta?.shortName ?? '').trim();
+  const en = String(output.titleEn ?? '').trim();
+  const enShown = en && en !== title ? `（${en}）` : '';
+  return `${short ? `[${short}]` : ''}${title}${enShown}`;
+}
+
 function pageUrl(rel) {
   const clean = String(rel ?? '').replace(/\.html$/, '');
   if (clean === '' || clean === 'index') return `${SITE_URL}/`;
@@ -1838,7 +1853,7 @@ function entryJsonLd(output) {
   const data = {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
-    headline: output.title ?? output.id,
+    headline: displayName(output),
     description: output.summary ?? undefined,
     inLanguage: 'zh-CN',
     url,
@@ -1861,10 +1876,9 @@ function injectJsonLd(html, json) {
 function renderEntryPage(template, output, entryOutputs, indexes = []) {
   // 标题三合一：中文名 + 英文原名 + 意图词。别名不塞进标题（太长会被截断），
   // 放到描述开头——既帮助匹配，又保持标题干净。
-  const name = output.title ?? output.id;
-  const en = output.titleEn ? `（${output.titleEn}）` : '';
+  const name = displayName(output);
   const intent = ENTRY_INTENT[output.kind] ?? ENTRY_INTENT_FALLBACK;
-  const title = `${name}${en}：${intent} | DSH百科`;
+  const title = `${name}：${intent} | DSH百科`;
   const aliasBit = Array.isArray(output.aliases) && output.aliases.length ? `别名：${output.aliases.join('、')}。` : '';
   const desc = `${aliasBit}${output.summary ?? ''}`.trim();
   return injectJsonLd(applyTemplate(template, {

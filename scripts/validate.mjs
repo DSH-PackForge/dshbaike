@@ -443,6 +443,14 @@ function checkEntries(ctx, reporter, only) {
   }
 }
 
+/**
+ * `canonicalId` 的全局占用表（规则 25）。
+ * 它是生态里认的那个**全局唯一名**（插件 owner.repo / @scope/name、启动器注册表 ID、
+ * 整合包市场坐标），所以两条词条不能认领同一个 —— 用模块级 Map 跨词条查重，
+ * 顺手把「整合包 bundles 写的官方包名对不上词条坐标」这类问题挡在前面。
+ */
+const CANONICAL_SEEN = new Map();
+
 function checkEntry(ctx, reporter, entry) {
   const { kind, n, file, data, lines } = entry;
   const id = `${kind}/${n}`;
@@ -732,6 +740,40 @@ function checkEntry(ctx, reporter, entry) {
           reporter.error(file, R('bugs'), 24, `bugs[${i}].upstream 必须是 http(s) 链接：\`${b.upstream}\``);
         }
       });
+    }
+  }
+
+  // ---- 规则 25：shortName（简称）与 canonicalId（全局唯一名）----
+  // 显示名与身份是两件事：title=中文名、titleEn=英文名、shortName=简称、aliases=俗称；
+  // 而 canonicalId 是**生态里认的那个唯一名**，与馆内坐标 id（plugin/2，号不复用）不同。
+  if (!isMissing(data.shortName)) {
+    const sn = String(data.shortName).trim();
+    if (!sn) {
+      reporter.error(file, R('shortName'), 25, 'shortName 不能是空白');
+    } else if (sn.length > 16) {
+      reporter.error(file, R('shortName'), 25, `shortName 太长（${sn.length} 字）；简称应当 ≤ 16 字`, '长名字放 title，简称只用来在标题与卡片上省地方');
+    }
+  }
+  if (!isMissing(data.canonicalId)) {
+    const cid = String(data.canonicalId).trim();
+    if (!cid) {
+      reporter.error(file, R('canonicalId'), 25, 'canonicalId 不能是空白');
+    } else {
+      if (/\s/.test(cid)) {
+        reporter.error(file, R('canonicalId'), 25, `canonicalId 不能含空格：\`${cid}\``);
+      }
+      const prev = CANONICAL_SEEN.get(cid);
+      if (prev) {
+        reporter.error(
+          file,
+          R('canonicalId'),
+          25,
+          `canonicalId \`${cid}\` 已被 ${prev} 占用（它必须全局唯一）`,
+          '同一个上游包/仓库只能被一条词条认领；合集的词条请留空，不要认领成员的 ID',
+        );
+      } else {
+        CANONICAL_SEEN.set(cid, id);
+      }
     }
   }
 
