@@ -127,6 +127,16 @@ export async function planProjectImport(options) {
   } else warnings.push('没有找到 README：正文留 TODO。');
 
   const entryTitle = String(title ?? '').trim() || repo;
+
+  // 仓库描述常写成「英文 / 中文」两段（作者自己用斜杠分隔）：拆开——英文进 titleEn，中文进 summary。
+  const rawDesc = String(meta.description ?? '').trim();
+  const hasCJK = (s) => /[\u4e00-\u9fff]/.test(s);
+  const descParts = rawDesc.split(/\s+\/\s+|\s*\/\s*/).map((s) => s.trim()).filter(Boolean);
+  const zhDesc = descParts.find((p) => hasCJK(p)) ?? '';
+  const enDesc = descParts.find((p) => !hasCJK(p)) ?? '';
+  const summary = zhDesc || rawDesc || 'TODO 一句话摘要';
+  // 英文名：优先描述里的英文那段，其次 npm 的 description；都没有就留 TODO（评审：英文名都没有）
+  const titleEnGuess = enDesc || (pkg && pkg.description && !hasCJK(pkg.description) ? String(pkg.description) : '');
   const summary = String(meta.description ?? '').trim() || 'TODO 一句话摘要';
 
   // 上游 README 是否已经有「已知限制 / 已知问题」这类小节——有就照搬了，没有就在**正文里**留出位置
@@ -166,6 +176,10 @@ export async function planProjectImport(options) {
 
   const extra = [];
   extra.push('# ---- 以下字段由 scripts/lib/import-project.mjs 从上游自动填入（快照 ' + now + '）');
+  extra.push('titleEn: ' + quote(titleEnGuess || 'TODO 英文名（上游描述里没有英文，补一个）'));
+  extra.push('aliases: []              # 别名：别人怎么叫它（中英简称都收）');
+  extra.push('shortName: TODO          # 生态里常用的简称（如 dsh-pack / dshl）');
+  extra.push('canonicalId: ' + (npmName || (owner + '.' + repo)) + '   # 生态里认的全局唯一名（插件用 owner.repo 或 @scope/name）');
   extra.push('repo: ' + owner + '/' + repo);
   if (npmName) extra.push('npm: ' + quote(npmName));
   if (pkg && pkg.bin && typeof pkg.bin === 'object' && Object.keys(pkg.bin).length) {
@@ -173,8 +187,14 @@ export async function planProjectImport(options) {
   }
   // 机器读不到、必须由人定的字段，**在这一坨里**留好位置（不是只写注释，也不是另开清单）：
   //   · 自由文本 → 直接给占位值，填的时候替换掉就行；
-  //   · 枚举（role / entryGate 等）→ 只能留注释，因为非法值会让校验报错（骨架里已有）。
+  //   · 枚举（role / entryGate 等）与形状未定的字段（bugs）→ 只能留注释，非法值会让校验报错。
   extra.push('positioning: TODO 用生态语境说清它解决什么问题（别照抄上游 description）');
+  extra.push('roles:                   # 上游那边是谁在做（authors 也记这个，roles 记角色）');
+  extra.push('  - who: ' + (meta.owner?.login ?? owner));
+  extra.push('    role: owner');
+  extra.push('    note: ' + quote('仓库归属 ' + (meta.owner?.login ?? owner) + '（来自 GitHub API，快照 ' + now + '）。'));
+  extra.push('# bugs: []               # 已知缺陷与踩坑（只对 plugin 开放；形状见 docs/02，跨插件组合的缺陷另开词条）');
+  extra.push('relations: []            # 与其它词条的关系（requires / recommends / conflicts / replaces）');
   extra.push('compat:');
   extra.push('  dsh: ["TODO 支持哪些 DSH 版本（查不到就写「未核实」，别猜）"]');
   extra.push('  runtime: []          # cli | desktop | web 等，按实测填');
