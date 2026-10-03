@@ -67,6 +67,16 @@ items:
     links:
       github: DSH-PackForge/dsh-pack-plugin
       npm: "@dsh-packforge/dsh-pack-plugin"
+  - name: dsh-TUI
+    section: plugins
+    blurb: 终端里的交互界面插件（3957 star）：像素鲸鱼宠物、启动页与首次向导、流式 Markdown 与工具卡、实时状态与流式思考、双击 Esc 回退时间、上下文进度条与 TPS 表；以 npm 全局包安装，纯插件挂载、不改官方源码。
+    entryGate: maintainer
+    source: curated
+    entry: plugin/3
+    tags: ["工具与能力", "UI 增强"]
+    links:
+      github: ccch1mneyyy/dsh-TUI
+      npm: "@deepseek-harness-tui/dsh-tui"
   - name: dsh-loader
     section: plugins
     blurb: 版本感知的运行时兼容层：在 DSH 升级、内部包版本变化之后，让第三方插件不必改源码就能继续挂上。升级炸插件时的第一根救命稻草。
