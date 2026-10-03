@@ -317,6 +317,7 @@ function main(argv) {
   /* ---- SEO：sitemap.xml 与 robots.txt（P1） ---- */
   push(writes, nextManifest, 'sitemap.xml', sitemapXml(sitemapUrls(model, entryOutputs, indexes)));
   push(writes, nextManifest, 'robots.txt', robotsTxt());
+  push(writes, nextManifest, '_redirects', cloudflareRedirects(nextManifest));
 
   /* ---- 写盘 ---- */
   const changed = [];
@@ -1552,4 +1553,47 @@ try {
     process.exit(1);
   }
   throw error;
+}
+
+/**
+ * Cloudflare Pages 的 `_redirects`：给每个产出的 HTML 写一条「指向自己的 200 改写」。
+ *
+ * 为什么需要：Cloudflare Pages 默认会把 HTML **重定向**到无扩展名形式
+ * （`/plugin/2.html` → 308 → `/plugin/2`，见官方文档 Serving Pages）。而本站刻意选择
+ * 「URL 就是文件」的形态 —— 这是一个"产物即站点"的静态百科，`.html` 拷到任何地方都能打开，
+ * 不依赖宿主的路径重写。于是那条内置重定向会让**每条站内链接都白吃一次 308**。
+ *
+ * 为什么这样能挡住：`_redirects` 的规则**优先于静态资源**（官方文档 Redirects：
+ * 「Redirects are always followed, regardless of whether or not an asset matches the
+ * incoming request」）。给每个 `.html` 写一条指向自己的 200（200 = proxying），
+ * 请求就在重定向阶段被改写回同一个文件、直接 200 出；而**无扩展名**那条路径照旧由
+ * Pages 的路径匹配服务（`/plugin/2` → `plugin/2.html`），两种写法都能用。
+ *
+ * 只列**实际产出**的 HTML（构建期已知），不用通配：精确、可核对，也远低于 2000 条
+ * 静态规则的上限。`404.html` 排除 —— 它是 Pages 的 404 约定，不是页面。
+ */
+function cloudflareRedirects(manifest) {
+  // 来源要**两边合起来**：构建产出的 HTML 在 manifest 里；而顶层页面与模板
+  // （index.html / about.html / promo.html / *.template.html）是**入库文件**、
+  // 直接躺在 web/ 里，不在 manifest 中——只看 manifest 会漏掉它们。
+  const found = new Set();
+  const add = (p) => {
+    const rel = String(p ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
+    if (rel.endsWith('.html') && rel !== '404.html' && !rel.endsWith('/404.html')) found.add(rel);
+  };
+  for (const item of manifest) add(item.path);
+  try {
+    for (const rel of fs.readdirSync(fromRoot('web'), { recursive: true })) add(rel);
+  } catch {
+    /* 输出目录还不存在（首次构建）时忽略：manifest 已经覆盖本轮产出 */
+  }
+  const html = [...found].sort();
+  const lines = [
+    '# 由 scripts/build.mjs 生成，不要手改。',
+    '# 目的：挡住 Cloudflare Pages 内置的「.html → 无扩展名」308，保持「URL 就是文件」。',
+    '# 每行格式：[source] [destination] [code]；200 表示改写而非跳转。',
+    ...html.map((p) => `/${p}  /${p}  200`),
+    '',
+  ];
+  return lines.join('\n');
 }
