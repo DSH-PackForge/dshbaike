@@ -1198,10 +1198,11 @@ function llmsTxt(model, entryOutputs, indexes = []) {
     '',
   ];
   for (const zone of model.zones) {
-    // 分区标题与描述挂在 `zone.data` 上（不是 `zone.title`）——之前写错，标题退化成 id 了
+    // 分区标题与描述挂在 `zone.data` 上（不是 `zone.title`）——之前写错，标题退化成 id 了。
+    // 冒号只由 desc 前缀提供一次（之前格式串里还有一个 `:`，成了 `):：`）。
     const t = zone.data?.title ?? zone.zone;
     const d = zone.data?.desc ? `：${String(zone.data.desc).replace(/\s+/g, ' ').trim()}` : '';
-    L.push(`- [${t}](${pageUrl(`${zone.zone}.html`)}):${d}`);
+    L.push(`- [${t}](${pageUrl(`${zone.zone}.html`)})${d}`);
   }
   L.push('', '## 索引页', '');
   L.push(`- [全部词条（按标签与平台）](${pageUrl('tags.html')}): 按类型/标签/平台浏览全站词条`);
