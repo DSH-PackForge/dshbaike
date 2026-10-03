@@ -137,7 +137,6 @@ export async function planProjectImport(options) {
   const summary = zhDesc || rawDesc || 'TODO 一句话摘要';
   // 英文名：优先描述里的英文那段，其次 npm 的 description；都没有就留 TODO（评审：英文名都没有）
   const titleEnGuess = enDesc || (pkg && pkg.description && !hasCJK(pkg.description) ? String(pkg.description) : '');
-  const summary = String(meta.description ?? '').trim() || 'TODO 一句话摘要';
 
   // 上游 README 是否已经有「已知限制 / 已知问题」这类小节——有就照搬了，没有就在**正文里**留出位置
   const LIMIT_HEAD = /^#{1,4}\s*(已知限制|已知问题|已知的?坑|限制|注意事项|Known (issues|limitations)|Limitations|Caveats)\s*$/im;
