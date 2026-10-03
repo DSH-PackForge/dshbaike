@@ -37,15 +37,25 @@ body:
       label: 词条标题（可选）
       description: 不填就用仓库名
   - type: textarea
+    id: limits
+    attributes:
+      label: 已知问题 / 限制（可选）
+      description: |
+        **这一格机器一定读不到，但读者最需要**：已知的坑、不支持的平台、需要额外配置的地方、
+        上游 README 没写但你心里清楚的问题。你 README 里已有「已知限制」一节的话，这里补充遗漏的即可。
+    validations:
+      required: false
+  - type: textarea
     id: note
     attributes:
       label: 想额外说明什么（可选）
       description: |
-        比如：它解决什么问题、只你知道的限制、希望我们**不要**写的内容、和同类项目的区别。
+        比如：它解决什么问题、和同类项目的区别、希望我们**不要**写的内容。
         不写也行——正文照搬你的 README，我们不会替你编。
   - type: markdown
     attributes:
       value: |
         ---
 
-        编号由自动化分配；事实与措辞都以上游为准。查不到出处的部分会标「未核实」，不会猜。
+        编号由自动化分配；事实与措辞都以上游为准。机器读不到的部分（分类、定位、标签、兼容区间、
+        生态关系、未核实项）会在生成的词条里留成一份 **checklist**，一条条都有落点，不会静默丢掉。

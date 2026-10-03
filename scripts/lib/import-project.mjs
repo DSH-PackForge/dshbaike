@@ -88,7 +88,7 @@ export function emptySectionsAfterClean(md) {
  */
 export async function planProjectImport(options) {
   const {
-    repoRef, kind = 'plugin', user = null, title = null, note = null,
+    repoRef, kind = 'plugin', user = null, title = null, note = null, limits = null,
     now = new Date().toISOString().slice(0, 10), fetchImpl = globalThis.fetch,
   } = options ?? {};
 
@@ -129,16 +129,46 @@ export async function planProjectImport(options) {
   const entryTitle = String(title ?? '').trim() || repo;
   const summary = String(meta.description ?? '').trim() || 'TODO 一句话摘要';
 
+  // 上游 README 是否已经有「已知限制 / 已知问题」这类小节——有就照搬了，没有就得留位置给人补
+  const LIMIT_HEAD = /^#{1,4}\s*(已知限制|已知问题|已知的?坑|限制|注意事项|Known (issues|limitations)|Limitations|Caveats)\s*$/im;
+  const readmeHasLimits = readme ? LIMIT_HEAD.test(readme) : false;
+
+  // 机器读不到的东西一律**显式预留**（评审：肯定有一些字段收集不到，比如 bug——要预留好）。
+  // 这些是 checklist，不是空话：每一条都指到具体字段或具体小节。
+  const openQuestions = [];
+  openQuestions.push('category：填 taxonomy 叶子（规则 6 是 error）');
+  openQuestions.push('tags：至少两个（喂给标签长尾页）');
+  openQuestions.push('positioning：用生态语境说清它解决什么问题（别照抄上游 description）');
+  openQuestions.push(readmeHasLimits
+    ? '已知问题 / 限制：上游 README 有这一节，已照搬；若还有只作者知道的，请补'
+    : '已知问题 / 限制：上游没写这一节——请作者或我们实测补上（这是最容易被漏、也最有用的一格）');
+  openQuestions.push('兼容性：支持的 DSH 版本区间（上游大多不写；查不到就写「未核实」，别猜）');
+  openQuestions.push('生态关系：与官方地基、同类项目的关系');
+  openQuestions.push('未核实：哪些只有上游自述、哪些我们实测过');
+
   const bodyParts = [
     readmePart || '## TODO 第一节\n\n（这个仓库没有可照搬的 README：正文待补。）',
+  ];
+  if (note) bodyParts.push('', '## 作者补充', '', String(note).trim());
+  // 「已知问题」这一格机器一定读不到，必须留位置给人：
+  //   · README 里没有 → 替它开一节，把作者填的（若有）放进去，否则留 TODO；
+  //   · README 里已有 → 已经照搬了，作者额外知道的追加进「作者补充」。
+  if (!readmeHasLimits) {
+    bodyParts.push('', '## 已知问题与限制', '', limits ? String(limits).trim() : 'TODO 待补（上游 README 没写）。');
+  } else if (limits) {
+    bodyParts.push('', '## 作者补充的已知问题', '', String(limits).trim());
+  }
+  bodyParts.push(
     '',
     '## 本站补充（待填）',
     '',
-    note ? '- 作者补充：' + String(note).trim() : '- TODO 作者补充：它解决什么问题、只你知道的限制',
-    '- TODO 分类与定位：`category` 填 taxonomy 叶子、`positioning` 用生态语境说清它解决什么问题；',
-    '- TODO 未核实：哪些说法只有上游自述、哪些我们实测过。',
+    '生成器只填了机器读得到的部分。下面这些**必须由人来定**（本项目的规矩：不编内容）：',
     '',
-  ];
+    ...openQuestions.map((q) => '- [ ] ' + q),
+    '',
+    '> 填完后删掉本节的勾选项与 `TODO`；`category` / `positioning` 填好才能从 draft 改 published。',
+    '',
+  );
   const body = bodyParts.join('\n');
 
   let text = skeleton(kind, entryTitle, now, { summary, body });
@@ -185,6 +215,9 @@ export async function planProjectImport(options) {
     readmeFile,
     npmName,
     version,
+    // 机器读不到、必须由人定的部分（CLI 会打印，机器人会写进 Issue 回帖与 PR 描述）
+    openQuestions,
+    readmeHasLimits,
     meta: { star: meta.stargazers_count, fork: meta.forks_count, license: meta.license?.spdx_id ?? null, language: meta.language ?? null },
     upstream: { owner, repo, url: 'https://github.com/' + owner + '/' + repo },
     warnings,

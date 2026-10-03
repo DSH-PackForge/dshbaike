@@ -271,6 +271,7 @@ export const OPS = {
         user,
         title: String(form['词条标题（可选）'] ?? '').trim() || null,
         note: String(form['想额外说明什么（可选）'] ?? '').trim() || null,
+        limits: String(form['已知问题 / 限制（可选）'] ?? '').trim() || null,
         now: todayLocal(),
       });
       if (!plan.ok) return plan;
@@ -289,7 +290,8 @@ export const OPS = {
         user,
         credited: user,
         summary: `从 ${plan.upstream.owner}/${plan.upstream.repo} 读上游，领号 plugin/${alloc.n}、建 draft 草稿`
-          + (plan.warnings.length ? `（⚠ ${plan.warnings.join('；')}）` : ''),
+          + (plan.warnings.length ? `（⚠ ${plan.warnings.join('；')}）` : '')
+          + `（机器读不到的 ${plan.openQuestions.length} 项已在词条里留成 checklist，需人补）`,
       };
     },
   },

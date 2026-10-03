@@ -54,6 +54,10 @@ console.log('  正文来源：' + (plan.readmeFile ?? '（无 README）')
   + (plan.readmeFile && /ZH|zh/.test(plan.readmeFile) ? '（简体中文版）' : '')
   + ' · npm ' + (plan.npmName ?? '（无）') + (plan.version ? ' v' + plan.version : ''));
 for (const w of plan.warnings) console.log('  ⚠ ' + w);
+if (plan.openQuestions.length) {
+  console.log('  机器读不到、必须由人定的 ' + plan.openQuestions.length + ' 项（词条里已留成 checklist）：');
+  for (const q of plan.openQuestions) console.log('      · ' + q);
+}
 
 if (dry) {
   if (outPath && typeof outPath === 'string') {
