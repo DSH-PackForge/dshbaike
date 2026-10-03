@@ -1364,7 +1364,9 @@ function sitemapXml(urls) {
  */
 function displayName(output) {
   const title = String(output.title ?? output.meta?.title ?? output.id ?? '').trim();
-  const short = String(output.meta?.shortName ?? '').trim();
+  const shortRaw = String(output.meta?.shortName ?? '').trim();
+  // 简称与主名相同就丢掉（否则渲染成 [dsh-TUI]dsh-TUI），英文名同理
+  const short = shortRaw && shortRaw !== title ? shortRaw : '';
   const en = String(output.titleEn ?? '').trim();
   const enShown = en && en !== title ? `（${en}）` : '';
   return `${short ? `[${short}]` : ''}${title}${enShown}`;

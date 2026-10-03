@@ -1866,6 +1866,7 @@
     var short = isPresent(meta.shortName) ? String(meta.shortName).trim() : '';
     var en = isPresent(entry.titleEn) ? String(entry.titleEn).trim() : '';
     if (en && en === title) en = ''; // 重复的英文名不显示
+    if (short && short === title) short = ''; // 简称与主名相同也会重复（[dsh-TUI]dsh-TUI）
     return { short: short, title: title, en: en };
   }
 

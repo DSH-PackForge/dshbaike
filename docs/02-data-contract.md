@@ -251,9 +251,17 @@ plugins:                    # 插件引用块，见 §5
 | `summary` | string | ✅ | 一句话摘要，用于列表与搜索 |
 | `status` | enum | ✅ | `draft` \| `published` \| `archived` \| `deleted`（与 registry 的 `status` 必须一致；`archived` = 上游已归档/停止维护，页面挂「已归档」徽标） |
 | `maintainers` | string[] | 否 | 维护者 GitHub 用户名（**本馆维护者**，也是机器人代改第一道闸的批准人） |
+| `shortName` | string | 否 | **简称**（≤ 16 字），用来在标题与卡片上省地方：`dsh-pack` / `DSHL` / `HDSL`。**与 `title` 相同就不要写**（渲染时也会自动不显示，避免 `[dsh-TUI]dsh-TUI` 这种重复） |
+| `canonicalId` | string | 否 | **全局唯一名**——生态里认的那个标识：插件 `owner.repo` 或 `@scope/name`、启动器注册表 ID、整合包市场坐标。**全局不得重复**（规则 25 会用 Map 跨词条查重）；与馆内坐标 `id`（`plugin/2`，号不复用）不是一回事。与 `launcherId` / `marketId` 的关系：后两者是各自领域里的同一概念，保留 |
 | `authors` | object[] | 否 | **上游作者/团队**：`{ name, role }`，`role` ∈ `开发团队` \| `作者` \| `维护者` \| `贡献者` \| `吉祥物` \| `发布方`。只对**第三方项目类**（plugin / pack / launcher / tool / source …）有意义；`concept` / `tutorial` / `recipe` 是本馆原创，用了会报错。与 `maintainers` 语义不同，**不可混用**；核不实的写「未核实」，不猜 |
 | `updatedAt` | string | 否 | 人工核实的日期（`YYYY-MM-DD`） |
 | `screenshots` | string[] | 否 | 相对 `data/assets/` 的图片路径 |
+
+> **命名约定（显示名 vs 身份，别再混）**：`title` = **中文名**（确实是技术名的保留原名，如 `$DSH_HOME`）；
+> `titleEn` = **英文名**（与中文名相同就不要写 ✗）；`shortName` = **简称**；`aliases` = 俗称 / 拼音 / 搜索变体；
+> `canonicalId` = **全局唯一名**（生态认的标识）。**页面标题是渲染结果**：`[简称]中文名（英文名）`，
+> 缺哪项跳哪项 —— 学 MC百科 的 `[JEI]JEI物品管理器 (Just Enough Items)`。渲染实现见
+> `scripts/build.mjs` 与 `web/pedia.js` 各自的 `displayName()`。
 
 ### 3.2 按 kind 的专有字段
 

@@ -752,6 +752,8 @@ function checkEntry(ctx, reporter, entry) {
       reporter.error(file, R('shortName'), 25, 'shortName 不能是空白');
     } else if (sn.length > 16) {
       reporter.error(file, R('shortName'), 25, `shortName 太长（${sn.length} 字）；简称应当 ≤ 16 字`, '长名字放 title，简称只用来在标题与卡片上省地方');
+    } else if (sn === String(data.title ?? '').trim()) {
+      reporter.error(file, R('shortName'), 25, 'shortName 与 title 相同（简称没有意义，且会渲染成 [X]X）', '要么删掉 shortName，要么把它改成真正的简称');
     }
   }
   if (!isMissing(data.canonicalId)) {
