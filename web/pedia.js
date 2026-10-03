@@ -1525,7 +1525,7 @@
       statusNotice(entry, id),
       el('div', { class: 'entry-grid' }, [
         // 两栏：正文 + 信息栏（「相关」已并入信息栏，不再单开左侧一列——评审：太占空间）
-        el('div', { class: 'entry-grid__main' }, [leadBlock(entry), entryTopBlock(entry), teamBlock(entry), tabs, backlinksBlock(entry)]),
+        el('div', { class: 'entry-grid__main' }, [leadBlock(entry), entryTopBlock(entry), teamBlock(entry), versionBlock(entry), tabs, backlinksBlock(entry)]),
         el('div', { class: 'entry-grid__aside' }, aside)
       ]),
       dataFootnote(entry, id)
@@ -1613,6 +1613,47 @@
     }
 
     return parts.length ? el('div', { class: 'entry-top' }, parts) : null;
+  }
+
+  /**
+   * 「支持的 DSH 版本」——放在开发者/团队**下面**（评审指定的顺序）。
+   *
+   * 数据源按可靠性排：`dshVersions` / `dshVersion` / `appliesTo`（结构化声明）优先，
+   * 其次是 `compat.dsh`——实测里它是**成句的声明**（「未核实：…；本机实测跑的是
+   * @deepseek-ai/dsh 0.1.0-rc.6」或「README 说支持 v0.0.1-rc1 到 v0.1.7-rc.1」），
+   * 本身就带诚实措辞，所以逐字照登、不加工。
+   * 三者都没有时给一句中性的「本站尚未收录」——**不替上游下结论**。
+   * 插件页不放 manifest（已决定取消），所以这里也不提 manifest。
+   */
+  function versionBlock(entry) {
+    var meta = entry.meta || {};
+    var declared = [];
+    var addField = function (label, v) {
+      if (!isPresent(v)) return;
+      if (Array.isArray(v)) {
+        var xs = v.filter(isPresent).map(String);
+        if (xs.length) declared.push(label + '：' + xs.join('、'));
+      } else {
+        declared.push(label + '：' + String(v));
+      }
+    };
+    addField('DSH 版本', meta.dshVersions);
+    addField('DSH 版本', meta.dshVersion);
+    addField('适用版本', meta.appliesTo);
+
+    var compatText = meta.compat && isPresent(meta.compat.dsh) ? String(meta.compat.dsh) : null;
+    var lines = [];
+    if (declared.length) lines.push(el('p', { class: 'vers__line', text: declared.join('　·　') }));
+    if (compatText) {
+      lines.push(
+        el('p', { class: 'vers__line' }, [el('span', { class: 'faint', text: '兼容声明' }), document.createTextNode('　' + compatText)])
+      );
+    }
+    if (!lines.length) lines.push(el('p', { class: 'vers__line faint', text: '本站尚未收录它的 DSH 版本声明。' }));
+
+    return el('section', { class: 'vers', 'aria-label': '支持的 DSH 版本' }, [
+      el('h2', { class: 'vers__title', text: '支持的 DSH 版本' }),
+    ].concat(lines));
   }
 
   /**

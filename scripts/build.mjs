@@ -1155,6 +1155,35 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
       }
       L.push('</section>');
     }
+    // 支持的 DSH 版本：放在开发者/团队**下面**（评审指定的顺序）。
+    // 数据源按可靠性排：dshVersions / dshVersion / appliesTo 优先，其次是 compat.dsh
+    // （实测里它成句、自带诚实措辞，逐字照登）；都没有就给中性的一句，不替上游下结论。
+    // 插件页不放 manifest（已决定取消），这里也不提。
+    const versBits = [];
+    const pushVers = (label, v) => {
+      if (v === null || v === undefined || v === '') return;
+      if (Array.isArray(v)) {
+        const xs = v.filter((x) => x !== null && x !== undefined && x !== '');
+        if (xs.length) versBits.push(`${label}：${xs.join('、')}`);
+      } else if (typeof v !== 'object') {
+        versBits.push(`${label}：${v}`);
+      }
+    };
+    pushVers('DSH 版本', output.meta?.dshVersions);
+    pushVers('DSH 版本', output.meta?.dshVersion);
+    pushVers('适用版本', output.meta?.appliesTo);
+    const compatDsh = output.meta?.compat?.dsh;
+    const hasCompatText = compatDsh !== null && compatDsh !== undefined && compatDsh !== '' && typeof compatDsh !== 'object';
+    L.push('<section class="vers" aria-label="支持的 DSH 版本">');
+    L.push('<h2 class="vers__title">支持的 DSH 版本</h2>');
+    if (versBits.length) L.push(`<p class="vers__line">${escapeHtml(versBits.join('　·　'))}</p>`);
+    if (hasCompatText) {
+      L.push(`<p class="vers__line"><span class="faint">兼容声明</span>　${escapeHtml(String(compatDsh))}</p>`);
+    }
+    if (!versBits.length && !hasCompatText) {
+      L.push('<p class="vers__line faint">本站尚未收录它的 DSH 版本声明。</p>');
+    }
+    L.push('</section>');
     const row = indexLinkRow(output.tags, indexes, 'tag');
     if (row) L.push(row);
   }
