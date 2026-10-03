@@ -199,6 +199,7 @@
     license: '许可证',
     licenseRefs: '许可证',
     maintainers: '维护者',
+    authors: '开发者/团队',
     difficulty: '难度',
     appliesTo: '适用版本',
     origin: '来源',
@@ -302,7 +303,7 @@
 
 
   var FIELD_GROUPS = [
-    { title: '基本信息', keys: ['positioning', 'titleEn', 'aliases', 'category', 'tags', 'role', 'layer', 'difficulty', 'origin', 'fitFor', 'packType', 'launcherId', 'sourceKind', 'form', 'targets', 'assetType', 'locale', 'skillKind', 'roots', 'presetKind', 'recipeKind', 'targetLayer', 'language', 'specVersion', 'specStatus', 'maintainers', 'status', 'updatedAt'] },
+    { title: '基本信息', keys: ['positioning', 'titleEn', 'aliases', 'category', 'tags', 'role', 'layer', 'difficulty', 'origin', 'fitFor', 'packType', 'launcherId', 'sourceKind', 'form', 'targets', 'assetType', 'locale', 'skillKind', 'roots', 'presetKind', 'recipeKind', 'targetLayer', 'language', 'specVersion', 'specStatus', 'maintainers', 'authors', 'status', 'updatedAt'] },
     { title: '兼容与平台', keys: ['dshVersion', 'dshVersions', 'appliesTo', 'runtime', 'platforms', 'supportedManifest', 'launchers', 'importSupport', 'selfVersioning', 'lineage', 'permissions'] },
     { title: '安装与出处', keys: ['install', 'repo', 'npm', 'marketId', 'spec', 'url', 'linkOut', 'coverage', 'downloads', 'relation', 'howto', 'zones', 'prereq', 'related', 'files', 'dshRef', 'fileName', 'supersedes', 'requires', 'provides', 'snippet', 'why'] },
     { title: '许可证', keys: ['license', 'licenseRefs'] }

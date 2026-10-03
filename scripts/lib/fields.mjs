@@ -15,6 +15,11 @@ export const OPTIONAL_FIELDS = {
     'aliases',
     'tags',
     'maintainers',
+    // 上游那个项目是谁做的。**与 maintainers 语义不同**：maintainers 是本馆维护者
+    // （也是机器人代改第一道闸的批准人），authors 是上游作者/团队。
+    // 只对第三方项目类（plugin / pack / launcher / tool / source …）有意义；
+    // concept / tutorial / recipe 是本馆原创，用了会被 validate 报错（见 docs/02 §3.1）。
+    'authors',
     'updatedAt',
     'screenshots',
     'slug',

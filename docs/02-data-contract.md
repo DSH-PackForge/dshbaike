@@ -250,7 +250,8 @@ plugins:                    # 插件引用块，见 §5
 | `tags` | string[] | 否 | 自由标签 |
 | `summary` | string | ✅ | 一句话摘要，用于列表与搜索 |
 | `status` | enum | ✅ | `draft` \| `published` \| `archived` \| `deleted`（与 registry 的 `status` 必须一致；`archived` = 上游已归档/停止维护，页面挂「已归档」徽标） |
-| `maintainers` | string[] | 否 | 维护者 GitHub 用户名 |
+| `maintainers` | string[] | 否 | 维护者 GitHub 用户名（**本馆维护者**，也是机器人代改第一道闸的批准人） |
+| `authors` | object[] | 否 | **上游作者/团队**：`{ name, role }`，`role` ∈ `开发团队` \| `作者` \| `维护者` \| `贡献者` \| `吉祥物` \| `发布方`。只对**第三方项目类**（plugin / pack / launcher / tool / source …）有意义；`concept` / `tutorial` / `recipe` 是本馆原创，用了会报错。与 `maintainers` 语义不同，**不可混用**；核不实的写「未核实」，不猜 |
 | `updatedAt` | string | 否 | 人工核实的日期（`YYYY-MM-DD`） |
 | `screenshots` | string[] | 否 | 相对 `data/assets/` 的图片路径 |
 

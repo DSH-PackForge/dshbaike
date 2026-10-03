@@ -664,6 +664,33 @@ function checkEntry(ctx, reporter, entry) {
     checkPluginEntry(ctx, reporter, entry, { id, bodyText });
   }
 
+  // ---- 规则 23：authors（上游作者/团队）----
+  // 与 maintainers 语义不同：maintainers 是本馆维护者（也是第一道闸的批准人），
+  // authors 是**上游**那个项目是谁做的。只对第三方项目类有意义；
+  // concept / tutorial / recipe 是本馆原创，写了就是概念混用，直接报错。
+  if (!isMissing(data.authors)) {
+    const OWN_TYPES = new Set(['concept', 'tutorial', 'recipe']);
+    const AUTHOR_ROLES = new Set(['开发团队', '作者', '维护者', '贡献者', '吉祥物', '发布方']);
+    if (OWN_TYPES.has(kind)) {
+      reporter.error(file, R('authors'), 23, `${kind} 是本馆原创词条，不该有 \`authors\`（上游作者只用于第三方项目类；本馆署名走贡献者机制）`);
+    } else if (!Array.isArray(data.authors) || data.authors.length === 0) {
+      reporter.error(file, R('authors'), 23, 'authors 必须是非空数组，每项形如 `- { name, role }`');
+    } else {
+      data.authors.forEach((a, i) => {
+        if (!a || typeof a !== 'object' || Array.isArray(a)) {
+          reporter.error(file, R('authors'), 23, `authors[${i}] 必须是 { name, role } 对象`);
+          return;
+        }
+        if (isMissing(a.name)) reporter.error(file, R('authors'), 23, `authors[${i}] 缺 name`);
+        if (isMissing(a.role)) {
+          reporter.error(file, R('authors'), 23, `authors[${i}] 缺 role（枚举：${[...AUTHOR_ROLES].join(' | ')}）`);
+        } else if (!AUTHOR_ROLES.has(String(a.role))) {
+          reporter.error(file, R('authors'), 23, `authors[${i}].role 不在枚举里：\`${a.role}\``);
+        }
+      });
+    }
+  }
+
   // ---- 字段白名单：未知字段给 warn，避免拼错字段名悄悄丢数据 ----
   const expected = new Set([
     ...(EXPECTED_FIELDS[kind] ?? []),
