@@ -421,20 +421,31 @@ jobs:
             # 只批**本分支**上的 pull_request 运行，别的运行一概不碰。
             #
             # 接口：POST /repos/{owner}/{repo}/actions/runs/{id}/approve（需要 actions: write）。
-            # 若接口对同仓库 PR 不生效，这里只会打一行提示、不让整步失败 —— 人工点也行。
-            pending=""
-            for _ in 1 2 3 4 5 6 7 8; do
-              pending=$(gh run list -R "$REPO" --branch "$branch" --limit 20 \
-                --json databaseId,event,status \
-                --jq '[.[] | select(.event == "pull_request") | select(.status == "action_required" or .status == "waiting" or .status == "pending")] | .[].databaseId' 2>/dev/null || true)
-              [ -n "$pending" ] && break
-              sleep 5
+            #
+            # 两个踩过的坑，都写在这里免得再犯：
+            #   · **等批准的运行在 API 里是 `conclusion=action_required`**，不是 status ——
+            #     只按 status 过滤会永远匹配不到（第一版就是这样，静默什么都没做）；
+            #   · 循环里别写 `[ -n "$x" ] && break` —— `set -e` 下条件为假会让**整个脚本**
+            #     当场退出，后面的步骤全都不执行。用 if/then 写。
+            found=""
+            for attempt in $(seq 1 12); do
+              found=$(gh run list -R "$REPO" --branch "$branch" --limit 20 \
+                --json databaseId,event,status,conclusion \
+                --jq '[.[] | select(.event == "pull_request") | select(.status == "action_required" or .status == "waiting" or .status == "pending" or .conclusion == "action_required")] | .[].databaseId' 2>/dev/null || true)
+              if [ -n "${found:-}" ]; then break; fi
+              sleep 8
             done
-            for id in ${pending:-}; do
-              if gh api -X POST "repos/${REPO}/actions/runs/${id}/approve" >/dev/null 2>&1; then
+            if [ -z "${found:-}" ]; then
+              echo "没有发现等待批准的运行；这个分支上现有这些运行（供排查）："
+              gh run list -R "$REPO" --branch "$branch" --limit 10 \
+                --json workflowName,event,status,conclusion \
+                --jq '.[] | "  \(.workflowName)  event=\(.event)  \(.status)/\(.conclusion)"' 2>/dev/null || true
+            fi
+            for id in ${found:-}; do
+              if err=$(gh api -X POST "repos/${REPO}/actions/runs/${id}/approve" 2>&1); then
                 echo "已自动放行运行 ${id}（等同点「Approve and run」）"
               else
-                echo "自动放行失败（运行 ${id}）——人工点一下「Approve and run」即可"
+                echo "自动放行失败（运行 ${id}）：${err}"
               fi
             done
           else
