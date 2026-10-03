@@ -124,11 +124,11 @@ check('清洗后变空的小节会告警（HTML 表格被丢掉）', plan.warnin
 check('取不到上游时给人话、不抛异常',
   (await planProjectImport({ repoRef: 'x/nope', fetchImpl: async () => ({ status: 404, ok: false, json: async () => null, text: async () => '' }) })).reason,
   'upstream-unreachable');
-// 机器读不到的东西必须**显式预留**（评审：肯定有字段收集不到，比如 bug——要预留好）
-check('机器读不到的项列成 checklist（≥6 项）', plan.openQuestions.length >= 6, true);
-check('checklist 里点名了「已知问题 / 限制」', plan.openQuestions.join(' ').includes('已知问题'), true);
-check('上游没有「限制」一节时，替它留出空位', /## 已知问题与限制/.test(plan.entryText), true);
-check('空位里有 TODO，不是静默省略', /## 已知问题与限制[\s\S]{0,80}TODO/.test(plan.entryText), true);
+// 机器读不到的东西要在**文档里**留占位（评审：不是另开一份"待办清单"，那没人看得懂该填啥）
+check('不再另开"待办清单"节', /本站补充（待填）/.test(plan.entryText), false);
+check('上游没有「限制」一节时，正文里留出这一节', /## 已知问题与限制/.test(plan.entryText), true);
+check('占位写的是"该写什么"，不是空壳', /## 已知问题与限制[\s\S]{0,80}待补：/.test(plan.entryText), true);
+check('兼容性也在正文里留了位置', /## 兼容性[\s\S]{0,60}DSH 版本/.test(plan.entryText), true);
 
 console.log(`\n== 结果：通过 ${pass} 项，失败 ${fail} 项 ==`);
 process.exit(fail ? 1 : 0);
