@@ -101,7 +101,7 @@ entries:
     status: published
   - n: 1
     kind: launcher
-    title: DSH Launcher（dsh-plugins）
+    title: DSH Launcher
     createdAt: 2026-10-02
     status: published
   - n: 2
@@ -171,7 +171,7 @@ entries:
     status: published
   - n: 1
     kind: pack
-    title: '丝滑的DSH（smoother-deepseek-harness）'
+    title: '丝滑的DSH'
     createdAt: 2026-10-02
     status: published
   - n: 1
@@ -181,7 +181,7 @@ entries:
     status: published
   - n: 1
     kind: spec
-    title: 'DSH 社区生态互操作规范（dsh-ecosystem-spec）'
+    title: 'DSH 社区生态互操作规范'
     createdAt: 2026-10-02
     status: published
   - n: 2
@@ -191,12 +191,12 @@ entries:
     status: published
   - n: 1
     kind: mcp
-    title: 'MCP 客户端（dsh-mcp-client）'
+    title: 'MCP 客户端'
     createdAt: 2026-10-02
     status: published
   - n: 1
     kind: plugin
-    title: '官方插件与半端（deepseek-harness 仓库）'
+    title: '官方插件与半端'
     createdAt: 2026-10-02
     status: published
   - n: 3
