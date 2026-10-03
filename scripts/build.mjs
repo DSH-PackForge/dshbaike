@@ -1609,6 +1609,40 @@ const ENTRY_INTENT = {
 };
 const ENTRY_INTENT_FALLBACK = '是什么、怎么用';
 
+/**
+ * 词条页的结构化数据（schema.org `TechArticle`）。
+ *
+ * 为什么值得做：搜索引擎用它生成富结果，AI 摘要用它判断"这一页在讲什么、什么时候更新的"。
+ * 只写**确定有值**的字段（标题/描述/别名/更新时间/所属站点），不编造关系与作者——
+ * 关系要等 `relations` 真的填了再挂（那时用 `about`/`citation` 指向对方页面）。
+ * `<` 一律转义成 `\u003c`，避免正文里的 `</script>` 之类把标签截断。
+ */
+function entryJsonLd(output) {
+  const url = pageUrl(`${output.kind}/${output.n}.html`);
+  const alt = [output.titleEn, ...(Array.isArray(output.aliases) ? output.aliases : [])].filter(Boolean);
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: output.title ?? output.id,
+    description: output.summary ?? undefined,
+    inLanguage: 'zh-CN',
+    url,
+    mainEntityOfPage: url,
+    isPartOf: { '@type': 'WebSite', name: 'DSH百科', url: `${SITE_URL}/` },
+    publisher: { '@type': 'Organization', name: 'DSH百科', url: `${SITE_URL}/` },
+    ...(alt.length ? { alternateName: alt } : {}),
+    ...(output.updatedAt ? { dateModified: String(output.updatedAt).slice(0, 10) } : {}),
+  };
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
+/** 把一段 JSON-LD 塞进 </head> 之前（模板里没有占位符，这样不用改模板） */
+function injectJsonLd(html, json) {
+  const tag = `<script type="application/ld+json">${json}</script>`;
+  const s = String(html ?? '');
+  return s.includes('</head>') ? s.replace('</head>', `${tag}</head>`) : `${tag}${s}`;
+}
+
 function renderEntryPage(template, output, entryOutputs, indexes = []) {
   // 标题三合一：中文名 + 英文原名 + 意图词。别名不塞进标题（太长会被截断），
   // 放到描述开头——既帮助匹配，又保持标题干净。
@@ -1618,7 +1652,7 @@ function renderEntryPage(template, output, entryOutputs, indexes = []) {
   const title = `${name}${en}：${intent} | DSH百科`;
   const aliasBit = Array.isArray(output.aliases) && output.aliases.length ? `别名：${output.aliases.join('、')}。` : '';
   const desc = `${aliasBit}${output.summary ?? ''}`.trim();
-  return applyTemplate(template, {
+  return injectJsonLd(applyTemplate(template, {
     title,
     desc,
     prerender: prerenderEntry(output, entryOutputs, indexes),
@@ -1626,7 +1660,7 @@ function renderEntryPage(template, output, entryOutputs, indexes = []) {
     // 草稿页也 noindex（spec/1 那种占位条目就是草稿）
     noindex: output.status === 'deleted' || output.status === 'draft',
     payload: { base: BASE, page: 'entry', kind: output.kind, n: output.n, title: output.title },
-  });
+  }), entryJsonLd(output));
 }
 
 function renderZonePage(template, output, entryOutputs, indexes = []) {
