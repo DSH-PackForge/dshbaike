@@ -1601,12 +1601,14 @@
     if (isPresent(pick('linkOut'))) pairs.push(['默认去处', String(pick('linkOut'))]);
     if (pairs.length) {
       parts.push(
-        el('div', { class: 'attrs' }, pairs.map(function (p) {
-          return el('span', { class: 'attrs__pair' }, [
-            el('span', { class: 'faint', text: p[0] }),
-            el('strong', { text: p[1] })
-          ]);
-        }))
+        el('section', { class: 'attrs', 'aria-label': '属性' }, [el('h2', { class: 'attrs__title', text: '属性' })].concat(
+          pairs.map(function (p) {
+            return el('span', { class: 'attrs__pair' }, [
+              el('span', { class: 'faint', text: p[0] }),
+              el('strong', { text: p[1] })
+            ]);
+          })
+        ))
       );
     }
 

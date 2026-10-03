@@ -1114,16 +1114,17 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
     if (pick('url')) attrPairs.push(['上游地址', String(pick('url'))]);
     if (pick('linkOut')) attrPairs.push(['默认去处', String(pick('linkOut'))]);
     if (attrPairs.length) {
-      // 用内联样式保证观感（柔和的"标签 + 值"行，可换行；主题安全靠 opacity）；
-      // 下轮再把这几条收进 pedia.css，这里先不引入外部样式依赖。
-      L.push('<div class="attrs" style="display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 14px;font-size:.92em">');
+      // 与 JS 侧同名结构（.attrs 卡片 + .attrs__title 标题 + .attrs__pair 键值对），
+      // 样式统一放 pedia.css —— 之前这里用内联样式、也没标题，肉眼根本认不出这是「属性」。
+      L.push('<section class="attrs" aria-label="属性">');
+      L.push('<h2 class="attrs__title">属性</h2>');
       for (const [k, v] of attrPairs) {
         L.push(
-          `<span class="attrs__pair"><span class="faint" style="opacity:.65;font-size:.88em">${escapeHtml(k)}</span> ` +
-            `<strong style="font-weight:600">${escapeHtml(v)}</strong></span>`,
+          `<span class="attrs__pair"><span class="faint">${escapeHtml(k)}</span> ` +
+            `<strong>${escapeHtml(v)}</strong></span>`,
         );
       }
-      L.push('</div>');
+      L.push('</section>');
     }
     // 开发者 / 团队（authors）：上游作者卡片，头像用 GitHub 现成地址（零托管成本）。
     // 放在属性块之后（学 MC百科 的顺序），并且**只列已有数据**，没有就整块不出。
