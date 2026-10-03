@@ -34,3 +34,8 @@ web/robots.txt
 web/.pedia-manifest.json
 web/llms.txt
 web/llms-full.txt
+
+# 各搜索引擎的站点验证文件（人工放入，工具不生成）
+!web/BingSiteAuth.xml
+!web/baidu_verify_*.html
+!web/google*.html
