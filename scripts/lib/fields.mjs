@@ -43,6 +43,9 @@ export const OPTIONAL_FIELDS = {
     'entryGate',
     'catalogCat',
     'archivedNote',
+    // 缺陷与踩坑（评审：这里的"特性"就是 bug）。只对 plugin 开放：
+    // 跨插件组合才出现的缺陷要另开独立 bug 词条并被反向引用，同一个缺陷只有一个 canonical 位置。
+    'bugs',
   ],
   tutorial: ['difficulty', 'prereq', 'appliesTo', 'origin', 'external', 'plugins', 'related', 'archivedNote'],
   pack: [

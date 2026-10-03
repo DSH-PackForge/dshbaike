@@ -1040,6 +1040,8 @@ function prerenderEntry(output, entryOutputs, indexes = []) {
   }
 
   const metaRows = Object.entries(output.meta ?? {})
+    // bugs 有自己的页签（「插件特性」），不进信息表——否则信息表里会出现一坨缺陷详情。
+    .filter(([k]) => k !== 'bugs')
     .map(([k, v]) => [k, formatMetaValue(v)])
     .filter(([, v]) => v !== null && v !== undefined && v !== '')
     // 兜底：formatMetaValue 没吃住的嵌套形态曾漏出 `[object Object]`——那是**爬虫与

@@ -691,6 +691,50 @@ function checkEntry(ctx, reporter, entry) {
     }
   }
 
+  // ---- 规则 24：bugs（缺陷与踩坑）----
+  // 评审明确：插件页那个「插件特性」页签里的"特性"就是 bug（对照 bug.mcmod.cn 的
+  // 「MOD特性警示」，供安装前避雷）。所以字段要求能回答「哪个版本、什么状态、凭什么说」：
+  //   title 必填；severity ∈ 致命|严重|轻微；status ∈ 已确认|未复现|上游已知|已修复*|未核实；
+  //   affects / evidence / note / upstream 可选，upstream 必须是 http(s) 链接。
+  // 只对 plugin 开放（跨插件组合的缺陷走独立 bug 词条）。
+  if (!isMissing(data.bugs)) {
+    const BUG_SEVERITY = new Set(['致命', '严重', '轻微']);
+    const BUG_STATUS = new Set(['已确认', '未复现', '上游已知', '未核实']);
+    if (kind !== 'plugin') {
+      reporter.error(file, R('bugs'), 24, `bugs 只用于 plugin 词条；${kind} 若遇到跨插件组合的缺陷，请另开独立 bug 词条并让相关词条反向引用`);
+    } else if (!Array.isArray(data.bugs) || data.bugs.length === 0) {
+      reporter.error(file, R('bugs'), 24, 'bugs 必须是非空数组，每项形如 `- { title, severity, affects, status, evidence }`');
+    } else {
+      data.bugs.forEach((b, i) => {
+        if (!b || typeof b !== 'object' || Array.isArray(b)) {
+          reporter.error(file, R('bugs'), 24, `bugs[${i}] 必须是对象`);
+          return;
+        }
+        if (isMissing(b.title)) reporter.error(file, R('bugs'), 24, `bugs[${i}] 缺 title（一句话说清是什么缺陷）`);
+        if (isMissing(b.severity)) {
+          reporter.error(file, R('bugs'), 24, `bugs[${i}] 缺 severity（枚举：${[...BUG_SEVERITY].join(' | ')}）`);
+        } else if (!BUG_SEVERITY.has(String(b.severity))) {
+          reporter.error(file, R('bugs'), 24, `bugs[${i}].severity 不在枚举里：\`${b.severity}\``);
+        }
+        if (isMissing(b.status)) {
+          reporter.error(file, R('bugs'), 24, `bugs[${i}] 缺 status（枚举：${[...BUG_STATUS].join(' | ')} | 已修复…）`);
+        } else {
+          const st = String(b.status);
+          // 「已修复」允许带版本尾巴（已修复（0.3.6）），其余必须是枚举里的整词
+          if (!BUG_STATUS.has(st) && !st.startsWith('已修复')) {
+            reporter.error(file, R('bugs'), 24, `bugs[${i}].status 不在枚举里：\`${st}\``);
+          }
+        }
+        if (isMissing(b.affects)) {
+          reporter.error(file, R('bugs'), 24, `bugs[${i}] 缺 affects（受影响/起始版本；不确定就写「未核实」）`);
+        }
+        if (!isMissing(b.upstream) && !/^https?:\/\//i.test(String(b.upstream))) {
+          reporter.error(file, R('bugs'), 24, `bugs[${i}].upstream 必须是 http(s) 链接：\`${b.upstream}\``);
+        }
+      });
+    }
+  }
+
   // ---- 字段白名单：未知字段给 warn，避免拼错字段名悄悄丢数据 ----
   const expected = new Set([
     ...(EXPECTED_FIELDS[kind] ?? []),

@@ -200,6 +200,7 @@
     licenseRefs: '许可证',
     maintainers: '维护者',
     authors: '开发者/团队',
+    bugs: '缺陷',
     difficulty: '难度',
     appliesTo: '适用版本',
     origin: '来源',
